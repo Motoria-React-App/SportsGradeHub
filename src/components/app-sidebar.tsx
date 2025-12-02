@@ -5,9 +5,7 @@ import {
   IconInnerShadowTop,
 } from "@tabler/icons-react"
 import {
-  BookOpen,
-  Bot,
-  Settings2,
+  Dumbbell,
   SquareTerminal,
 } from "lucide-react"
 
@@ -37,19 +35,9 @@ const data = {
       isActive: true,
     },
     {
-      title: "Classi",
-      url: "/classes",
-      icon: BookOpen,
-    },
-    {
-      title: "Studenti",
-      url: "/students",
-      icon: Bot,
-    },
-    {
-      title: "Analisi",
-      url: "/analytics",
-      icon: Settings2,
+      title: "Esercizi",
+      url: "/exercises",
+      icon: Dumbbell,
     },
   ],
 }
@@ -66,7 +54,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">SportsGradeHub</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

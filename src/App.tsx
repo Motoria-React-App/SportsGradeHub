@@ -4,12 +4,15 @@ import Classes from "@/pages/Classes";
 import Students from "@/pages/Students";
 import Analytics from "@/pages/Analytics";
 
+import Exercises from "@/pages/Exercises";
+
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/exercises" element={<Exercises />} />
         <Route path="/classes" element={<Classes />} />
         <Route path="/students" element={<Students />} />
         <Route path="/analytics" element={<Analytics />} />
