@@ -51,12 +51,22 @@ export interface Grade {
     teacherId?: string;
 }
 
+export type EvaluationCriterionType = 'technical' | 'effort' | 'teamwork' | 'overall';
+
+export interface SubExercise {
+    id: string;
+    name: string;
+    evaluationCriteria: EvaluationCriterionType[];
+    weight?: number; // Optional weight for weighted grading
+}
+
 export interface Exercise {
     id: string;
     name: string;
     type: ExerciseType;
     description?: string;
     requiresTeamwork: boolean;
+    subExercises?: SubExercise[]; // Optional for backward compatibility
 }
 
 export interface Class {
@@ -73,7 +83,7 @@ export interface PerformanceMetric {
     label: string;
     value: number;
     date: string;
-    
+
 }
 
 export interface TrendData {

@@ -1,6 +1,4 @@
-"use client"
-
-
+import { Link, useLocation } from "react-router-dom"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -18,18 +16,23 @@ export function NavMain({
     icon?: React.ElementType
   }[]
 }) {
+  const location = useLocation();
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-
-        </SidebarMenu>
-        <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+              <SidebarMenuButton
+                asChild
+                isActive={location.pathname === item.url}
+                tooltip={item.title}
+              >
+                <Link to={item.url}>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

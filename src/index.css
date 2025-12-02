@@ -125,4 +125,51 @@
     body {
         @apply bg-background text-foreground;
     }
+}/* Custom Scrollbar Styles */
+@layer base {
+    /* Webkit browsers (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: hsl(var(--muted));
+        border-radius: var(--radius);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: hsl(var(--muted-foreground) / 0.5);
+        border-radius: var(--radius);
+        border: 2px solid hsl(var(--muted));
+        transition: background 0.2s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--muted-foreground) / 0.7);
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+        background: hsl(var(--muted-foreground) / 0.9);
+    }
+
+    /* Thin scrollbar variant for dialogs and small containers */
+    .CustomScrollbar-thin::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .CustomScrollbar-thin::-webkit-scrollbar-thumb {
+        border-width: 1px;
+    }
+
+    /* Firefox */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--muted-foreground) / 0.5) hsl(var(--muted));
+    }
+
+    .CustomScrollbar-thin {
+        scrollbar-width: thin;
+    }
 }
