@@ -6,12 +6,16 @@ import {
     SidebarProvider,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { classes } from "@/data/mockData";
-import { cn } from "@/lib/utils";
 import { GradeEntryModal } from "@/components/Grading/GradeEntryModal";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import TableComp from "@/components/dashboard/table";
 
 export default function Dashboard() {
@@ -62,35 +66,20 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between w-full gap-4">
                             <div className="flex flex-col">
                                 <label htmlFor="class-select" className="sr-only">Seleziona classe</label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger className="flex items-center gap-2 text-3xl font-bold tracking-tight hover:text-zinc-300 transition-colors duration-200 focus:outline-none">
-                                        {classes.find(c => c.id === selectedClassId)?.name || "Seleziona classe"}
-                                        <span className="text-lg text-zinc-400 font-normal">
-                                            - {classes.find(c => c.id === selectedClassId)?.studentCount || 0} Studenti
-                                        </span>
-                                        <ChevronDown className="h-6 w-6" />
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="start"
-                                        className="bg-zinc-900 border-zinc-800 shadow-md backdrop-blur-sm"
-                                    >
+                                <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                                    <SelectTrigger className="w-[110px] text-2xl font-bold tracking-tight border-none shadow-none p-0 pl-2 h-auto focus:ring-0 hover:text-zinc-300 transition-colors duration-200">
+                                        <SelectValue placeholder="Seleziona classe">
+                                            {classes.find(c => c.id === selectedClassId)?.name || "Seleziona classe"}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent className="min-w-[110px] w-[110px]">
                                         {classes.map((cls) => (
-                                            <DropdownMenuItem
-                                                key={cls.id}
-                                                onClick={() => setSelectedClassId(cls.id)}
-                                                className={cn(
-                                                    "text-white cursor-pointer transition-all duration-200",
-                                                    "hover:bg-zinc-800/50 focus:bg-zinc-800/50",
-                                                    selectedClassId === cls.id
-                                                        ? "bg-zinc-800 ring-1 ring-blue-500/50 border-l-2 border-blue-500"
-                                                        : ""
-                                                )}
-                                            >
-                                                {cls.name} - {cls.studentCount} Studenti
-                                            </DropdownMenuItem>
+                                            <SelectItem key={cls.id} value={cls.id}>
+                                                <span className="font-bold">{cls.name}</span>
+                                            </SelectItem>
                                         ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                    </SelectContent>
+                                </Select>
                                 <p className="text-muted-foreground mt-1">Seleziona una classe per visualizzare gli studenti</p>
                             </div>
                         </div>
