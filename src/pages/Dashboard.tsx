@@ -58,6 +58,7 @@ export default function Dashboard() {
                 } as React.CSSProperties
             }
         >
+
             <AppSidebar variant="inset" />
             <SidebarInset>
                 <SiteHeader />
@@ -120,6 +121,8 @@ export default function Dashboard() {
 
                     {/* Students Table for Selected Class */}
                     <TableComp />
+
+
 
                     {/* Grade Entry Modal */}
                     <GradeEntryModal
