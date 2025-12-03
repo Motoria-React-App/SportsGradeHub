@@ -8,10 +8,12 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TrendingUp, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, Plus, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { classes, getStudentsByClass } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { GradeEntryModal } from "@/components/Grading/GradeEntryModal";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 
 export default function Dashboard() {
   const [isGradeModalOpen, setIsGradeModalOpen] = useState(false);
@@ -60,9 +62,40 @@ export default function Dashboard() {
         <SiteHeader />
         <div className="flex flex-1 flex-col p-4 md:p-6 space-y-8 animate-in fade-in duration-700">
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground">Seleziona una classe per visualizzare gli studenti</p>
+                <div className="flex items-center justify-between w-full gap-4">
+                    <div className="flex flex-col">
+                        <label htmlFor="class-select" className="sr-only">Seleziona classe</label>
+                       <DropdownMenu>
+  <DropdownMenuTrigger className="flex items-center gap-2 text-3xl font-bold tracking-tight hover:text-zinc-300 transition-colors duration-200 focus:outline-none">
+    {classes.find(c => c.id === selectedClassId)?.name || "Seleziona classe"}
+    <span className="text-lg text-zinc-400 font-normal">
+      - {classes.find(c => c.id === selectedClassId)?.studentCount || 0} Studenti
+    </span>
+    <ChevronDown className="h-6 w-6" />
+  </DropdownMenuTrigger>
+  <DropdownMenuContent 
+    align="start"
+    className="bg-zinc-900 border-zinc-800 shadow-md backdrop-blur-sm"
+  >
+    {classes.map((cls) => (
+      <DropdownMenuItem 
+        key={cls.id} 
+        onClick={() => setSelectedClassId(cls.id)}
+        className={cn(
+          "text-white cursor-pointer transition-all duration-200",
+          "hover:bg-zinc-800/50 focus:bg-zinc-800/50",
+          selectedClassId === cls.id 
+            ? "bg-zinc-800 ring-1 ring-blue-500/50 border-l-2 border-blue-500" 
+            : ""
+        )}
+      >
+        {cls.name} - {cls.studentCount} Studenti
+      </DropdownMenuItem>
+    ))}
+  </DropdownMenuContent>
+</DropdownMenu>
+                        <p className="text-muted-foreground mt-1">Seleziona una classe per visualizzare gli studenti</p>
+                    </div>
                 </div>
                 <Button 
                     onClick={() => setIsGradeModalOpen(true)} 
@@ -86,36 +119,6 @@ export default function Dashboard() {
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                     )}
-
-                    <div 
-                        ref={scrollContainerRef}
-                        onScroll={checkScroll}
-                        className="flex gap-3 overflow-x-auto scrollbar-hide scroll-smooth px-1 py-2 flex-1 min-w-0"
-                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                    >
-                        {classes.map((cls) => (
-                            <Card 
-                                key={cls.id}
-                                className={cn(
-                                    "min-w-[200px] cursor-pointer transition-all duration-200 shrink-0",
-                                    "bg-card border-border shadow-sm hover:shadow-md hover:bg-accent/50",
-                                    "flex flex-col items-center justify-center py-6",
-                                    selectedClassId === cls.id 
-                                        ? "ring-2 ring-primary border-primary" 
-                                        : "hover:border-primary/50"
-                                )}
-                                onClick={() => setSelectedClassId(cls.id)}
-                            >
-                                <CardTitle className="text-2xl font-bold text-center">
-                                    {cls.name}
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    {cls.studentCount} Studenti
-                                </p>
-                            </Card>
-                        ))}
-                    </div>
-
                     {canScrollRight && (
                         <Button
                             variant="outline"
