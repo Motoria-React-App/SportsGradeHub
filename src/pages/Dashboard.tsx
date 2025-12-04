@@ -120,7 +120,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Students Table for Selected Class */}
-                    <TableComp />
+                    <TableComp classId={selectedClassId} />
 
 
 
