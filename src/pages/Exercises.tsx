@@ -1267,8 +1267,10 @@ export default function Exercises() {
                                           newCrit[cIdx] = { ...newCrit[cIdx], maxScore: parseInt(v) };
                                           updateSubExerciseItem(index, { customCriteria: newCrit });
                                         }}>
-                                          <SelectTrigger className="h-7 w-16 text-xs"><SelectValue /></SelectTrigger>
-                                          <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>/{s}</SelectItem>)}</SelectContent>
+                                          <SelectTrigger className="h-7 min-w-[50px] w-auto text-xs">
+                                            <span className="text-muted-foreground">/</span><SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>{s}</SelectItem>)}</SelectContent>
                                         </Select>
                                         {(subEx.customCriteria?.length || 0) > 1 && (
                                           <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
@@ -1325,6 +1327,6 @@ export default function Exercises() {
           </Dialog>
         </div>
       </SidebarInset>
-    </SidebarProvider>
+    </SidebarProvider >
   );
 }
