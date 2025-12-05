@@ -32,7 +32,7 @@ export function CommandDialogDemo() {
 
             const apiKey = import.meta.env.VITE_API_KEY || "";  // ← QUI
 
-            const res = await fetch("http://localhost:3000/api/students", {
+            const res = await fetch("https://frozen-sophey-sportsgradehub-91b977c5.koyeb.app/api/students", {
                 method: "GET",
                 mode: "cors",
                 headers: {
@@ -42,7 +42,7 @@ export function CommandDialogDemo() {
             })
             const data: Student[] = await res.json();
 
-            const resp = await fetch("http://localhost:3000/api/classes", {
+            const resp = await fetch("https://frozen-sophey-sportsgradehub-91b977c5.koyeb.app/api/classes", {
                 method: "GET",
                 mode: "cors",
                 headers: {

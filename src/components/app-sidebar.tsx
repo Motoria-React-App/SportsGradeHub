@@ -152,7 +152,7 @@ const data = {
     },
     {
       title: "Analytics",
-      url: "/exercises",
+      url: "/analytics",
       icon: ChartArea,
     },
   ]
