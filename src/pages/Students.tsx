@@ -9,7 +9,6 @@ import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
 
 export default function Students() {
     const [selectedClass, setSelectedClass] = useState<string>("all");
@@ -32,7 +31,7 @@ export default function Students() {
         >
             <AppSidebar variant="inset" />
             <SidebarInset>
-                <SiteHeader />
+
                 <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
                     <div className="flex items-center justify-between">
                         <div>

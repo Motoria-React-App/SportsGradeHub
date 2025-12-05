@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
+
 import {
   SidebarInset,
   SidebarProvider,
@@ -155,7 +155,7 @@ export default function Exercises() {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader />
+
         <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
           <div className="flex items-center justify-between">
             <div>

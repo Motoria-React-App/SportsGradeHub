@@ -1,5 +1,5 @@
 import * as React from "react"
-import { type DialogProps } from "@radix-ui/react-dialog"
+import { DialogTitle, type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
 import { Search } from "lucide-react"
 
@@ -71,7 +71,7 @@ const CommandEmpty = React.forwardRef<
 >((props, ref) => (
   <CommandPrimitive.Empty
     ref={ref}
-    className="py-6 text-center text-sm"
+    className="py-6 w-full flex items-center justify-center text-sm "
     {...props}
   />
 ))

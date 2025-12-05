@@ -13,41 +13,53 @@ import {
 } from "./ui/command"
 import { Student } from "@/types";
 import { SchoolClass } from "@/types/types";
+import { Spinner } from "./ui/spinner";
 
 
 
 export function CommandDialogDemo() {
     const [open, setOpen] = React.useState(false)
 
-    const [students, setStudents] = React.useState<Student[]>([])
-    const [classes, setClasses] = React.useState<SchoolClass[]>([])
+    const [students, setStudents] = React.useState<Student[] | null>(null)
+    const [classes, setClasses] = React.useState<SchoolClass[] | null>(null)
+    const [error, setError] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(false);
 
     async function getStudents() {
 
-        const apiKey = import.meta.env.VITE_API_KEY || "";  // ← QUI
+        try {
+            setIsLoading(true);
 
-        const res = await fetch("http://localhost:3000/api/students", {
-            method: "GET",
-            mode: "cors",
-            headers: {
-                'Content-Type': 'application/json',
-                "X-API-Key": apiKey
-            },
-        })
-        const data: Student[] = await res.json();
+            const apiKey = import.meta.env.VITE_API_KEY || "";  // ← QUI
 
-        const resp = await fetch("http://localhost:3000/api/classes", {
-            method: "GET",
-            mode: "cors",
-            headers: {
-                'Content-Type': 'application/json',
-                "X-API-Key": apiKey
-            },
-        })
-        const classes: SchoolClass[] = await resp.json();
+            const res = await fetch("http://localhost:3000/api/students", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-API-Key": apiKey
+                },
+            })
+            const data: Student[] = await res.json();
 
+            const resp = await fetch("http://localhost:3000/api/classes", {
+                method: "GET",
+                mode: "cors",
+                headers: {
+                    'Content-Type': 'application/json',
+                    "X-API-Key": apiKey
+                },
+            })
+            const classes: SchoolClass[] = await resp.json();
 
-        return { data, classes }
+            setIsLoading(false);
+
+            return { data, classes }
+
+        } catch (error) {
+            setIsLoading(false);
+            setError(true);
+        }
 
     }
 
@@ -59,8 +71,8 @@ export function CommandDialogDemo() {
 
                 // Fetch students when opening the dialog
                 const studentsData = await getStudents();
-                setStudents(studentsData.data);
-                setClasses(studentsData.classes);
+                setStudents(studentsData!.data);
+                setClasses(studentsData!.classes);
             }
         }
         document.addEventListener("keydown", down)
@@ -72,24 +84,28 @@ export function CommandDialogDemo() {
             <CommandDialog open={open} onOpenChange={setOpen}>
                 <CommandInput placeholder="Search a student or class" />
                 <CommandList>
-                    <CommandEmpty>No results found.</CommandEmpty>
-                    <CommandGroup heading="Classes">
-                        {classes.map((cls) => (
-                            <CommandItem key={cls.id}>
-                                <User />
-                                <span>{cls.className}</span>
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
-                    <CommandGroup heading="Students">
-                        {students.map((student) => (
-                            <CommandItem key={student.id}>
-                                <User />
-                                <span>{student.firstName + " " + student.lastName}</span>
-                            </CommandItem>
-                        ))}
-
-                    </CommandGroup>
+                    {isLoading && <CommandEmpty><Spinner /></CommandEmpty>}
+                    {error && <CommandEmpty>Error loading data</CommandEmpty>}
+                    {classes && students && (
+                        <>
+                            <CommandGroup heading="Classes">
+                                {classes.map((cls) => (
+                                    <CommandItem key={cls.id}>
+                                        <User />
+                                        <span>{cls.className}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                            <CommandGroup heading="Students">
+                                {students.map((student) => (
+                                    <CommandItem key={student.id}>
+                                        <User />
+                                        <span>{student.firstName + " " + student.lastName}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </>
+                    )}
                 </CommandList>
             </CommandDialog>
         </>
