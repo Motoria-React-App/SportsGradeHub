@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -14,9 +14,127 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { exercises as mockExercises } from "@/data/mockData";
-import { Search, Plus, Filter, Dumbbell, Users, Activity, X, ListPlus } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Filter,
+  Dumbbell,
+  Users,
+  Activity,
+  X,
+  ListPlus,
+  Zap,
+  Wind,
+  Target,
+  Move,
+  Flame,
+  Circle,
+} from "lucide-react";
 import type { Exercise, ExerciseType, SubExercise, EvaluationCriterionType } from "@/types";
+
+// Type display names in Italian
+const typeDisplayNames: Record<ExerciseType, string> = {
+  velocita: "Velocità",
+  resistenza: "Resistenza",
+  forza: "Forza",
+  coordinazione: "Coordinazione",
+  flessibilita: "Flessibilità",
+  pallavolo: "Pallavolo",
+  basket: "Basket",
+  calcio: "Calcio",
+  ginnastica: "Ginnastica",
+  atletica: "Atletica",
+};
+
+// Type icons
+const typeIcons: Record<ExerciseType, React.ReactNode> = {
+  velocita: <Zap className="h-5 w-5" />,
+  resistenza: <Wind className="h-5 w-5" />,
+  forza: <Flame className="h-5 w-5" />,
+  coordinazione: <Target className="h-5 w-5" />,
+  flessibilita: <Move className="h-5 w-5" />,
+  pallavolo: <Circle className="h-5 w-5" />,
+  basket: <Circle className="h-5 w-5" />,
+  calcio: <Circle className="h-5 w-5" />,
+  ginnastica: <Circle className="h-5 w-5" />,
+  atletica: <Dumbbell className="h-5 w-5" />,
+};
+
+// Type colors for badges and section headers
+const typeColors: Record<ExerciseType, { bg: string; text: string; border: string }> = {
+  velocita: {
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800"
+  },
+  resistenza: {
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+    text: "text-blue-700 dark:text-blue-400",
+    border: "border-blue-200 dark:border-blue-800"
+  },
+  forza: {
+    bg: "bg-red-100 dark:bg-red-900/30",
+    text: "text-red-700 dark:text-red-400",
+    border: "border-red-200 dark:border-red-800"
+  },
+  coordinazione: {
+    bg: "bg-purple-100 dark:bg-purple-900/30",
+    text: "text-purple-700 dark:text-purple-400",
+    border: "border-purple-200 dark:border-purple-800"
+  },
+  flessibilita: {
+    bg: "bg-green-100 dark:bg-green-900/30",
+    text: "text-green-700 dark:text-green-400",
+    border: "border-green-200 dark:border-green-800"
+  },
+  pallavolo: {
+    bg: "bg-amber-100 dark:bg-amber-900/30",
+    text: "text-amber-700 dark:text-amber-400",
+    border: "border-amber-200 dark:border-amber-800"
+  },
+  basket: {
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+    text: "text-orange-700 dark:text-orange-400",
+    border: "border-orange-200 dark:border-orange-800"
+  },
+  calcio: {
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+    text: "text-emerald-700 dark:text-emerald-400",
+    border: "border-emerald-200 dark:border-emerald-800"
+  },
+  ginnastica: {
+    bg: "bg-pink-100 dark:bg-pink-900/30",
+    text: "text-pink-700 dark:text-pink-400",
+    border: "border-pink-200 dark:border-pink-800"
+  },
+  atletica: {
+    bg: "bg-sky-100 dark:bg-sky-900/30",
+    text: "text-sky-700 dark:text-sky-400",
+    border: "border-sky-200 dark:border-sky-800"
+  },
+};
+
+// Order for displaying types
+const typeOrder: ExerciseType[] = [
+  "forza",
+  "velocita",
+  "resistenza",
+  "coordinazione",
+  "flessibilita",
+  "atletica",
+  "pallavolo",
+  "basket",
+  "calcio",
+  "ginnastica",
+];
 
 export default function Exercises() {
   const [exercises, setExercises] = useState<Exercise[]>(mockExercises);
@@ -41,21 +159,33 @@ export default function Exercises() {
   // Get unique exercise types for the filter
   const exerciseTypes = Array.from(new Set(exercises.map(ex => ex.type)));
 
+  // Filter exercises based on search and type
   const filteredExercises = exercises.filter(ex => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = selectedType === "all" || ex.type === selectedType;
     return matchesSearch && matchesType;
   });
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'velocita': return 'bg-orange-100 text-orange-800 hover:bg-orange-100/80 dark:bg-orange-900/30 dark:text-orange-400';
-      case 'resistenza': return 'bg-blue-100 text-blue-800 hover:bg-blue-100/80 dark:bg-blue-900/30 dark:text-blue-400';
-      case 'forza': return 'bg-red-100 text-red-800 hover:bg-red-100/80 dark:bg-red-900/30 dark:text-red-400';
-      case 'coordinazione': return 'bg-purple-100 text-purple-800 hover:bg-purple-100/80 dark:bg-purple-900/30 dark:text-purple-400';
-      case 'flessibilita': return 'bg-green-100 text-green-800 hover:bg-green-100/80 dark:bg-green-900/30 dark:text-green-400';
-      default: return 'bg-gray-100 text-gray-800 hover:bg-gray-100/80 dark:bg-gray-800 dark:text-gray-300';
-    }
+  // Group exercises by type
+  const exercisesByType = useMemo(() => {
+    const grouped: Record<ExerciseType, Exercise[]> = {} as Record<ExerciseType, Exercise[]>;
+
+    filteredExercises.forEach(ex => {
+      if (!grouped[ex.type]) {
+        grouped[ex.type] = [];
+      }
+      grouped[ex.type].push(ex);
+    });
+
+    return grouped;
+  }, [filteredExercises]);
+
+  // Get ordered types that have exercises
+  const orderedTypesWithExercises = typeOrder.filter(type => exercisesByType[type]?.length > 0);
+
+  const getTypeColor = (type: ExerciseType) => {
+    const colors = typeColors[type];
+    return `${colors.bg} ${colors.text} hover:opacity-80`;
   };
 
   const evaluationCriteriaOptions: EvaluationCriterionType[] = ['technical', 'effort', 'teamwork', 'overall'];
@@ -189,7 +319,7 @@ export default function Exercises() {
                   <SelectItem value="all">Tutti i tipi</SelectItem>
                   {exerciseTypes.map((type) => (
                     <SelectItem key={type} value={type} className="capitalize">
-                      {type}
+                      {typeDisplayNames[type] || type}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -200,46 +330,93 @@ export default function Exercises() {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredExercises.map((ex) => (
-              <Card key={ex.id} className="flex flex-col hover:shadow-md transition-all duration-200 cursor-pointer group">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <CardTitle className="text-lg font-bold leading-tight group-hover:text-primary transition-colors">
-                      {ex.name}
-                    </CardTitle>
-                    <Badge variant="secondary" className={`capitalize shrink-0 ${getTypeColor(ex.type)}`}>
-                      {ex.type}
-                    </Badge>
-                  </div>
-                  <CardDescription className="flex items-center gap-1 mt-1">
-                    <Activity className="h-3 w-3" />
-                    Attività fisica
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 pb-3 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      {ex.requiresTeamwork ? "Richiede gioco di squadra" : "Individuale"}
+          {/* Carousel sections by type */}
+          <div className="space-y-8">
+            {orderedTypesWithExercises.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Nessun esercizio trovato</p>
+              </div>
+            )}
+
+            {orderedTypesWithExercises.map((type) => {
+              const typeExercises = exercisesByType[type];
+              const colors = typeColors[type];
+
+              return (
+                <div key={type} className="space-y-4">
+                  {/* Section Header */}
+                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border ${colors.bg} ${colors.border}`}>
+                    <div className={colors.text}>
+                      {typeIcons[type]}
+                    </div>
+                    <h2 className={`text-base font-semibold ${colors.text}`}>
+                      {typeDisplayNames[type]}
+                    </h2>
+                    <span className="text-xs text-muted-foreground">
+                      ({typeExercises.length})
                     </span>
                   </div>
-                  {ex.subExercises && ex.subExercises.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <ListPlus className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-primary">
-                        {ex.subExercises.length} sotto-eserciz{ex.subExercises.length === 1 ? 'io' : 'i'}
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter className="pt-0">
-                  <Button variant="ghost" className="w-full justify-start pl-0 hover:pl-2 transition-all" size="sm">
-                    Dettagli <Dumbbell className="ml-2 h-3 w-3" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+
+                  {/* Carousel */}
+                  <div className="px-12">
+                    <Carousel
+                      opts={{
+                        align: "start",
+                        loop: false,
+                      }}
+                      className="w-full"
+                    >
+                      <CarouselContent className="-ml-2 md:-ml-4">
+                        {typeExercises.map((ex) => (
+                          <CarouselItem key={ex.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <Card className="flex flex-col h-full hover:shadow-md transition-all duration-200 cursor-pointer group">
+                              <CardHeader className="pb-3">
+                                <div className="flex justify-between items-start gap-2">
+                                  <CardTitle className="text-lg font-bold leading-tight group-hover:text-primary transition-colors">
+                                    {ex.name}
+                                  </CardTitle>
+                                  <Badge variant="secondary" className={`capitalize shrink-0 ${getTypeColor(ex.type)}`}>
+                                    {typeDisplayNames[ex.type] || ex.type}
+                                  </Badge>
+                                </div>
+                                <CardDescription className="flex items-center gap-1 mt-1">
+                                  <Activity className="h-3 w-3" />
+                                  Attività fisica
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="flex-1 pb-3 space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Users className="h-4 w-4" />
+                                  <span>
+                                    {ex.requiresTeamwork ? "Richiede gioco di squadra" : "Individuale"}
+                                  </span>
+                                </div>
+                                {ex.subExercises && ex.subExercises.length > 0 && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <ListPlus className="h-4 w-4 text-primary" />
+                                    <span className="font-medium text-primary">
+                                      {ex.subExercises.length} sotto-eserciz{ex.subExercises.length === 1 ? 'io' : 'i'}
+                                    </span>
+                                  </div>
+                                )}
+                              </CardContent>
+                              <CardFooter className="pt-0">
+                                <Button variant="ghost" className="w-full justify-start pl-0 hover:pl-2 transition-all" size="sm">
+                                  Dettagli <Dumbbell className="ml-2 h-3 w-3" />
+                                </Button>
+                              </CardFooter>
+                            </Card>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious />
+                      <CarouselNext />
+                    </Carousel>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Add Exercise Dialog */}

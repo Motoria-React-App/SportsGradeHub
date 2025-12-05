@@ -50,6 +50,8 @@ export interface Exercise {
     updatedAt: string;
 }
 
+
+
 export interface ScoreRange {
     min: number;
     max: number;
