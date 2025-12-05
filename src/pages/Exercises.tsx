@@ -45,6 +45,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { IconGenderMale, IconGenderFemale } from "@tabler/icons-react";
 import type { Exercise, ExerciseType, EvaluationMode, MeasurementUnit, ScoreRange, CustomCriterion, SubExerciseItem } from "@/types";
 
 // Type display names in Italian
@@ -227,18 +228,29 @@ export default function Exercises() {
     return `${colors.bg} ${colors.text} hover:opacity-80`;
   };
 
-  // Range management functions
-  const addRange = (gender: 'male' | 'female') => {
-    const setter = gender === 'male' ? setRangesMale : setRangesFemale;
-    const current = gender === 'male' ? rangesMale : rangesFemale;
-    setter([...current, { minValue: 0, maxValue: 100, score: 6 }]);
+  // Range management functions - syncs both genders when gender ranges are enabled
+  const addRange = () => {
+    const newRange = { minValue: 0, maxValue: 100, score: 6 };
+    // Add to both genders to keep them in sync
+    if (useGenderRanges) {
+      setRangesMale([...rangesMale, newRange]);
+      setRangesFemale([...rangesFemale, newRange]);
+    } else {
+      setRangesMale([...rangesMale, newRange]);
+    }
   };
 
-  const removeRange = (gender: 'male' | 'female', index: number) => {
-    const setter = gender === 'male' ? setRangesMale : setRangesFemale;
-    const current = gender === 'male' ? rangesMale : rangesFemale;
-    if (current.length > 1) {
-      setter(current.filter((_, i) => i !== index));
+  const removeRange = (index: number) => {
+    // Remove from both genders to keep them in sync
+    if (useGenderRanges) {
+      if (rangesMale.length > 1) {
+        setRangesMale(rangesMale.filter((_, i) => i !== index));
+        setRangesFemale(rangesFemale.filter((_, i) => i !== index));
+      }
+    } else {
+      if (rangesMale.length > 1) {
+        setRangesMale(rangesMale.filter((_, i) => i !== index));
+      }
     }
   };
 
@@ -419,7 +431,7 @@ export default function Exercises() {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => addRange(gender)}
+          onClick={() => addRange()}
           className="h-7 text-xs"
         >
           <Plus className="h-3 w-3 mr-1" />
@@ -472,7 +484,7 @@ export default function Exercises() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => removeRange(gender, index)}
+                onClick={() => removeRange(index)}
                 className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="h-4 w-4" />
@@ -862,7 +874,14 @@ export default function Exercises() {
                     <Checkbox
                       id="gender-ranges"
                       checked={useGenderRanges}
-                      onCheckedChange={(checked) => setUseGenderRanges(checked as boolean)}
+                      onCheckedChange={(checked) => {
+                        const isEnabled = checked as boolean;
+                        if (isEnabled) {
+                          // Sync female ranges to match male ranges when enabling
+                          setRangesFemale([...rangesMale]);
+                        }
+                        setUseGenderRanges(isEnabled);
+                      }}
                     />
                     <Label htmlFor="gender-ranges" className="cursor-pointer">
                       Usa fasce diverse per genere (M/F)
@@ -872,9 +891,21 @@ export default function Exercises() {
                   {/* Range editors */}
                   {useGenderRanges ? (
                     <Tabs defaultValue="male" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="male">👨 Maschi</TabsTrigger>
-                        <TabsTrigger value="female">👩 Femmine</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-2 p-1 h-11">
+                        <TabsTrigger
+                          value="male"
+                          className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-400 data-[state=active]:shadow-[0_0_12px_rgba(59,130,246,0.4)] dark:data-[state=active]:bg-blue-950/50 dark:data-[state=active]:text-blue-300 dark:data-[state=active]:border-blue-500 dark:data-[state=active]:shadow-[0_0_12px_rgba(59,130,246,0.3)] border-2 border-transparent transition-all"
+                        >
+                          <IconGenderMale className="h-4 w-4" />
+                          Maschi
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value="female"
+                          className="gap-2 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-700 data-[state=active]:border-pink-400 data-[state=active]:shadow-[0_0_12px_rgba(236,72,153,0.4)] dark:data-[state=active]:bg-pink-950/50 dark:data-[state=active]:text-pink-300 dark:data-[state=active]:border-pink-500 dark:data-[state=active]:shadow-[0_0_12px_rgba(236,72,153,0.3)] border-2 border-transparent transition-all"
+                        >
+                          <IconGenderFemale className="h-4 w-4" />
+                          Femmine
+                        </TabsTrigger>
                       </TabsList>
                       <TabsContent value="male" className="mt-4">
                         {renderRangeEditor(rangesMale, 'male', 'Fasce Maschi')}
@@ -1080,9 +1111,21 @@ export default function Exercises() {
 
                                     {subEx.useGenderRanges ? (
                                       <Tabs defaultValue="male" className="w-full">
-                                        <TabsList className="grid w-full grid-cols-2 h-8">
-                                          <TabsTrigger value="male" className="text-xs">👨 Maschi</TabsTrigger>
-                                          <TabsTrigger value="female" className="text-xs">👩 Femmine</TabsTrigger>
+                                        <TabsList className="grid w-full grid-cols-2 h-9 p-1">
+                                          <TabsTrigger
+                                            value="male"
+                                            className="text-xs gap-1.5 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-400 data-[state=active]:shadow-[0_0_10px_rgba(59,130,246,0.35)] dark:data-[state=active]:bg-blue-950/50 dark:data-[state=active]:text-blue-300 dark:data-[state=active]:border-blue-500 border border-transparent transition-all"
+                                          >
+                                            <IconGenderMale className="h-3.5 w-3.5" />
+                                            Maschi
+                                          </TabsTrigger>
+                                          <TabsTrigger
+                                            value="female"
+                                            className="text-xs gap-1.5 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-700 data-[state=active]:border-pink-400 data-[state=active]:shadow-[0_0_10px_rgba(236,72,153,0.35)] dark:data-[state=active]:bg-pink-950/50 dark:data-[state=active]:text-pink-300 dark:data-[state=active]:border-pink-500 border border-transparent transition-all"
+                                          >
+                                            <IconGenderFemale className="h-3.5 w-3.5" />
+                                            Femmine
+                                          </TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="male" className="mt-2 space-y-2">
                                           {(subEx.rangesMale || []).map((range, rIdx) => (
