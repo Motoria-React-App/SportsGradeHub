@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Carousel,
   CarouselContent,
@@ -30,15 +31,19 @@ import {
   Users,
   Activity,
   X,
-  ListPlus,
   Zap,
   Wind,
   Target,
   Move,
   Flame,
   Circle,
+  Ruler,
+  ClipboardList,
+  ChevronRight,
+  ChevronLeft,
+  Trash2,
 } from "lucide-react";
-import type { Exercise, ExerciseType, SubExercise, EvaluationCriterionType } from "@/types";
+import type { Exercise, ExerciseType, EvaluationMode, MeasurementUnit, ScoreRange, CustomCriterion } from "@/types";
 
 // Type display names in Italian
 const typeDisplayNames: Record<ExerciseType, string> = {
@@ -136,24 +141,52 @@ const typeOrder: ExerciseType[] = [
   "ginnastica",
 ];
 
+// Unit display names
+const unitDisplayNames: Record<MeasurementUnit, string> = {
+  cm: "Centimetri (cm)",
+  m: "Metri (m)",
+  km: "Chilometri (km)",
+  sec: "Secondi (sec)",
+  min: "Minuti (min)",
+  reps: "Ripetizioni",
+  kg: "Chilogrammi (kg)",
+  points: "Punti",
+};
+
+// Italian scores 1-10
+const italianScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 export default function Exercises() {
   const [exercises, setExercises] = useState<Exercise[]>(mockExercises);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Form state
+  // Multi-step form state
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     type: "" as ExerciseType | "",
     description: "",
     requiresTeamwork: false,
+    evaluationMode: "" as EvaluationMode | "",
+    unit: "cm" as MeasurementUnit,
   });
-  const [subExercises, setSubExercises] = useState<Omit<SubExercise, 'id'>[]>([{
-    name: "",
-    evaluationCriteria: [] as EvaluationCriterionType[],
-    weight: undefined,
-  }]);
+
+  // Range-based exercise state
+  const [rangesMale, setRangesMale] = useState<ScoreRange[]>([
+    { minValue: 0, maxValue: 100, score: 6 }
+  ]);
+  const [rangesFemale, setRangesFemale] = useState<ScoreRange[]>([
+    { minValue: 0, maxValue: 100, score: 6 }
+  ]);
+  const [useGenderRanges, setUseGenderRanges] = useState(true);
+
+  // Criteria-based exercise state
+  const [customCriteria, setCustomCriteria] = useState<Omit<CustomCriterion, 'id'>[]>([
+    { name: "", maxScore: 10, weight: 1 }
+  ]);
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   // Get unique exercise types for the filter
@@ -188,36 +221,47 @@ export default function Exercises() {
     return `${colors.bg} ${colors.text} hover:opacity-80`;
   };
 
-  const evaluationCriteriaOptions: EvaluationCriterionType[] = ['technical', 'effort', 'teamwork', 'overall'];
-
-  const addSubExercise = () => {
-    setSubExercises([...subExercises, { name: "", evaluationCriteria: [], weight: undefined }]);
+  // Range management functions
+  const addRange = (gender: 'male' | 'female') => {
+    const setter = gender === 'male' ? setRangesMale : setRangesFemale;
+    const current = gender === 'male' ? rangesMale : rangesFemale;
+    setter([...current, { minValue: 0, maxValue: 100, score: 6 }]);
   };
 
-  const removeSubExercise = (index: number) => {
-    if (subExercises.length > 1) {
-      setSubExercises(subExercises.filter((_, i) => i !== index));
+  const removeRange = (gender: 'male' | 'female', index: number) => {
+    const setter = gender === 'male' ? setRangesMale : setRangesFemale;
+    const current = gender === 'male' ? rangesMale : rangesFemale;
+    if (current.length > 1) {
+      setter(current.filter((_, i) => i !== index));
     }
   };
 
-  const updateSubExercise = (index: number, field: keyof SubExercise, value: any) => {
-    const updated = [...subExercises];
+  const updateRange = (gender: 'male' | 'female', index: number, field: keyof ScoreRange, value: number) => {
+    const setter = gender === 'male' ? setRangesMale : setRangesFemale;
+    const current = gender === 'male' ? rangesMale : rangesFemale;
+    const updated = [...current];
     updated[index] = { ...updated[index], [field]: value };
-    setSubExercises(updated);
+    setter(updated);
   };
 
-  const toggleCriterion = (subExIndex: number, criterion: EvaluationCriterionType) => {
-    const updated = [...subExercises];
-    const criteria = updated[subExIndex].evaluationCriteria;
-    if (criteria.includes(criterion)) {
-      updated[subExIndex].evaluationCriteria = criteria.filter(c => c !== criterion);
-    } else {
-      updated[subExIndex].evaluationCriteria = [...criteria, criterion];
+  // Criteria management functions
+  const addCriterion = () => {
+    setCustomCriteria([...customCriteria, { name: "", maxScore: 10, weight: 1 }]);
+  };
+
+  const removeCriterion = (index: number) => {
+    if (customCriteria.length > 1) {
+      setCustomCriteria(customCriteria.filter((_, i) => i !== index));
     }
-    setSubExercises(updated);
   };
 
-  const validateForm = () => {
+  const updateCriterion = (index: number, field: keyof Omit<CustomCriterion, 'id'>, value: string | number) => {
+    const updated = [...customCriteria];
+    updated[index] = { ...updated[index], [field]: value };
+    setCustomCriteria(updated);
+  };
+
+  const validateStep1 = () => {
     const newErrors: { [key: string]: string } = {};
 
     if (!formData.name.trim()) {
@@ -226,36 +270,74 @@ export default function Exercises() {
     if (!formData.type) {
       newErrors.type = "Il tipo di esercizio è obbligatorio";
     }
-    if (subExercises.length === 0) {
-      newErrors.subExercises = "Aggiungi almeno un sotto-esercizio";
+    if (!formData.evaluationMode) {
+      newErrors.evaluationMode = "Seleziona una modalità di valutazione";
     }
 
-    subExercises.forEach((subEx, index) => {
-      if (!subEx.name.trim()) {
-        newErrors[`subEx${index}`] = "Il nome del sotto-esercizio è obbligatorio";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (formData.evaluationMode === 'range') {
+      // Validate ranges
+      const validateRanges = (ranges: ScoreRange[], prefix: string) => {
+        ranges.forEach((range, index) => {
+          if (range.minValue >= range.maxValue) {
+            newErrors[`${prefix}${index}`] = "Il valore minimo deve essere inferiore al massimo";
+          }
+        });
+      };
+      validateRanges(rangesMale, 'rangeMale');
+      if (useGenderRanges) {
+        validateRanges(rangesFemale, 'rangeFemale');
       }
-      if (subEx.evaluationCriteria.length === 0) {
-        newErrors[`subExCriteria${index}`] = "Seleziona almeno un criterio";
-      }
-    });
+    } else if (formData.evaluationMode === 'criteria') {
+      // Validate criteria
+      customCriteria.forEach((criterion, index) => {
+        if (!criterion.name.trim()) {
+          newErrors[`criterion${index}`] = "Il nome del criterio è obbligatorio";
+        }
+      });
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const resetForm = () => {
+    setStep(1);
     setFormData({
       name: "",
       type: "" as ExerciseType | "",
       description: "",
       requiresTeamwork: false,
+      evaluationMode: "" as EvaluationMode | "",
+      unit: "cm" as MeasurementUnit,
     });
-    setSubExercises([{ name: "", evaluationCriteria: [], weight: undefined }]);
+    setRangesMale([{ minValue: 0, maxValue: 100, score: 6 }]);
+    setRangesFemale([{ minValue: 0, maxValue: 100, score: 6 }]);
+    setUseGenderRanges(true);
+    setCustomCriteria([{ name: "", maxScore: 10, weight: 1 }]);
     setErrors({});
   };
 
+  const handleNext = () => {
+    if (step === 1 && validateStep1()) {
+      setStep(2);
+    }
+  };
+
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+
   const handleSubmit = () => {
-    if (!validateForm()) return;
+    if (!validateStep2()) return;
 
     const newExercise: Exercise = {
       id: `ex${Date.now()}`,
@@ -263,16 +345,101 @@ export default function Exercises() {
       type: formData.type as ExerciseType,
       description: formData.description,
       requiresTeamwork: formData.requiresTeamwork,
-      subExercises: subExercises.map((subEx, index) => ({
-        ...subEx,
-        id: `subex${Date.now()}-${index}`,
-      })),
+      evaluationMode: formData.evaluationMode as EvaluationMode,
+      ...(formData.evaluationMode === 'range' && {
+        unit: formData.unit,
+        rangesMale: rangesMale,
+        rangesFemale: useGenderRanges ? rangesFemale : rangesMale,
+      }),
+      ...(formData.evaluationMode === 'criteria' && {
+        customCriteria: customCriteria.map((c, i) => ({
+          ...c,
+          id: `crit${Date.now()}-${i}`,
+        })),
+      }),
     };
 
     setExercises([...exercises, newExercise]);
     setDialogOpen(false);
     resetForm();
   };
+
+  // Render range editor
+  const renderRangeEditor = (ranges: ScoreRange[], gender: 'male' | 'female', label: string) => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">{label}</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => addRange(gender)}
+          className="h-7 text-xs"
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Aggiungi
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {ranges.map((range, index) => (
+          <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+            <div className="flex-1 grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Min</Label>
+                <Input
+                  type="number"
+                  value={range.minValue}
+                  onChange={(e) => updateRange(gender, index, 'minValue', parseFloat(e.target.value) || 0)}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Max</Label>
+                <Input
+                  type="number"
+                  value={range.maxValue}
+                  onChange={(e) => updateRange(gender, index, 'maxValue', parseFloat(e.target.value) || 0)}
+                  className="h-8"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Voto</Label>
+                <Select
+                  value={range.score.toString()}
+                  onValueChange={(v) => updateRange(gender, index, 'score', parseInt(v))}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {italianScores.map((score) => (
+                      <SelectItem key={score} value={score.toString()}>
+                        {score}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {ranges.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeRange(gender, index)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+      {errors[`range${gender.charAt(0).toUpperCase() + gender.slice(1)}0`] && (
+        <p className="text-xs text-destructive">{errors[`range${gender.charAt(0).toUpperCase() + gender.slice(1)}0`]}</p>
+      )}
+    </div>
+  );
 
   return (
     <SidebarProvider
@@ -346,16 +513,35 @@ export default function Exercises() {
               return (
                 <div key={type} className="space-y-4">
                   {/* Section Header */}
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border ${colors.bg} ${colors.border}`}>
-                    <div className={colors.text}>
-                      {typeIcons[type]}
+                  <div className="flex items-center gap-3">
+                    {/* Label Box */}
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-md border ${colors.bg} ${colors.border}`}>
+                      <div className={colors.text}>
+                        {typeIcons[type]}
+                      </div>
+                      <h2 className={`text-base font-semibold ${colors.text}`}>
+                        {typeDisplayNames[type]}
+                      </h2>
                     </div>
-                    <h2 className={`text-base font-semibold ${colors.text}`}>
-                      {typeDisplayNames[type]}
-                    </h2>
-                    <span className="text-xs text-muted-foreground">
-                      ({typeExercises.length})
-                    </span>
+                    {/* Colored Line */}
+                    <div className={`flex-1 h-[2px] rounded-full ${colors.bg.replace('bg-', 'bg-').replace('/30', '/50')}`} style={{
+                      background: `linear-gradient(to right, ${type === 'velocita' ? 'rgb(234 88 12 / 0.4)' :
+                          type === 'resistenza' ? 'rgb(37 99 235 / 0.4)' :
+                            type === 'forza' ? 'rgb(220 38 38 / 0.4)' :
+                              type === 'coordinazione' ? 'rgb(147 51 234 / 0.4)' :
+                                type === 'flessibilita' ? 'rgb(22 163 74 / 0.4)' :
+                                  type === 'pallavolo' ? 'rgb(217 119 6 / 0.4)' :
+                                    type === 'basket' ? 'rgb(234 88 12 / 0.4)' :
+                                      type === 'calcio' ? 'rgb(5 150 105 / 0.4)' :
+                                        type === 'ginnastica' ? 'rgb(219 39 119 / 0.4)' :
+                                          'rgb(14 165 233 / 0.4)'
+                        }, transparent)`
+                    }} />
+                    {/* Exercise Count Badge */}
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${colors.bg} ${colors.border} ${colors.text}`}>
+                      <span>{typeExercises.length}</span>
+                      <span className="opacity-75">eserciz{typeExercises.length === 1 ? 'io' : 'i'}</span>
+                    </div>
                   </div>
 
                   {/* Carousel */}
@@ -382,7 +568,9 @@ export default function Exercises() {
                                 </div>
                                 <CardDescription className="flex items-center gap-1 mt-1">
                                   <Activity className="h-3 w-3" />
-                                  Attività fisica
+                                  {ex.evaluationMode === 'range' ? 'Valutazione a fasce' :
+                                    ex.evaluationMode === 'criteria' ? 'Valutazione a criteri' :
+                                      'Attività fisica'}
                                 </CardDescription>
                               </CardHeader>
                               <CardContent className="flex-1 pb-3 space-y-2">
@@ -392,11 +580,17 @@ export default function Exercises() {
                                     {ex.requiresTeamwork ? "Richiede gioco di squadra" : "Individuale"}
                                   </span>
                                 </div>
-                                {ex.subExercises && ex.subExercises.length > 0 && (
+                                {ex.evaluationMode === 'range' && ex.unit && (
                                   <div className="flex items-center gap-2 text-sm">
-                                    <ListPlus className="h-4 w-4 text-primary" />
+                                    <Ruler className="h-4 w-4 text-primary" />
+                                    <span className="text-muted-foreground">Unità: {unitDisplayNames[ex.unit]}</span>
+                                  </div>
+                                )}
+                                {ex.evaluationMode === 'criteria' && ex.customCriteria && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <ClipboardList className="h-4 w-4 text-primary" />
                                     <span className="font-medium text-primary">
-                                      {ex.subExercises.length} sotto-eserciz{ex.subExercises.length === 1 ? 'io' : 'i'}
+                                      {ex.customCriteria.length} criter{ex.customCriteria.length === 1 ? 'io' : 'i'}
                                     </span>
                                   </div>
                                 )}
@@ -419,151 +613,320 @@ export default function Exercises() {
             })}
           </div>
 
-          {/* Add Exercise Dialog */}
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto CustomScrollbar-thin">
+          {/* Add Exercise Dialog - Redesigned */}
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Aggiungi Nuovo Esercizio</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  {step === 1 ? (
+                    <>
+                      <Dumbbell className="h-5 w-5" />
+                      Nuovo Esercizio
+                    </>
+                  ) : (
+                    <>
+                      {formData.evaluationMode === 'range' ? (
+                        <><Ruler className="h-5 w-5" /> Configura Fasce di Valutazione</>
+                      ) : (
+                        <><ClipboardList className="h-5 w-5" /> Configura Criteri di Valutazione</>
+                      )}
+                    </>
+                  )}
+                </DialogTitle>
                 <DialogDescription>
-                  Crea un nuovo esercizio con i suoi sotto-esercizi e criteri di valutazione.
+                  {step === 1 ? (
+                    "Definisci le informazioni base dell'esercizio e scegli la modalità di valutazione."
+                  ) : formData.evaluationMode === 'range' ? (
+                    "Imposta le fasce di punteggio in base alle prestazioni misurate."
+                  ) : (
+                    "Aggiungi i criteri con cui valuterai manualmente gli studenti."
+                  )}
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-6 py-4">
-                {/* Main Exercise Info */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="exercise-name">Nome Esercizio *</Label>
-                    <Input
-                      id="exercise-name"
-                      placeholder="es. Pallavolo - Fondamentali"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                    {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="exercise-type">Tipo *</Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as ExerciseType })}>
-                      <SelectTrigger id="exercise-type" className={errors.type ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Seleziona tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="coordinazione">Coordinazione</SelectItem>
-                        <SelectItem value="forza">Forza</SelectItem>
-                        <SelectItem value="resistenza">Resistenza</SelectItem>
-                        <SelectItem value="velocita">Velocità</SelectItem>
-                        <SelectItem value="flessibilita">Flessibilità</SelectItem>
-                        <SelectItem value="pallavolo">Pallavolo</SelectItem>
-                        <SelectItem value="basket">Basket</SelectItem>
-                        <SelectItem value="calcio">Calcio</SelectItem>
-                        <SelectItem value="atletica">Atletica</SelectItem>
-                        <SelectItem value="ginnastica">Ginnastica</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="exercise-desc">Descrizione</Label>
-                    <Textarea
-                      id="exercise-desc"
-                      placeholder="Descrizione dell'esercizio..."
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="teamwork"
-                      checked={formData.requiresTeamwork}
-                      onCheckedChange={(checked) => setFormData({ ...formData, requiresTeamwork: checked as boolean })}
-                    />
-                    <Label htmlFor="teamwork" className="cursor-pointer">
-                      Richiede gioco di squadra
-                    </Label>
-                  </div>
+              {/* Step Indicator */}
+              <div className="flex items-center gap-2 py-2">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step >= 1 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  1
                 </div>
-
-                {/* Sub-exercises */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-base font-semibold">Sotto-esercizi *</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={addSubExercise} className="gap-2">
-                      <ListPlus className="h-4 w-4" />
-                      Aggiungi Sotto-esercizio
-                    </Button>
-                  </div>
-                  {errors.subExercises && <p className="text-sm text-red-500">{errors.subExercises}</p>}
-
-                  <div className="space-y-4">
-                    {subExercises.map((subEx, index) => (
-                      <Card key={index} className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <Label className="text-sm font-medium">Sotto-esercizio {index + 1}</Label>
-                            {subExercises.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeSubExercise(index)}
-                                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="space-y-2">
-                            <Input
-                              placeholder="Nome sotto-esercizio"
-                              value={subEx.name}
-                              onChange={(e) => updateSubExercise(index, 'name', e.target.value)}
-                              className={errors[`subEx${index}`] ? "border-red-500" : ""}
-                            />
-                            {errors[`subEx${index}`] && <p className="text-xs text-red-500">{errors[`subEx${index}`]}</p>}
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label className="text-xs text-muted-foreground">Criteri di Valutazione *</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                              {evaluationCriteriaOptions.map((criterion) => (
-                                <div key={criterion} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`${index}-${criterion}`}
-                                    checked={subEx.evaluationCriteria.includes(criterion)}
-                                    onCheckedChange={() => toggleCriterion(index, criterion)}
-                                  />
-                                  <Label htmlFor={`${index}-${criterion}`} className="text-sm cursor-pointer capitalize">
-                                    {criterion === 'technical' && 'Tecnica'}
-                                    {criterion === 'effort' && 'Impegno'}
-                                    {criterion === 'teamwork' && 'Lavoro di squadra'}
-                                    {criterion === 'overall' && 'Generale'}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                            {errors[`subExCriteria${index}`] && <p className="text-xs text-red-500">{errors[`subExCriteria${index}`]}</p>}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                <div className={`flex-1 h-1 rounded ${step >= 2 ? 'bg-primary' : 'bg-muted'}`} />
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${step >= 2 ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  2
                 </div>
               </div>
 
-              <DialogFooter>
+              {step === 1 && (
+                <div className="space-y-6 py-4">
+                  {/* Basic Info */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="exercise-name">Nome Esercizio *</Label>
+                      <Input
+                        id="exercise-name"
+                        placeholder="es. Salto in Lungo, Pallavolo - Fondamentali"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className={errors.name ? "border-destructive" : ""}
+                      />
+                      {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="exercise-type">Categoria *</Label>
+                        <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value as ExerciseType })}>
+                          <SelectTrigger id="exercise-type" className={errors.type ? "border-destructive" : ""}>
+                            <SelectValue placeholder="Seleziona categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {typeOrder.map((type) => (
+                              <SelectItem key={type} value={type}>
+                                <div className="flex items-center gap-2">
+                                  {typeIcons[type]}
+                                  {typeDisplayNames[type]}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.type && <p className="text-sm text-destructive">{errors.type}</p>}
+                      </div>
+
+                      <div className="space-y-2 flex items-end">
+                        <div className="flex items-center space-x-2 pb-2">
+                          <Checkbox
+                            id="teamwork"
+                            checked={formData.requiresTeamwork}
+                            onCheckedChange={(checked) => setFormData({ ...formData, requiresTeamwork: checked as boolean })}
+                          />
+                          <Label htmlFor="teamwork" className="cursor-pointer">
+                            Richiede gioco di squadra
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="exercise-desc">Descrizione (opzionale)</Label>
+                      <Textarea
+                        id="exercise-desc"
+                        placeholder="Descrizione dell'esercizio..."
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Evaluation Mode Selection */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">Modalità di Valutazione *</Label>
+                    {errors.evaluationMode && <p className="text-sm text-destructive">{errors.evaluationMode}</p>}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Range-based card */}
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${formData.evaluationMode === 'range'
+                            ? 'ring-2 ring-primary border-primary bg-primary/5'
+                            : 'hover:border-primary/50'
+                          }`}
+                        onClick={() => setFormData({ ...formData, evaluationMode: 'range' })}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'range' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                            <Ruler className="h-6 w-6" />
+                          </div>
+                          <CardTitle className="text-base">A Fasce</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-4">
+                          <p className="text-sm text-muted-foreground">
+                            Voto automatico in base al risultato misurato (es. salto in lungo, corsa)
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Criteria-based card */}
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${formData.evaluationMode === 'criteria'
+                            ? 'ring-2 ring-primary border-primary bg-primary/5'
+                            : 'hover:border-primary/50'
+                          }`}
+                        onClick={() => setFormData({ ...formData, evaluationMode: 'criteria' })}
+                      >
+                        <CardHeader className="pb-2">
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'criteria' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                            <ClipboardList className="h-6 w-6" />
+                          </div>
+                          <CardTitle className="text-base">A Criteri</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-4">
+                          <p className="text-sm text-muted-foreground">
+                            Valutazione manuale per criteri (es. tecnica, velocità, posizionamento)
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && formData.evaluationMode === 'range' && (
+                <div className="space-y-6 py-4">
+                  {/* Unit selector */}
+                  <div className="space-y-2">
+                    <Label>Unità di Misura</Label>
+                    <Select value={formData.unit} onValueChange={(v) => setFormData({ ...formData, unit: v as MeasurementUnit })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(unitDisplayNames).map(([key, name]) => (
+                          <SelectItem key={key} value={key}>{name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Gender toggle */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="gender-ranges"
+                      checked={useGenderRanges}
+                      onCheckedChange={(checked) => setUseGenderRanges(checked as boolean)}
+                    />
+                    <Label htmlFor="gender-ranges" className="cursor-pointer">
+                      Usa fasce diverse per genere (M/F)
+                    </Label>
+                  </div>
+
+                  {/* Range editors */}
+                  {useGenderRanges ? (
+                    <Tabs defaultValue="male" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="male">👨 Maschi</TabsTrigger>
+                        <TabsTrigger value="female">👩 Femmine</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="male" className="mt-4">
+                        {renderRangeEditor(rangesMale, 'male', 'Fasce Maschi')}
+                      </TabsContent>
+                      <TabsContent value="female" className="mt-4">
+                        {renderRangeEditor(rangesFemale, 'female', 'Fasce Femmine')}
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    renderRangeEditor(rangesMale, 'male', 'Fasce di Valutazione')
+                  )}
+
+                  {/* Range preview hint */}
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-sm text-muted-foreground">
+                      💡 <strong>Esempio:</strong> Se uno studente ottiene un risultato tra il valore minimo e massimo di una fascia, riceverà il voto corrispondente.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && formData.evaluationMode === 'criteria' && (
+                <div className="space-y-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Criteri di Valutazione</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addCriterion}
+                      className="gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Aggiungi Criterio
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {customCriteria.map((criterion, index) => (
+                      <div key={index} className="p-4 rounded-lg bg-muted/50 border space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium">Criterio {index + 1}</Label>
+                          {customCriteria.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeCriterion(index)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nome Criterio</Label>
+                            <Input
+                              placeholder="es. Tecnica, Velocità, Posizionamento"
+                              value={criterion.name}
+                              onChange={(e) => updateCriterion(index, 'name', e.target.value)}
+                              className={errors[`criterion${index}`] ? "border-destructive" : ""}
+                            />
+                            {errors[`criterion${index}`] && (
+                              <p className="text-xs text-destructive">{errors[`criterion${index}`]}</p>
+                            )}
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Voto Max</Label>
+                            <Select
+                              value={criterion.maxScore.toString()}
+                              onValueChange={(v) => updateCriterion(index, 'maxScore', parseInt(v))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {italianScores.map((score) => (
+                                  <SelectItem key={score} value={score.toString()}>
+                                    {score}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Criteria hint */}
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-sm text-muted-foreground">
+                      💡 <strong>Suggerimento:</strong> Crea criteri come "Tecnica", "Impegno", "Coordinazione" per valutare aspetti specifici della prestazione.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2">
+                {step > 1 && (
+                  <Button variant="outline" onClick={handleBack} className="gap-2">
+                    <ChevronLeft className="h-4 w-4" />
+                    Indietro
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
                   Annulla
                 </Button>
-                <Button onClick={handleSubmit}>
-                  Crea Esercizio
-                </Button>
+                {step === 1 ? (
+                  <Button onClick={handleNext} className="gap-2">
+                    Avanti
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button onClick={handleSubmit}>
+                    Crea Esercizio
+                  </Button>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>

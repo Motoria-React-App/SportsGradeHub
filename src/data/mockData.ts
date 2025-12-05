@@ -24,24 +24,63 @@ const lastNames = [
 
 // Exercise definitions
 export const exercises: Exercise[] = [
-    { id: 'ex1', name: 'Corsa 100m', type: 'velocita', requiresTeamwork: false },
-    { id: 'ex2', name: 'Corsa 1000m', type: 'resistenza', requiresTeamwork: false },
-    { id: 'ex3', name: 'Salto in lungo', type: 'forza', requiresTeamwork: false },
-    { id: 'ex4', name: 'Lancio palla medica', type: 'forza', requiresTeamwork: false },
-    { id: 'ex5', name: 'Pallavolo - partita', type: 'pallavolo', requiresTeamwork: true },
-    { id: 'ex6', name: 'Pallavolo - palleggio', type: 'pallavolo', requiresTeamwork: false },
-    { id: 'ex7', name: 'Basket - tiro libero', type: 'basket', requiresTeamwork: false },
-    { id: 'ex8', name: 'Basket - partita', type: 'basket', requiresTeamwork: true },
-    { id: 'ex9', name: 'Calcio - partita', type: 'calcio', requiresTeamwork: true },
-    { id: 'ex10', name: 'Calcio - dribbling', type: 'calcio', requiresTeamwork: false },
-    { id: 'ex11', name: 'Circuito coordinazione', type: 'coordinazione', requiresTeamwork: false },
-    { id: 'ex12', name: 'Percorso ostacoli', type: 'coordinazione', requiresTeamwork: false },
-    { id: 'ex13', name: 'Flessioni', type: 'forza', requiresTeamwork: false },
-    { id: 'ex14', name: 'Addominali', type: 'forza', requiresTeamwork: false },
-    { id: 'ex15', name: 'Stretching', type: 'flessibilita', requiresTeamwork: false },
-    { id: 'ex16', name: 'Ginnastica artistica', type: 'ginnastica', requiresTeamwork: false },
-    { id: 'ex17', name: 'Salto con la corda', type: 'resistenza', requiresTeamwork: false },
-    { id: 'ex18', name: 'Staffetta 4x100', type: 'velocita', requiresTeamwork: true },
+    { id: 'ex1', name: 'Corsa 100m', type: 'velocita', requiresTeamwork: false, evaluationMode: 'range', unit: 'sec' },
+    { id: 'ex2', name: 'Corsa 1000m', type: 'resistenza', requiresTeamwork: false, evaluationMode: 'range', unit: 'min' },
+    { id: 'ex3', name: 'Salto in lungo', type: 'forza', requiresTeamwork: false, evaluationMode: 'range', unit: 'cm' },
+    { id: 'ex4', name: 'Lancio palla medica', type: 'forza', requiresTeamwork: false, evaluationMode: 'range', unit: 'm' },
+    {
+        id: 'ex5', name: 'Pallavolo - partita', type: 'pallavolo', requiresTeamwork: true, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Tecnica', maxScore: 10 },
+            { id: 'c2', name: 'Posizionamento', maxScore: 10 },
+            { id: 'c3', name: 'Collaborazione', maxScore: 10 }
+        ]
+    },
+    {
+        id: 'ex6', name: 'Pallavolo - palleggio', type: 'pallavolo', requiresTeamwork: false, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Tecnica', maxScore: 10 },
+            { id: 'c2', name: 'Precisione', maxScore: 10 }
+        ]
+    },
+    { id: 'ex7', name: 'Basket - tiro libero', type: 'basket', requiresTeamwork: false, evaluationMode: 'range', unit: 'points' },
+    {
+        id: 'ex8', name: 'Basket - partita', type: 'basket', requiresTeamwork: true, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Tecnica', maxScore: 10 },
+            { id: 'c2', name: 'Difesa', maxScore: 10 },
+            { id: 'c3', name: 'Collaborazione', maxScore: 10 }
+        ]
+    },
+    {
+        id: 'ex9', name: 'Calcio - partita', type: 'calcio', requiresTeamwork: true, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Tecnica', maxScore: 10 },
+            { id: 'c2', name: 'Visione di gioco', maxScore: 10 },
+            { id: 'c3', name: 'Impegno', maxScore: 10 }
+        ]
+    },
+    {
+        id: 'ex10', name: 'Calcio - dribbling', type: 'calcio', requiresTeamwork: false, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Controllo palla', maxScore: 10 },
+            { id: 'c2', name: 'Velocità', maxScore: 10 }
+        ]
+    },
+    { id: 'ex11', name: 'Circuito coordinazione', type: 'coordinazione', requiresTeamwork: false, evaluationMode: 'range', unit: 'sec' },
+    { id: 'ex12', name: 'Percorso ostacoli', type: 'coordinazione', requiresTeamwork: false, evaluationMode: 'range', unit: 'sec' },
+    { id: 'ex13', name: 'Flessioni', type: 'forza', requiresTeamwork: false, evaluationMode: 'range', unit: 'reps' },
+    { id: 'ex14', name: 'Addominali', type: 'forza', requiresTeamwork: false, evaluationMode: 'range', unit: 'reps' },
+    {
+        id: 'ex15', name: 'Stretching', type: 'flessibilita', requiresTeamwork: false, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Esecuzione', maxScore: 10 },
+            { id: 'c2', name: 'Impegno', maxScore: 10 }
+        ]
+    },
+    {
+        id: 'ex16', name: 'Ginnastica artistica', type: 'ginnastica', requiresTeamwork: false, evaluationMode: 'criteria', customCriteria: [
+            { id: 'c1', name: 'Tecnica', maxScore: 10 },
+            { id: 'c2', name: 'Eleganza', maxScore: 10 },
+            { id: 'c3', name: 'Difficoltà', maxScore: 10 }
+        ]
+    },
+    { id: 'ex17', name: 'Salto con la corda', type: 'resistenza', requiresTeamwork: false, evaluationMode: 'range', unit: 'reps' },
+    { id: 'ex18', name: 'Staffetta 4x100', type: 'velocita', requiresTeamwork: true, evaluationMode: 'range', unit: 'sec' },
 ];
 
 // Classes

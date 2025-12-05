@@ -53,6 +53,27 @@ export interface Grade {
 
 export type EvaluationCriterionType = 'technical' | 'effort' | 'teamwork' | 'overall';
 
+// Evaluation mode for exercises
+export type EvaluationMode = 'range' | 'criteria';
+
+// Measurement units for range-based exercises
+export type MeasurementUnit = 'cm' | 'm' | 'km' | 'sec' | 'min' | 'reps' | 'kg' | 'points';
+
+// Score range for range-based exercises (e.g., Salto in Lungo)
+export interface ScoreRange {
+    minValue: number;    // Minimum performance value (e.g., 150 cm)
+    maxValue: number;    // Maximum performance value (e.g., 200 cm)  
+    score: number;       // Score assigned (1-10 Italian grading)
+}
+
+// Custom criterion for criteria-based exercises (e.g., Pallavolo)
+export interface CustomCriterion {
+    id: string;
+    name: string;        // e.g., "Tecnica", "Velocità", "Posizionamento"
+    maxScore: number;    // Maximum score for this criterion (default 10)
+    weight?: number;     // Optional weight for weighted averaging
+}
+
 export interface SubExercise {
     id: string;
     name: string;
@@ -66,7 +87,20 @@ export interface Exercise {
     type: ExerciseType;
     description?: string;
     requiresTeamwork: boolean;
-    subExercises?: SubExercise[]; // Optional for backward compatibility
+
+    // Evaluation mode
+    evaluationMode: EvaluationMode;
+
+    // For range-based exercises (e.g., Salto in Lungo)
+    unit?: MeasurementUnit;
+    rangesMale?: ScoreRange[];
+    rangesFemale?: ScoreRange[];
+
+    // For criteria-based exercises (e.g., Pallavolo)
+    customCriteria?: CustomCriterion[];
+
+    // Legacy: sub-exercises (kept for backward compatibility)
+    subExercises?: SubExercise[];
 }
 
 export interface Class {
