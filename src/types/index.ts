@@ -74,12 +74,34 @@ export interface CustomCriterion {
     weight?: number;     // Optional weight for weighted averaging
 }
 
+// Sub-exercise for composite exercises (each can have its own evaluation mode)
+export interface SubExerciseItem {
+    id: string;
+    name: string;
+    evaluationMode: 'range' | 'criteria';
+
+    // For range-based sub-exercises
+    unit?: MeasurementUnit;
+    rangesMale?: ScoreRange[];
+    rangesFemale?: ScoreRange[];
+    useGenderRanges?: boolean;
+
+    // For criteria-based sub-exercises
+    customCriteria?: CustomCriterion[];
+
+    weight?: number; // Optional weight for weighted grading
+}
+
+// Legacy sub-exercise interface (kept for backward compatibility)
 export interface SubExercise {
     id: string;
     name: string;
     evaluationCriteria: EvaluationCriterionType[];
-    weight?: number; // Optional weight for weighted grading
+    weight?: number;
 }
+
+// Evaluation mode including composite
+export type ExerciseEvaluationMode = 'range' | 'criteria' | 'composite';
 
 export interface Exercise {
     id: string;
@@ -88,8 +110,8 @@ export interface Exercise {
     description?: string;
     requiresTeamwork: boolean;
 
-    // Evaluation mode
-    evaluationMode: EvaluationMode;
+    // Evaluation mode ('range', 'criteria', or 'composite')
+    evaluationMode: EvaluationMode | 'composite';
 
     // For range-based exercises (e.g., Salto in Lungo)
     unit?: MeasurementUnit;
@@ -98,6 +120,9 @@ export interface Exercise {
 
     // For criteria-based exercises (e.g., Pallavolo)
     customCriteria?: CustomCriterion[];
+
+    // For composite exercises with sub-exercises
+    subExerciseItems?: SubExerciseItem[];
 
     // Legacy: sub-exercises (kept for backward compatibility)
     subExercises?: SubExercise[];

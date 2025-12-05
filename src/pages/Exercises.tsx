@@ -30,7 +30,6 @@ import {
   Dumbbell,
   Users,
   Activity,
-  X,
   Zap,
   Wind,
   Target,
@@ -42,8 +41,11 @@ import {
   ChevronRight,
   ChevronLeft,
   Trash2,
+  Layers,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import type { Exercise, ExerciseType, EvaluationMode, MeasurementUnit, ScoreRange, CustomCriterion } from "@/types";
+import type { Exercise, ExerciseType, EvaluationMode, MeasurementUnit, ScoreRange, CustomCriterion, SubExerciseItem } from "@/types";
 
 // Type display names in Italian
 const typeDisplayNames: Record<ExerciseType, string> = {
@@ -169,7 +171,7 @@ export default function Exercises() {
     type: "" as ExerciseType | "",
     description: "",
     requiresTeamwork: false,
-    evaluationMode: "" as EvaluationMode | "",
+    evaluationMode: "" as EvaluationMode | "composite" | "",
     unit: "cm" as MeasurementUnit,
   });
 
@@ -186,6 +188,10 @@ export default function Exercises() {
   const [customCriteria, setCustomCriteria] = useState<Omit<CustomCriterion, 'id'>[]>([
     { name: "", maxScore: 10, weight: 1 }
   ]);
+
+  // Composite exercise state - sub-exercises
+  const [subExerciseItems, setSubExerciseItems] = useState<Omit<SubExerciseItem, 'id'>[]>([]);
+  const [expandedSubEx, setExpandedSubEx] = useState<number | null>(null);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -261,6 +267,31 @@ export default function Exercises() {
     setCustomCriteria(updated);
   };
 
+  // Sub-exercise management functions
+  const addSubExerciseItem = () => {
+    setSubExerciseItems([...subExerciseItems, {
+      name: "",
+      evaluationMode: 'range',
+      unit: 'cm',
+      rangesMale: [{ minValue: 0, maxValue: 100, score: 6 }],
+      rangesFemale: [{ minValue: 0, maxValue: 100, score: 6 }],
+      useGenderRanges: false,
+      customCriteria: [{ id: 'c1', name: '', maxScore: 10 }],
+    }]);
+    setExpandedSubEx(subExerciseItems.length);
+  };
+
+  const removeSubExerciseItem = (index: number) => {
+    setSubExerciseItems(subExerciseItems.filter((_, i) => i !== index));
+    setExpandedSubEx(null);
+  };
+
+  const updateSubExerciseItem = (index: number, updates: Partial<Omit<SubExerciseItem, 'id'>>) => {
+    const updated = [...subExerciseItems];
+    updated[index] = { ...updated[index], ...updates };
+    setSubExerciseItems(updated);
+  };
+
   const validateStep1 = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -282,7 +313,6 @@ export default function Exercises() {
     const newErrors: { [key: string]: string } = {};
 
     if (formData.evaluationMode === 'range') {
-      // Validate ranges
       const validateRanges = (ranges: ScoreRange[], prefix: string) => {
         ranges.forEach((range, index) => {
           if (range.minValue >= range.maxValue) {
@@ -295,10 +325,18 @@ export default function Exercises() {
         validateRanges(rangesFemale, 'rangeFemale');
       }
     } else if (formData.evaluationMode === 'criteria') {
-      // Validate criteria
       customCriteria.forEach((criterion, index) => {
         if (!criterion.name.trim()) {
           newErrors[`criterion${index}`] = "Il nome del criterio è obbligatorio";
+        }
+      });
+    } else if (formData.evaluationMode === 'composite') {
+      if (subExerciseItems.length === 0) {
+        newErrors.subExercises = "Aggiungi almeno un sotto-esercizio";
+      }
+      subExerciseItems.forEach((subEx, index) => {
+        if (!subEx.name.trim()) {
+          newErrors[`subEx${index}`] = "Il nome del sotto-esercizio è obbligatorio";
         }
       });
     }
@@ -314,13 +352,15 @@ export default function Exercises() {
       type: "" as ExerciseType | "",
       description: "",
       requiresTeamwork: false,
-      evaluationMode: "" as EvaluationMode | "",
+      evaluationMode: "" as EvaluationMode | "composite" | "",
       unit: "cm" as MeasurementUnit,
     });
     setRangesMale([{ minValue: 0, maxValue: 100, score: 6 }]);
     setRangesFemale([{ minValue: 0, maxValue: 100, score: 6 }]);
     setUseGenderRanges(true);
     setCustomCriteria([{ name: "", maxScore: 10, weight: 1 }]);
+    setSubExerciseItems([]);
+    setExpandedSubEx(null);
     setErrors({});
   };
 
@@ -345,7 +385,7 @@ export default function Exercises() {
       type: formData.type as ExerciseType,
       description: formData.description,
       requiresTeamwork: formData.requiresTeamwork,
-      evaluationMode: formData.evaluationMode as EvaluationMode,
+      evaluationMode: formData.evaluationMode as EvaluationMode | 'composite',
       ...(formData.evaluationMode === 'range' && {
         unit: formData.unit,
         rangesMale: rangesMale,
@@ -355,6 +395,12 @@ export default function Exercises() {
         customCriteria: customCriteria.map((c, i) => ({
           ...c,
           id: `crit${Date.now()}-${i}`,
+        })),
+      }),
+      ...(formData.evaluationMode === 'composite' && {
+        subExerciseItems: subExerciseItems.map((s, i) => ({
+          ...s,
+          id: `subex${Date.now()}-${i}`,
         })),
       }),
     };
@@ -526,15 +572,15 @@ export default function Exercises() {
                     {/* Colored Line */}
                     <div className={`flex-1 h-[2px] rounded-full ${colors.bg.replace('bg-', 'bg-').replace('/30', '/50')}`} style={{
                       background: `linear-gradient(to right, ${type === 'velocita' ? 'rgb(234 88 12 / 0.4)' :
-                          type === 'resistenza' ? 'rgb(37 99 235 / 0.4)' :
-                            type === 'forza' ? 'rgb(220 38 38 / 0.4)' :
-                              type === 'coordinazione' ? 'rgb(147 51 234 / 0.4)' :
-                                type === 'flessibilita' ? 'rgb(22 163 74 / 0.4)' :
-                                  type === 'pallavolo' ? 'rgb(217 119 6 / 0.4)' :
-                                    type === 'basket' ? 'rgb(234 88 12 / 0.4)' :
-                                      type === 'calcio' ? 'rgb(5 150 105 / 0.4)' :
-                                        type === 'ginnastica' ? 'rgb(219 39 119 / 0.4)' :
-                                          'rgb(14 165 233 / 0.4)'
+                        type === 'resistenza' ? 'rgb(37 99 235 / 0.4)' :
+                          type === 'forza' ? 'rgb(220 38 38 / 0.4)' :
+                            type === 'coordinazione' ? 'rgb(147 51 234 / 0.4)' :
+                              type === 'flessibilita' ? 'rgb(22 163 74 / 0.4)' :
+                                type === 'pallavolo' ? 'rgb(217 119 6 / 0.4)' :
+                                  type === 'basket' ? 'rgb(234 88 12 / 0.4)' :
+                                    type === 'calcio' ? 'rgb(5 150 105 / 0.4)' :
+                                      type === 'ginnastica' ? 'rgb(219 39 119 / 0.4)' :
+                                        'rgb(14 165 233 / 0.4)'
                         }, transparent)`
                     }} />
                     {/* Exercise Count Badge */}
@@ -723,25 +769,25 @@ export default function Exercises() {
                     <Label className="text-base font-semibold">Modalità di Valutazione *</Label>
                     {errors.evaluationMode && <p className="text-sm text-destructive">{errors.evaluationMode}</p>}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       {/* Range-based card */}
                       <Card
                         className={`cursor-pointer transition-all hover:shadow-md ${formData.evaluationMode === 'range'
-                            ? 'ring-2 ring-primary border-primary bg-primary/5'
-                            : 'hover:border-primary/50'
+                          ? 'ring-2 ring-primary border-primary bg-primary/5'
+                          : 'hover:border-primary/50'
                           }`}
                         onClick={() => setFormData({ ...formData, evaluationMode: 'range' })}
                       >
-                        <CardHeader className="pb-2">
-                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'range' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        <CardHeader className="pb-2 p-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'range' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                             }`}>
-                            <Ruler className="h-6 w-6" />
+                            <Ruler className="h-5 w-5" />
                           </div>
-                          <CardTitle className="text-base">A Fasce</CardTitle>
+                          <CardTitle className="text-sm">A Fasce</CardTitle>
                         </CardHeader>
-                        <CardContent className="pb-4">
-                          <p className="text-sm text-muted-foreground">
-                            Voto automatico in base al risultato misurato (es. salto in lungo, corsa)
+                        <CardContent className="pb-3 p-3 pt-0">
+                          <p className="text-xs text-muted-foreground">
+                            Voto automatico (es. salto, corsa)
                           </p>
                         </CardContent>
                       </Card>
@@ -749,21 +795,43 @@ export default function Exercises() {
                       {/* Criteria-based card */}
                       <Card
                         className={`cursor-pointer transition-all hover:shadow-md ${formData.evaluationMode === 'criteria'
-                            ? 'ring-2 ring-primary border-primary bg-primary/5'
-                            : 'hover:border-primary/50'
+                          ? 'ring-2 ring-primary border-primary bg-primary/5'
+                          : 'hover:border-primary/50'
                           }`}
                         onClick={() => setFormData({ ...formData, evaluationMode: 'criteria' })}
                       >
-                        <CardHeader className="pb-2">
-                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'criteria' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        <CardHeader className="pb-2 p-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'criteria' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                             }`}>
-                            <ClipboardList className="h-6 w-6" />
+                            <ClipboardList className="h-5 w-5" />
                           </div>
-                          <CardTitle className="text-base">A Criteri</CardTitle>
+                          <CardTitle className="text-sm">A Criteri</CardTitle>
                         </CardHeader>
-                        <CardContent className="pb-4">
-                          <p className="text-sm text-muted-foreground">
-                            Valutazione manuale per criteri (es. tecnica, velocità, posizionamento)
+                        <CardContent className="pb-3 p-3 pt-0">
+                          <p className="text-xs text-muted-foreground">
+                            Valutazione manuale (es. tecnica)
+                          </p>
+                        </CardContent>
+                      </Card>
+
+                      {/* Composite card */}
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${formData.evaluationMode === 'composite'
+                          ? 'ring-2 ring-primary border-primary bg-primary/5'
+                          : 'hover:border-primary/50'
+                          }`}
+                        onClick={() => setFormData({ ...formData, evaluationMode: 'composite' })}
+                      >
+                        <CardHeader className="pb-2 p-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${formData.evaluationMode === 'composite' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                            }`}>
+                            <Layers className="h-5 w-5" />
+                          </div>
+                          <CardTitle className="text-sm">Composto</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pb-3 p-3 pt-0">
+                          <p className="text-xs text-muted-foreground">
+                            Con sotto-esercizi (es. body)
                           </p>
                         </CardContent>
                       </Card>
@@ -902,6 +970,288 @@ export default function Exercises() {
                   <div className="p-3 rounded-lg bg-muted/50 border">
                     <p className="text-sm text-muted-foreground">
                       💡 <strong>Suggerimento:</strong> Crea criteri come "Tecnica", "Impegno", "Coordinazione" per valutare aspetti specifici della prestazione.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {step === 2 && formData.evaluationMode === 'composite' && (
+                <div className="space-y-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-semibold">Sotto-esercizi</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addSubExerciseItem} className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Aggiungi
+                    </Button>
+                  </div>
+                  {errors.subExercises && <p className="text-sm text-destructive">{errors.subExercises}</p>}
+
+                  {subExerciseItems.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                      <Layers className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                      <p className="text-muted-foreground">Nessun sotto-esercizio</p>
+                      <Button variant="link" onClick={addSubExerciseItem} className="mt-2">
+                        Aggiungi il primo sotto-esercizio
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {subExerciseItems.map((subEx, index) => (
+                        <Card key={index} className="p-4">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">{index + 1}</Badge>
+                                <span className="font-medium">{subEx.name || "Nuovo sotto-esercizio"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button" variant="ghost" size="sm"
+                                  onClick={() => setExpandedSubEx(expandedSubEx === index ? null : index)}
+                                >
+                                  {expandedSubEx === index ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </Button>
+                                <Button
+                                  type="button" variant="ghost" size="sm"
+                                  onClick={() => removeSubExerciseItem(index)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            {expandedSubEx === index && (
+                              <div className="space-y-4 pt-2 border-t">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label className="text-xs">Nome *</Label>
+                                    <Input
+                                      placeholder="es. Salto in lungo"
+                                      value={subEx.name}
+                                      onChange={(e) => updateSubExerciseItem(index, { name: e.target.value })}
+                                      className={errors[`subEx${index}`] ? "border-destructive" : ""}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label className="text-xs">Tipo valutazione</Label>
+                                    <Select
+                                      value={subEx.evaluationMode}
+                                      onValueChange={(v) => updateSubExerciseItem(index, { evaluationMode: v as 'range' | 'criteria' })}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="range">📏 A Fasce</SelectItem>
+                                        <SelectItem value="criteria">📋 A Criteri</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                {subEx.evaluationMode === 'range' && (
+                                  <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="text-xs font-medium">Configurazione Fasce</Label>
+                                      <Select
+                                        value={subEx.unit || 'cm'}
+                                        onValueChange={(v) => updateSubExerciseItem(index, { unit: v as MeasurementUnit })}
+                                      >
+                                        <SelectTrigger className="w-[120px] h-7 text-xs">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {Object.entries(unitDisplayNames).map(([key, name]) => (
+                                            <SelectItem key={key} value={key}>{name}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        id={`gender-${index}`}
+                                        checked={subEx.useGenderRanges || false}
+                                        onCheckedChange={(checked) => updateSubExerciseItem(index, { useGenderRanges: checked as boolean })}
+                                      />
+                                      <Label htmlFor={`gender-${index}`} className="text-xs cursor-pointer">Fasce diverse per genere</Label>
+                                    </div>
+
+                                    {subEx.useGenderRanges ? (
+                                      <Tabs defaultValue="male" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-2 h-8">
+                                          <TabsTrigger value="male" className="text-xs">👨 Maschi</TabsTrigger>
+                                          <TabsTrigger value="female" className="text-xs">👩 Femmine</TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="male" className="mt-2 space-y-2">
+                                          {(subEx.rangesMale || []).map((range, rIdx) => (
+                                            <div key={rIdx} className="flex items-center gap-1">
+                                              <Input type="number" className="h-7 text-xs w-16" placeholder="Min" value={range.minValue}
+                                                onChange={(e) => {
+                                                  const newRanges = [...(subEx.rangesMale || [])];
+                                                  newRanges[rIdx] = { ...newRanges[rIdx], minValue: parseFloat(e.target.value) || 0 };
+                                                  updateSubExerciseItem(index, { rangesMale: newRanges });
+                                                }} />
+                                              <span className="text-xs">-</span>
+                                              <Input type="number" className="h-7 text-xs w-16" placeholder="Max" value={range.maxValue}
+                                                onChange={(e) => {
+                                                  const newRanges = [...(subEx.rangesMale || [])];
+                                                  newRanges[rIdx] = { ...newRanges[rIdx], maxValue: parseFloat(e.target.value) || 0 };
+                                                  updateSubExerciseItem(index, { rangesMale: newRanges });
+                                                }} />
+                                              <span className="text-xs">=</span>
+                                              <Select value={range.score.toString()} onValueChange={(v) => {
+                                                const newRanges = [...(subEx.rangesMale || [])];
+                                                newRanges[rIdx] = { ...newRanges[rIdx], score: parseInt(v) };
+                                                updateSubExerciseItem(index, { rangesMale: newRanges });
+                                              }}>
+                                                <SelectTrigger className="h-7 w-14 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>{s}</SelectItem>)}</SelectContent>
+                                              </Select>
+                                              {(subEx.rangesMale?.length || 0) > 1 && (
+                                                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
+                                                  onClick={() => updateSubExerciseItem(index, { rangesMale: (subEx.rangesMale || []).filter((_, i) => i !== rIdx) })}>
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          ))}
+                                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs w-full"
+                                            onClick={() => updateSubExerciseItem(index, { rangesMale: [...(subEx.rangesMale || []), { minValue: 0, maxValue: 100, score: 6 }] })}>
+                                            <Plus className="h-3 w-3 mr-1" /> Aggiungi fascia
+                                          </Button>
+                                        </TabsContent>
+                                        <TabsContent value="female" className="mt-2 space-y-2">
+                                          {(subEx.rangesFemale || []).map((range, rIdx) => (
+                                            <div key={rIdx} className="flex items-center gap-1">
+                                              <Input type="number" className="h-7 text-xs w-16" placeholder="Min" value={range.minValue}
+                                                onChange={(e) => {
+                                                  const newRanges = [...(subEx.rangesFemale || [])];
+                                                  newRanges[rIdx] = { ...newRanges[rIdx], minValue: parseFloat(e.target.value) || 0 };
+                                                  updateSubExerciseItem(index, { rangesFemale: newRanges });
+                                                }} />
+                                              <span className="text-xs">-</span>
+                                              <Input type="number" className="h-7 text-xs w-16" placeholder="Max" value={range.maxValue}
+                                                onChange={(e) => {
+                                                  const newRanges = [...(subEx.rangesFemale || [])];
+                                                  newRanges[rIdx] = { ...newRanges[rIdx], maxValue: parseFloat(e.target.value) || 0 };
+                                                  updateSubExerciseItem(index, { rangesFemale: newRanges });
+                                                }} />
+                                              <span className="text-xs">=</span>
+                                              <Select value={range.score.toString()} onValueChange={(v) => {
+                                                const newRanges = [...(subEx.rangesFemale || [])];
+                                                newRanges[rIdx] = { ...newRanges[rIdx], score: parseInt(v) };
+                                                updateSubExerciseItem(index, { rangesFemale: newRanges });
+                                              }}>
+                                                <SelectTrigger className="h-7 w-14 text-xs"><SelectValue /></SelectTrigger>
+                                                <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>{s}</SelectItem>)}</SelectContent>
+                                              </Select>
+                                              {(subEx.rangesFemale?.length || 0) > 1 && (
+                                                <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
+                                                  onClick={() => updateSubExerciseItem(index, { rangesFemale: (subEx.rangesFemale || []).filter((_, i) => i !== rIdx) })}>
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                          ))}
+                                          <Button type="button" variant="outline" size="sm" className="h-7 text-xs w-full"
+                                            onClick={() => updateSubExerciseItem(index, { rangesFemale: [...(subEx.rangesFemale || []), { minValue: 0, maxValue: 100, score: 6 }] })}>
+                                            <Plus className="h-3 w-3 mr-1" /> Aggiungi fascia
+                                          </Button>
+                                        </TabsContent>
+                                      </Tabs>
+                                    ) : (
+                                      <div className="space-y-2">
+                                        {(subEx.rangesMale || []).map((range, rIdx) => (
+                                          <div key={rIdx} className="flex items-center gap-1">
+                                            <Input type="number" className="h-7 text-xs w-16" placeholder="Min" value={range.minValue}
+                                              onChange={(e) => {
+                                                const newRanges = [...(subEx.rangesMale || [])];
+                                                newRanges[rIdx] = { ...newRanges[rIdx], minValue: parseFloat(e.target.value) || 0 };
+                                                updateSubExerciseItem(index, { rangesMale: newRanges });
+                                              }} />
+                                            <span className="text-xs">-</span>
+                                            <Input type="number" className="h-7 text-xs w-16" placeholder="Max" value={range.maxValue}
+                                              onChange={(e) => {
+                                                const newRanges = [...(subEx.rangesMale || [])];
+                                                newRanges[rIdx] = { ...newRanges[rIdx], maxValue: parseFloat(e.target.value) || 0 };
+                                                updateSubExerciseItem(index, { rangesMale: newRanges });
+                                              }} />
+                                            <span className="text-xs">=</span>
+                                            <Select value={range.score.toString()} onValueChange={(v) => {
+                                              const newRanges = [...(subEx.rangesMale || [])];
+                                              newRanges[rIdx] = { ...newRanges[rIdx], score: parseInt(v) };
+                                              updateSubExerciseItem(index, { rangesMale: newRanges });
+                                            }}>
+                                              <SelectTrigger className="h-7 w-14 text-xs"><SelectValue /></SelectTrigger>
+                                              <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>{s}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                            {(subEx.rangesMale?.length || 0) > 1 && (
+                                              <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
+                                                onClick={() => updateSubExerciseItem(index, { rangesMale: (subEx.rangesMale || []).filter((_, i) => i !== rIdx) })}>
+                                                <Trash2 className="h-3 w-3" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        ))}
+                                        <Button type="button" variant="outline" size="sm" className="h-7 text-xs w-full"
+                                          onClick={() => updateSubExerciseItem(index, { rangesMale: [...(subEx.rangesMale || []), { minValue: 0, maxValue: 100, score: 6 }] })}>
+                                          <Plus className="h-3 w-3 mr-1" /> Aggiungi fascia
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {subEx.evaluationMode === 'criteria' && (
+                                  <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                                    <Label className="text-xs font-medium">Configurazione Criteri</Label>
+                                    {(subEx.customCriteria || []).map((crit, cIdx) => (
+                                      <div key={cIdx} className="flex items-center gap-2">
+                                        <Input
+                                          className="h-7 text-xs flex-1"
+                                          placeholder="Nome criterio"
+                                          value={crit.name}
+                                          onChange={(e) => {
+                                            const newCrit = [...(subEx.customCriteria || [])];
+                                            newCrit[cIdx] = { ...newCrit[cIdx], name: e.target.value };
+                                            updateSubExerciseItem(index, { customCriteria: newCrit });
+                                          }}
+                                        />
+                                        <Select value={(crit.maxScore || 10).toString()} onValueChange={(v) => {
+                                          const newCrit = [...(subEx.customCriteria || [])];
+                                          newCrit[cIdx] = { ...newCrit[cIdx], maxScore: parseInt(v) };
+                                          updateSubExerciseItem(index, { customCriteria: newCrit });
+                                        }}>
+                                          <SelectTrigger className="h-7 w-16 text-xs"><SelectValue /></SelectTrigger>
+                                          <SelectContent>{italianScores.map(s => <SelectItem key={s} value={s.toString()}>/{s}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                        {(subEx.customCriteria?.length || 0) > 1 && (
+                                          <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0"
+                                            onClick={() => updateSubExerciseItem(index, { customCriteria: (subEx.customCriteria || []).filter((_, i) => i !== cIdx) })}>
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    ))}
+                                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs w-full"
+                                      onClick={() => updateSubExerciseItem(index, { customCriteria: [...(subEx.customCriteria || []), { id: `c${Date.now()}`, name: '', maxScore: 10 }] })}>
+                                      <Plus className="h-3 w-3 mr-1" /> Aggiungi criterio
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="p-3 rounded-lg bg-muted/50 border">
+                    <p className="text-sm text-muted-foreground">
+                      💡 <strong>Esempio:</strong> "Body" può avere sotto-esercizi come "Salto in lungo" (a fasce), "Flessioni" (a fasce), "Coordinazione" (a criteri).
                     </p>
                   </div>
                 </div>
