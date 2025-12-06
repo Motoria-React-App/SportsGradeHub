@@ -3,6 +3,7 @@ import Dashboard from "@/pages/Dashboard";
 import Classes from "@/pages/Classes";
 import Students from "@/pages/Students";
 import Analytics from "@/pages/Analytics";
+import Valutazioni from "@/pages/Valutazioni";
 import { CommandDialogDemo } from "@/components/commandDialog";
 import Exercises from "@/pages/Exercises";
 import LoginPage from "@/pages/LoginPage";
@@ -28,6 +29,7 @@ function App() {
         {/* Authenticated routes */}
         <Route path="/dashboard" element={<AuthenticatedLayout><Dashboard /></AuthenticatedLayout>} />
         <Route path="/exercises" element={<AuthenticatedLayout><Exercises /></AuthenticatedLayout>} />
+        <Route path="/valutazioni" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
         <Route path="/classes" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
         <Route path="/analytics" element={<AuthenticatedLayout><Analytics /></AuthenticatedLayout>} />

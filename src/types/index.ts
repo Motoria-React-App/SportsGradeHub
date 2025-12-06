@@ -22,6 +22,7 @@ export interface Student {
     avatar?: string;
     email?: string;
     dateOfBirth?: string;
+    gender: 'M' | 'F';
     averageGrade: number;
     totalGrades: number;
     lastActivityDate: string;
