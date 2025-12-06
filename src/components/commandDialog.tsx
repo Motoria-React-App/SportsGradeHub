@@ -40,7 +40,9 @@ export function CommandDialogDemo() {
                     "X-API-Key": apiKey
                 },
             })
+
             const data: Student[] = await res.json();
+            console.log(data);
 
             const resp = await fetch("https://frozen-sophey-sportsgradehub-91b977c5.koyeb.app/api/classes", {
                 method: "GET",
