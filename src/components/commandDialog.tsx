@@ -14,6 +14,7 @@ import {
 import { Student } from "@/types";
 import { SchoolClass } from "@/types/types";
 import { Spinner } from "./ui/spinner";
+import { useClient } from "@/provider/clientProvider";
 
 
 
@@ -25,38 +26,22 @@ export function CommandDialogDemo() {
     const [error, setError] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
 
+    const client = useClient();
     async function getStudents() {
 
         try {
             setIsLoading(true);
 
-            const apiKey = import.meta.env.VITE_API_KEY || "";  // ← QUI
+            let res = await client.getStudents();
+            let classes = await client.getClasses();
 
-            const res = await fetch("https://frozen-sophey-sportsgradehub-91b977c5.koyeb.app/api/students", {
-                method: "GET",
-                mode: "cors",
-                headers: {
-                    'Content-Type': 'application/json',
-                    "X-API-Key": apiKey
-                },
-            })
+            setStudents(res.data);
+            setClasses(classes.data);
 
-            const data: Student[] = await res.json();
-            console.log(data);
-
-            const resp = await fetch("https://frozen-sophey-sportsgradehub-91b977c5.koyeb.app/api/classes", {
-                method: "GET",
-                mode: "cors",
-                headers: {
-                    'Content-Type': 'application/json',
-                    "X-API-Key": apiKey
-                },
-            })
-            const classes: SchoolClass[] = await resp.json();
 
             setIsLoading(false);
 
-            return { data, classes }
+            return { res, classes }
 
         } catch (error) {
             setIsLoading(false);
@@ -72,9 +57,7 @@ export function CommandDialogDemo() {
                 setOpen((open) => !open)
 
                 // Fetch students when opening the dialog
-                const studentsData = await getStudents();
-                setStudents(studentsData!.data);
-                setClasses(studentsData!.classes);
+                await getStudents();
             }
         }
         document.addEventListener("keydown", down)
