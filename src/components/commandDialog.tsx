@@ -1,6 +1,5 @@
 import * as React from "react"
 import {
-
     User,
 } from "lucide-react"
 import {
@@ -15,11 +14,13 @@ import { Student } from "@/types";
 import { SchoolClass } from "@/types/types";
 import { Spinner } from "./ui/spinner";
 import { useClient } from "@/provider/clientProvider";
+import { useCommandDialog } from "@/provider/commandDialogProvider";
 
 
 
 export function CommandDialogDemo() {
-    const [open, setOpen] = React.useState(false)
+    // Use global state from context
+    const { open, setOpen } = useCommandDialog()
 
     const [students, setStudents] = React.useState<Student[] | null>(null)
     const [classes, setClasses] = React.useState<SchoolClass[] | null>(null)
@@ -27,8 +28,8 @@ export function CommandDialogDemo() {
     const [isLoading, setIsLoading] = React.useState(false);
 
     const client = useClient();
-    async function getStudents() {
 
+    const getStudents = React.useCallback(async () => {
         try {
             setIsLoading(true);
 
@@ -38,7 +39,6 @@ export function CommandDialogDemo() {
             setStudents(res.data);
             setClasses(classes.data);
 
-
             setIsLoading(false);
 
             return { res, classes }
@@ -47,22 +47,26 @@ export function CommandDialogDemo() {
             setIsLoading(false);
             setError(true);
         }
+    }, [client]);
 
-    }
-
+    // Fetch data when dialog opens
     React.useEffect(() => {
-        const down = async (e: KeyboardEvent) => {
+        if (open && !students && !isLoading) {
+            getStudents();
+        }
+    }, [open, students, isLoading, getStudents]);
+
+    // Keyboard shortcut
+    React.useEffect(() => {
+        const down = (e: KeyboardEvent) => {
             if (e.key === "j" && (e.metaKey || e.altKey)) {
                 e.preventDefault()
-                setOpen((open) => !open)
-
-                // Fetch students when opening the dialog
-                await getStudents();
+                setOpen((prev) => !prev)
             }
         }
         document.addEventListener("keydown", down)
         return () => document.removeEventListener("keydown", down)
-    }, [])
+    }, [setOpen])
 
     return (
         <>
