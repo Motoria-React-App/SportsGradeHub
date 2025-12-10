@@ -32,7 +32,7 @@ function App() {
         {/* Authenticated routes */}
         <Route path="/dashboard" element={<AuthenticatedLayout><Dashboard /></AuthenticatedLayout>} />
         <Route path="/exercises" element={<AuthenticatedLayout><Exercises /></AuthenticatedLayout>} />
-        <Route path="/valutazioni" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
+        <Route path="/valutazioni/:classId/:exerciseId" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
         <Route path="/classes/:id" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
         <Route path="/analytics" element={<AuthenticatedLayout><Analytics /></AuthenticatedLayout>} />

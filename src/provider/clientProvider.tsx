@@ -1,4 +1,4 @@
-import { Student, SchoolClass } from "@/types/types";
+import { Student, SchoolClass, Exercise } from "@/types/types";
 import React, { createContext, useContext, useMemo, ReactNode, useState, useEffect, useCallback } from "react";
 
 const USER_STORAGE_KEY = "sportsgrade_user";
@@ -73,6 +73,10 @@ class Client {
 
     public async getClassById(id: string) {
         return await this.sendRequest<SchoolClass>(`/api/classes/${id}`, "GET");
+    }
+
+    public async getExercise(id: string) {
+        return await this.sendRequest<Exercise>(`/api/exercises/${id}`, "GET");
     }
 
     public async createClass(data: any) {

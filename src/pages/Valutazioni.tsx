@@ -16,6 +16,7 @@ import { students, classes, exercises } from "@/data/mockData";
 import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Student, Exercise, CustomCriterion } from "@/types";
+import { useParams } from "react-router-dom";
 
 // Types for evaluation state
 interface StudentEvaluation {
@@ -141,6 +142,15 @@ export default function Valutazioni() {
     // Filters
     const [selectedClassId, setSelectedClassId] = useState<string>("all");
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
+
+    const { classId, exerciseId } = useParams();
+    console.log(classId, exerciseId);
+    useEffect(() => {
+        if (classId && exerciseId) {
+            setSelectedClassId(classId);
+            setSelectedExerciseId(exerciseId);
+        }
+    }, [classId, exerciseId]);
 
     // Evaluations state (in real app, this would come from backend)
     const [evaluations, setEvaluations] = useState<StudentEvaluation[]>([]);

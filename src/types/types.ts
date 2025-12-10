@@ -26,7 +26,7 @@ export interface SchoolClass {
     schoolYear: string;
     isArchived: boolean;
     students: Student[];          // ID Studenti
-    exerciseGroups: string[];    // ID Gruppi di esercizi
+    exerciseGroups: ExerciseGroup[];    // ID Gruppi di esercizi
     createdAt: string;
     updatedAt: string;
 }
@@ -34,7 +34,7 @@ export interface SchoolClass {
 export interface ExerciseGroup {
     id: string;
     groupName: string;
-    exercises: string[];
+    exercises: Exercise[];
     createdAt: string;
     updatedAt: string;
 }

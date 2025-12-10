@@ -1,9 +1,9 @@
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClient } from "@/provider/clientProvider";
-import { SchoolClass, Student } from "@/types/types";
+import { Exercise, ExerciseGroup, SchoolClass, Student } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,7 +17,6 @@ export default function Classes() {
     const { id } = useParams<{ id: string }>();
     const client = useClient();
     const [schoolClass, setSchoolClass] = useState<SchoolClass | null>(null);
-    const [students, setStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -25,14 +24,10 @@ export default function Classes() {
             if (!id) return;
             setLoading(true);
             try {
-                // Fetch class details and all students in parallel
-                const [classRes] = await Promise.all([
-                    client.getClassById(id),
-                ]);
+                const classRes = await client.getClassById(id);
 
                 if (classRes.success && classRes.data) {
                     setSchoolClass(classRes.data);
-                    setStudents(classRes.data.students);
                 }
 
 
@@ -45,6 +40,8 @@ export default function Classes() {
 
         fetchData();
     }, [id, client]);
+
+    console.log(schoolClass);
 
     if (loading) {
         return (
@@ -114,7 +111,7 @@ export default function Classes() {
                             </div>
                             <p className="text-muted-foreground flex items-center gap-2">
                                 <Users className="w-4 h-4" />
-                                {students.length} Studenti iscritti
+                                {schoolClass.students.length} Studenti iscritti
                             </p>
                         </div>
                         <div className="flex gap-2">
@@ -158,8 +155,8 @@ export default function Classes() {
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {students.length > 0 ? (
-                                                    students.map((student) => (
+                                                {schoolClass.students.length > 0 ? (
+                                                    schoolClass.students.map((student) => (
                                                         <TableRow key={student.id}>
                                                             <TableCell className="font-medium">{student.firstName}</TableCell>
                                                             <TableCell>{student.lastName}</TableCell>
@@ -197,42 +194,89 @@ export default function Classes() {
                             </TabsContent>
 
                             <TabsContent value="exercises">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Programma Esercizi</CardTitle>
-                                        <CardDescription>
-                                            Visualizza i gruppi di esercizi assegnati a questa classe.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        {schoolClass.exerciseGroups && schoolClass.exerciseGroups.length > 0 ? (
-                                            <div className="space-y-4">
-                                                <div className="p-4 rounded-md border bg-muted/30">
-                                                    <p className="text-sm font-medium">IDs Gruppi Esercizi:</p>
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        {schoolClass.exerciseGroups.map(groupId => (
-                                                            <span key={groupId} className="px-2 py-1 bg-background border rounded text-xs font-mono">
-                                                                {groupId}
-                                                            </span>
-                                                        ))}
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-lg font-medium">Piano di Lavoro</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                Esercizi e gruppi di valutazione assegnati a questa classe.
+                                            </p>
+                                        </div>
+                                        <Button className="gap-2">
+                                            <Plus className="w-4 h-4" />
+                                            Assegna Gruppo
+                                        </Button>
+                                    </div>
+
+                                    {schoolClass.exerciseGroups && schoolClass.exerciseGroups.length > 0 ? (
+                                        <div className="space-y-8">
+                                            {schoolClass.exerciseGroups.map((group: ExerciseGroup) => (
+                                                <div key={group.id} className="space-y-4">
+                                                    <div className="flex items-center gap-3 pb-4 border-b">
+                                                        <div className="p-2 bg-primary/10 rounded-md text-primary">
+                                                            <Activity className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-semibold text-lg">{group.groupName}</h4>
+                                                            <p className="text-xs text-muted-foreground">{group.exercises.length} esercizi inclusi</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                        {group.exercises.map((exercise) => {
+                                                            return (
+                                                                <Link to={"/valutazioni/" + schoolClass.className + "/" + exercise.id}>
+                                                                    <Card key={exercise.id} className="flex flex-col h-full hover:shadow-md transition-all duration-200 group/card">
+                                                                        <CardHeader className="pb-3">
+                                                                            <div className="flex justify-between items-start gap-2">
+                                                                                <CardTitle className="text-base font-bold leading-tight group-hover/card:text-primary transition-colors">
+                                                                                    {exercise.name}
+                                                                                </CardTitle>
+                                                                                {exercise.unit && (
+                                                                                    <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                                                                                        {exercise.unit}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </CardHeader>
+                                                                        <CardContent className="flex-1 pb-3 text-sm text-muted-foreground space-y-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Activity className="w-4 h-4 opacity-70" />
+                                                                                <span>Valutazione: {exercise.evaluationRanges ? 'A Fasce' : 'Standard'}</span>
+                                                                            </div>
+                                                                            {exercise.maxScore && (
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <Activity className="w-4 h-4 opacity-70" />
+                                                                                    <span>Max Score: {exercise.maxScore}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </CardContent>
+                                                                    </Card>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                        {group.exercises.length === 0 && (
+                                                            <div className="col-span-full py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                                                                <p>Nessun esercizio in questo gruppo.</p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground italic">
-                                                    TODO: Implementare fetch dettagliata esercizi
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-8 text-center">
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <Card>
+                                            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                                                 <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                                                <h3 className="text-lg font-medium">Nessun esercizio assegnato</h3>
+                                                <h3 className="text-lg font-medium">Nessun programma assegnato</h3>
                                                 <p className="text-muted-foreground max-w-sm mt-1 mb-4">
                                                     Non ci sono ancora gruppi di esercizi collegati a questa classe.
                                                 </p>
-                                                <Button variant="outline">Assegna Esercizi</Button>
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
+                                                <Button variant="outline">Crea Primo Gruppo</Button>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="analytics">
