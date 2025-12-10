@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
+
 import { NavUser } from "./nav-user"
 import { useClient } from "@/provider/clientProvider"
 import { SchoolClass } from "@/types/types"
@@ -23,13 +24,12 @@ import {
   Home,
   Search,
   FileText,
-  MoreHorizontal,
   Plus,
-  // ChevronRight,
   Activity,
   BarChart3,
   Users,
-  LogOut
+  LogOut,
+  Settings,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
@@ -223,14 +223,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
           <SidebarGroup className="py-2">
-            <SidebarGroupLabel className="h-8 px-2 text-xs font-medium text-muted-foreground flex items-center justify-between group/label">
-              <span>Gestione</span>
-              <div className="flex gap-1 opacity-0 group-hover/label:opacity-100 transition-opacity">
-                <button className="p-1 hover:bg-sidebar-accent rounded">
-                  <MoreHorizontal className="size-3.5 text-muted-foreground" />
-                </button>
-              </div>
-            </SidebarGroupLabel>
+            <SidebarGroupLabel>Gestione</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 <SidebarMenuItem>
@@ -241,6 +234,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <Link to="/students" className="flex items-center gap-2">
                       <Users className="size-4 text-muted-foreground" />
                       <span className="text-sm">Tutti gli Studenti</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="h-8 px-2 hover:bg-sidebar-accent/50 rounded-md"
+                  >
+                    <Link to="/settings" className="flex items-center gap-2">
+                      <Settings className="size-4 text-muted-foreground" />
+                      <span className="text-sm">Impostazioni</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
