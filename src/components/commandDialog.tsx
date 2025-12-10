@@ -10,8 +10,7 @@ import {
     CommandItem,
     CommandList,
 } from "./ui/command"
-import { Student } from "@/types";
-import { SchoolClass } from "@/types/types";
+import { Student, SchoolClass } from "@/types/types";
 import { Spinner } from "./ui/spinner";
 import { useClient } from "@/provider/clientProvider";
 import { useCommandDialog } from "@/provider/commandDialogProvider";

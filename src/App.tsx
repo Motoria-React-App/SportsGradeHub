@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
 import Classes from "@/pages/Classes";
 import Students from "@/pages/Students";
@@ -7,18 +7,10 @@ import Valutazioni from "@/pages/Valutazioni";
 import { CommandDialogDemo } from "@/components/commandDialog";
 import Exercises from "@/pages/Exercises";
 import LoginPage from "@/pages/LoginPage";
-import { useClient } from "./provider/clientProvider";
-import { UserModel } from "./provider/clientProvider";
+
 
 // Layout wrapper for authenticated pages (with sidebar and command dialog)
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const client = useClient();
-  const navigate = useNavigate();
-  const user: UserModel | null = client.UserModel;
-
-  if (!user) {
-    navigate("/login");
-  }
 
   return (
     <>
@@ -40,7 +32,7 @@ function App() {
         <Route path="/dashboard" element={<AuthenticatedLayout><Dashboard /></AuthenticatedLayout>} />
         <Route path="/exercises" element={<AuthenticatedLayout><Exercises /></AuthenticatedLayout>} />
         <Route path="/valutazioni" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
-        <Route path="/classes" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
+        <Route path="/classes/:id" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
         <Route path="/analytics" element={<AuthenticatedLayout><Analytics /></AuthenticatedLayout>} />
       </Routes>

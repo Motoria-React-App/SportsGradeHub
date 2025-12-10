@@ -1,5 +1,4 @@
-import { Student } from "@/types";
-import { SchoolClass } from "@/types/types";
+import { Student, SchoolClass } from "@/types/types";
 import React, { createContext, useContext, useMemo, ReactNode, useState, useEffect, useCallback } from "react";
 
 const USER_STORAGE_KEY = "sportsgrade_user";
@@ -49,8 +48,55 @@ class Client {
 
     constructor() {
         this.apiKey = import.meta.env.VITE_API_KEY || "";
-        // this.MainURl = import.meta.env.VITE_API_URL || "";
-        this.MainURl = "http://localhost:3000";
+        this.MainURl = import.meta.env.VITE_API_URL || "";
+        // this.MainURl = "http://localhost:3000";
+    }
+
+
+    // Check if user is authenticated
+    public isAuthenticated(): boolean {
+        return this._userModel !== null && !!this._userModel.accessToken;
+    }
+
+    // Logout - clear user data
+    public logout() {
+        this.UserModel = null;
+    }
+
+    public async getStudents() {
+        return await this.sendRequest<Student[]>("/api/students", "GET");
+    }
+
+    public async getClasses() {
+        return await this.sendRequest<SchoolClass[]>("/api/classes", "GET");
+    }
+
+    public async getClassById(id: string) {
+        return await this.sendRequest<SchoolClass>(`/api/classes/${id}`, "GET");
+    }
+
+    public async createClass(data: any) {
+        return await this.sendRequest("/api/classes", "POST", data);
+    }
+
+    public async register(email: string, password: string) {
+        const res = await this.sendRequest<UserModel>("/auth/register", "POST", { email, password });
+
+        if (res.success) {
+            this.UserModel = res.data;
+        }
+
+        return res;
+    }
+
+    public async login(email: string, password: string) {
+        const res = await this.sendRequest<UserModel>("/auth/login", "POST", { email, password });
+
+        if (res.success) {
+            this.UserModel = res.data;
+        }
+
+        return res;
     }
 
     // Getter for UserModel
@@ -95,50 +141,84 @@ class Client {
         return null;
     }
 
-    // Check if user is authenticated
-    public isAuthenticated(): boolean {
-        return this._userModel !== null && !!this._userModel.accessToken;
-    }
 
-    // Logout - clear user data
-    public logout() {
-        this.UserModel = null;
-    }
 
-    public async getStudents() {
-        return await this.sendRequest<Student[]>("/api/students", "GET");
-    }
-
-    public async getClasses() {
-        return await this.sendRequest<SchoolClass[]>("/api/classes", "GET");
-    }
-
-    public async createClass(data: any) {
-        return await this.sendRequest("/api/classes", "POST", data);
-    }
-
-    public async register(email: string, password: string) {
-        const res = await this.sendRequest<UserModel>("/auth/register", "POST", { email, password });
-
-        if (res.success) {
-            this.UserModel = res.data;
+    // Refresh the access token using the refresh token
+    public async refreshAccessToken(): Promise<boolean> {
+        if (!this._userModel?.refreshToken) {
+            console.error("No refresh token available");
+            return false;
         }
 
-        return res;
-    }
+        try {
+            const response = await this.sendRequest<{ accessToken: string; expiresIn?: number }>("/auth/refresh-token", "POST", { refreshToken: this._userModel.refreshToken });
 
-    public async login(email: string, password: string) {
-        const res = await this.sendRequest<UserModel>("/auth/login", "POST", { email, password });
+            if (response.success && response.data?.accessToken) {
+                // Aggiorna solo l'accessToken, mantieni il resto
+                this._userModel = {
+                    ...this._userModel,
+                    accessToken: response.data.accessToken,
+                    expiresIn: response.data.expiresIn || this._userModel.expiresIn,
+                };
+                // Persisti l'utente aggiornato
+                this.persistUser(this._userModel);
+                this.onUserChange?.(this._userModel);
+                console.log("Access token refreshed successfully");
+                return true;
+            }
 
-        if (res.success) {
-            this.UserModel = res.data;
+            return false;
+        } catch (error) {
+            console.error("Error refreshing token:", error);
+            return false;
         }
-
-        return res;
     }
 
-    // Public method to send requests with proper error handling
-    private async sendRequest<T>(endpoint: string, method: "GET" | "POST", body?: unknown): Promise<ApiResponse<T>> {
+
+
+    // Get the expiration date of the refresh token
+    public getRefreshTokenExpiration(): Date | null {
+        if (!this._userModel?.refreshToken) return null;
+
+        try {
+            const payload = this.decodeJwt(this._userModel.refreshToken);
+            if (payload?.exp) {
+                return new Date(payload.exp * 1000); // JWT exp is in seconds
+            }
+        } catch (e) {
+            console.error("Failed to decode refresh token", e);
+        }
+        return null;
+    }
+
+    // Check if refresh token is about to expire (e.g. within X hours)
+    public isRefreshTokenNearExpiry(hoursBuffer: number = 24): boolean {
+        const expiration = this.getRefreshTokenExpiration();
+        if (!expiration) return false;
+
+        const bufferMs = hoursBuffer * 60 * 60 * 1000;
+        return Date.now() >= (expiration.getTime() - bufferMs);
+    }
+
+    // Helper to decode JWT payload safely
+    private decodeJwt(token: string): any {
+        try {
+            const base64Url = token.split('.')[1];
+            if (!base64Url) return null;
+
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = window.atob(base64);
+
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    }
+
+
+
+    // Public method to send requests with proper error handling and auto-refresh
+    private async sendRequest<T>(endpoint: string, method: "GET" | "POST", body?: unknown, isRetry: boolean = false): Promise<ApiResponse<T>> {
         try {
             if (!endpoint) {
                 throw new ApiError("Endpoint is not valid", 400, "Bad Request");
@@ -150,15 +230,33 @@ class Client {
 
             const url = `${this.MainURl}${endpoint}`;
 
+            let result: ApiResponse<T>;
+
             if (method === "GET") {
-                return await this.get<T>(url);
+                result = await this.get<T>(url);
+            } else if (method === "POST") {
+                result = await this.post<T>(url, body);
+            } else {
+                throw new ApiError("Method not supported", 405, "Method Not Allowed");
             }
 
-            if (method === "POST") {
-                return await this.post<T>(url, body);
+            // Se riceviamo 401 e non è già un retry, prova a refreshare il token
+            if (!result.success && result.error?.statusCode === 401 && !isRetry) {
+                console.log("Access token expired, attempting refresh...");
+                const refreshed = await this.refreshAccessToken();
+
+                if (refreshed) {
+                    // Riprova la richiesta originale
+                    console.log("Token refreshed, retrying original request...");
+                    return await this.sendRequest<T>(endpoint, method, body, true);
+                } else {
+                    // Refresh fallito, l'utente deve riloggarsi
+                    console.error("Token refresh failed, user needs to login again");
+                    this.logout();
+                }
             }
 
-            throw new ApiError("Method not supported", 405, "Method Not Allowed");
+            return result;
 
         } catch (error) {
             return this.handleError<T>(error);

@@ -25,7 +25,7 @@ export interface SchoolClass {
     className: string;
     schoolYear: string;
     isArchived: boolean;
-    students: string[];          // ID Studenti
+    students: Student[];          // ID Studenti
     exerciseGroups: string[];    // ID Gruppi di esercizi
     createdAt: string;
     updatedAt: string;

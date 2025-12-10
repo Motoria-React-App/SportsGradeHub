@@ -338,7 +338,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                                             className="font-mono text-sm"
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Formato: <code className="bg-muted px-1 rounded">Nome; Cognome; M/F [opzionale]</code> (una riga per studente)
+                                            Formato: <code className="bg-muted px-1 rounded py-[0.5px]">Nome; Cognome; M/F [opzionale]</code> (una riga per studente)
                                         </p>
                                     </div>
                                 </TabsContent>

@@ -28,12 +28,16 @@ import {
   // ChevronRight,
   Activity,
   BarChart3,
-  Users
+  Users,
+  LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
 import { Link } from "react-router-dom"
 import { AddClassDialog } from "./add-class-dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
+import { Button } from "./ui/button"
+import { Kbd, KbdGroup } from "./ui/kbd"
 
 // Types
 type NavItemType = {
@@ -132,12 +136,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {item.onClick ? (
                     <SidebarMenuButton
                       onClick={item.onClick}
-                      className="h-8 px-2 hover:bg-sidebar-accent/50 rounded-md flex items-center gap-2"
+                      className="h-8 px-2 hover:bg-sidebar-accent/50 rounded-md flex items-center justify-between gap-2"
                     >
-                      {item.icon && (
-                        <item.icon className="size-4 text-muted-foreground" />
-                      )}
-                      <span className="text-sm">{item.title}</span>
+                      <div className="flex items-center gap-2">
+                        {item.icon && (
+                          <item.icon className="size-4 text-muted-foreground" />
+                        )}
+                        <span className="text-sm">{item.title}</span>
+                      </div>
+                      <KbdGroup>
+                        <Kbd>⌥</Kbd>
+                        <span>+</span>
+                        <Kbd>J</Kbd>
+                      </KbdGroup>
                     </SidebarMenuButton>
                   ) : (
                     <SidebarMenuButton
@@ -236,9 +247,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
         </SidebarContent>
 
+        {client.isRefreshTokenNearExpiry(52) && (
+          <Card className="gap-4 py-4 m-2 shadow-none">
+            <CardHeader className="px-4">
+              <CardTitle className="text-sm">Scadenza Sessione</CardTitle>
+              <CardDescription>
+                La tua sessione scade il {client.getRefreshTokenExpiration()?.toLocaleDateString() || "Non disponibile"} <br />
+                Per una maggiore sicurezza, dovrai rieffettuare il Login
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4">
+              <Button
+                onClick={() => client.logout()}
+                className="w-full cursor-pointer"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </Button>
+
+            </CardContent>
+          </Card>
+        )
+        }
+
         <SidebarFooter className="border-t border-sidebar-border">
+
           <NavUser user={data.user} />
         </SidebarFooter>
 
