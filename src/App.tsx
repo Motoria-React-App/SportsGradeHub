@@ -11,19 +11,35 @@ import Settings from "@/pages/Settings";
 
 
 // Layout wrapper for authenticated pages (with sidebar and command dialog)
-function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+// Layout wrapper for authenticated pages (with sidebar and command dialog)
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
+import ScrollToTop from "@/components/ScrollToTop";
+
+function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <CommandDialogDemo />
-      {children}
-    </>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "calc(var(--spacing) * 72)",
+          "--header-height": "calc(var(--spacing) * 12)",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset>
+        <CommandDialogDemo />
+        {children}
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Login page - standalone without sidebar */}
         <Route path="/" element={<LoginPage />} />
@@ -32,6 +48,7 @@ function App() {
         {/* Authenticated routes */}
         <Route path="/dashboard" element={<AuthenticatedLayout><Dashboard /></AuthenticatedLayout>} />
         <Route path="/exercises" element={<AuthenticatedLayout><Exercises /></AuthenticatedLayout>} />
+        <Route path="/valutazioni" element={<Navigate to="/valutazioni/all/all" replace />} />
         <Route path="/valutazioni/:classId/:exerciseId" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
         <Route path="/classes/:id" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
