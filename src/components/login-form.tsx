@@ -29,6 +29,8 @@ export function LoginForm({
     const [isLoading, setIsLoading] = useState(false)
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [firstName, setFirstName] = useState("")
+    const [lastName, setLastName] = useState("")
 
     const [isLogin, setIsLogin] = useState(true)
 
@@ -45,7 +47,7 @@ export function LoginForm({
             if (isLogin) {
                 response = await client.login(email, password)
             } else {
-                response = await client.register(email, password)
+                response = await client.register(email, password, firstName, lastName)
             }
 
             if (response.error) {
@@ -110,6 +112,34 @@ export function LoginForm({
                             <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
                                 Or continue with
                             </FieldSeparator>
+                            {!isLogin && (
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Field>
+                                        <FieldLabel htmlFor="firstName">Nome</FieldLabel>
+                                        <Input
+                                            id="firstName"
+                                            type="text"
+                                            placeholder="nome"
+                                            value={firstName}
+                                            onChange={(e) => setFirstName(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                    </Field>
+                                    <Field>
+                                        <FieldLabel htmlFor="lastName">Cognome</FieldLabel>
+                                        <Input
+                                            id="lastName"
+                                            type="text"
+                                            placeholder="cognome"
+                                            value={lastName}
+                                            onChange={(e) => setLastName(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                        />
+                                    </Field>
+                                </div>
+                            )}
                             <Field>
                                 <FieldLabel htmlFor="email">Email</FieldLabel>
                                 <Input

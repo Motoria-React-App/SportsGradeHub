@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 
 import { NavUser } from "./nav-user"
-import { useClient } from "@/provider/clientProvider"
+import { useClient, useSchoolData } from "@/provider/clientProvider"
 import { SchoolClass } from "@/types/types"
 import {
   Home,
@@ -50,27 +50,11 @@ type NavItemType = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const client = useClient();
+  const { classes, refreshClasses } = useSchoolData();
   const { openCommandDialog } = useCommandDialog();
-  const [classes, setClasses] = React.useState<SchoolClass[]>([]);
   const [addClassDialogOpen, setAddClassDialogOpen] = React.useState(false);
 
-  const fetchClasses = React.useCallback(async () => {
-    const response = await client.getClasses();
-    if (response.success && response.data) {
-      setClasses(response.data);
-    }
-  }, [client]);
-
-  React.useEffect(() => {
-    fetchClasses();
-  }, [fetchClasses]);
-
   const data = {
-    user: {
-      name: "Professor",
-      email: "prof@school.com",
-      avatar: "/avatars/user.jpg",
-    },
     quickNav: [
       {
         title: "Search",
@@ -100,6 +84,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: FileText,
     })) as NavItemType[],
   }
+
+
 
   return (
     <>
@@ -237,17 +223,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="h-8 px-2 hover:bg-sidebar-accent/50 rounded-md"
-                  >
-                    <Link to="/settings" className="flex items-center gap-2">
-                      <Settings className="size-4 text-muted-foreground" />
-                      <span className="text-sm">Impostazioni</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -278,8 +254,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         <SidebarFooter className="border-t border-sidebar-border">
-
-          <NavUser user={data.user} />
+          <NavUser user={client.UserModel!.user} /> {/* TODO: fix */}
         </SidebarFooter>
 
         <SidebarRail />
@@ -290,7 +265,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <AddClassDialog
         open={addClassDialogOpen}
         onOpenChange={setAddClassDialogOpen}
-        onClassAdded={fetchClasses}
+        onClassAdded={refreshClasses}
       />
     </>
   )

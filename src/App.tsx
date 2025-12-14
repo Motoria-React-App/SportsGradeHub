@@ -22,6 +22,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+
   return (
     <Router>
       <Routes>

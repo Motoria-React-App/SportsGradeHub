@@ -14,6 +14,7 @@ import { Student, SchoolClass } from "@/types/types";
 import { Spinner } from "./ui/spinner";
 import { useClient } from "@/provider/clientProvider";
 import { useCommandDialog } from "@/provider/commandDialogProvider";
+import { Link } from "react-router-dom";
 
 
 
@@ -78,10 +79,12 @@ export function CommandDialogDemo() {
                         <>
                             <CommandGroup heading="Classes">
                                 {classes.map((cls) => (
-                                    <CommandItem key={cls.id}>
-                                        <User />
-                                        <span>{cls.className}</span>
-                                    </CommandItem>
+                                    <Link onClick={() => setOpen(false)} to={`/classes/${cls.id}`}>
+                                        <CommandItem key={cls.id}>
+                                            <User />
+                                            <span>{cls.className}</span>
+                                        </CommandItem>
+                                    </Link>
                                 ))}
                             </CommandGroup>
                             <CommandGroup heading="Students">

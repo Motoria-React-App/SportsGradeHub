@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClient } from "@/provider/clientProvider";
-import { Exercise, ExerciseGroup, SchoolClass, Student } from "@/types/types";
+import { ExerciseGroup, SchoolClass} from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

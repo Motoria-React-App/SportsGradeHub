@@ -11,6 +11,9 @@ export interface UserModel {
     user: {
         uid: string;
         email: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string;
     }
 }
 
@@ -83,8 +86,8 @@ class Client {
         return await this.sendRequest("/api/classes", "POST", data);
     }
 
-    public async register(email: string, password: string) {
-        const res = await this.sendRequest<UserModel>("/auth/register", "POST", { email, password });
+    public async register(email: string, password: string, firstName: string, lastName: string) {
+        const res = await this.sendRequest<UserModel>("/auth/register", "POST", { email, password, firstName, lastName });
 
         if (res.success) {
             this.UserModel = res.data;
@@ -402,6 +405,8 @@ interface ClientContextProps {
     user: UserModel | null;
     isAuthenticated: boolean;
     logout: () => void;
+    classes: SchoolClass[];
+    refreshClasses: () => Promise<void>;
 }
 
 export const ClientContext = createContext<ClientContextProps | undefined>(
@@ -414,6 +419,7 @@ interface ClientProviderProps {
 
 export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const [user, setUser] = useState<UserModel | null>(null);
+    const [classes, setClasses] = useState<SchoolClass[]>([]);
 
     const client = useMemo(() => {
         const c = new Client();
@@ -436,7 +442,27 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const logout = useCallback(() => {
         client.logout();
         setUser(null);
+        setClasses([]);
     }, [client]);
+
+    const refreshClasses = useCallback(async () => {
+        if (!user) return;
+        try {
+            const response = await client.getClasses();
+            if (response.success && response.data) {
+                setClasses(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch classes", error);
+        }
+    }, [client, user]);
+
+    // Fetch classes when user is authenticated
+    useEffect(() => {
+        if (user) {
+            refreshClasses();
+        }
+    }, [user, refreshClasses]);
 
     const isAuthenticated = user !== null && !!user.accessToken;
 
@@ -445,7 +471,9 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         user,
         isAuthenticated,
         logout,
-    }), [client, user, isAuthenticated, logout]);
+        classes,
+        refreshClasses
+    }), [client, user, isAuthenticated, logout, classes, refreshClasses]);
 
     return (
         <ClientContext.Provider value={value}>
@@ -472,5 +500,16 @@ export const useAuth = () => {
         user: context.user,
         isAuthenticated: context.isAuthenticated,
         logout: context.logout,
+    };
+};
+
+export const useSchoolData = () => {
+    const context = useContext(ClientContext);
+    if (context === undefined) {
+        throw new Error("useSchoolData must be used within a ClientProvider");
+    }
+    return {
+        classes: context.classes,
+        refreshClasses: context.refreshClasses,
     };
 };

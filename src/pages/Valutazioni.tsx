@@ -146,7 +146,7 @@ export default function Valutazioni() {
     const { classId, exerciseId } = useParams();
     console.log(classId, exerciseId);
     useEffect(() => {
-        if (classId && exerciseId) {
+        if (classId && exerciseId) { 
             setSelectedClassId(classId);
             setSelectedExerciseId(exerciseId);
         }
@@ -166,7 +166,7 @@ export default function Valutazioni() {
     const [assignMode, setAssignMode] = useState<"class" | "students">("class");
 
     // Get current exercise
-    const currentExercise = exercises.find((e) => e.id === selectedExerciseId);
+    // const currentExercise = exercises.find((e) => e.id === selectedExerciseId);
 
     // Filter evaluations based on selected filters
     const filteredEvaluations = useMemo(() => {
@@ -341,7 +341,7 @@ export default function Valutazioni() {
                                     >
                                         <CardContent className="p-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                                                     <User className="h-5 w-5 text-primary" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -408,7 +408,7 @@ export default function Valutazioni() {
                         </Button>
                     </div>
                     <div className="flex items-center gap-3 mt-2">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
                             <User className="h-6 w-6 text-primary" />
                         </div>
                         <div>
