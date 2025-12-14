@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -528,53 +527,137 @@ export default function Valutazioni() {
     const completedEvaluations = groupedEvaluations["valutato"].length;
 
     return (
-        <SidebarProvider
-            style={
-                {
-                    "--sidebar-width": "calc(var(--spacing) * 72)",
-                    "--header-height": "calc(var(--spacing) * 12)",
-                } as React.CSSProperties
-            }
-        >
-            <AppSidebar variant="inset" />
-            <SidebarInset>
-                <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
-                    {/* Header */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Valutazioni</h1>
-                            <p className="text-muted-foreground">
-                                Gestisci le valutazioni degli studenti
-                            </p>
+        <>
+
+            <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Valutazioni</h1>
+                        <p className="text-muted-foreground">
+                            Gestisci le valutazioni degli studenti
+                        </p>
+                    </div>
+                    <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        Assegna Esercizio
+                    </Button>
+                </div>
+
+                {/* Filters and stats */}
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Filtra per classe" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tutte le classi</SelectItem>
+                                {classes.map((cls) => (
+                                    <SelectItem key={cls.id} value={cls.id}>
+                                        Classe {cls.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedExerciseId} onValueChange={setSelectedExerciseId}>
+                            <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Filtra per esercizio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tutti gli esercizi</SelectItem>
+                                {exercises.map((ex) => (
+                                    <SelectItem key={ex.id} value={ex.id}>
+                                        {ex.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {totalEvaluations > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                            <Badge variant="outline" className="text-base px-3 py-1">
+                                {completedEvaluations}/{totalEvaluations} valutati
+                            </Badge>
+                            <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-green-500 transition-all"
+                                    style={{
+                                        width: `${(completedEvaluations / totalEvaluations) * 100}%`,
+                                    }}
+                                />
+                            </div>
                         </div>
-                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)}>
-                            <Plus className="h-4 w-4" />
+                    )}
+                </div>
+
+                {/* Kanban columns and grading panel */}
+                <div className="flex gap-6">
+                    {/* Columns */}
+                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
+                        <Column
+                            title="Non Valutato"
+                            status="non-valutato"
+                            icon={AlertCircle}
+                            colorClass="text-slate-600 dark:text-slate-400"
+                            bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
+                        />
+                        <Column
+                            title="Valutando"
+                            status="valutando"
+                            icon={Clock}
+                            colorClass="text-yellow-600 dark:text-yellow-400"
+                            bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                        />
+                        <Column
+                            title="Valutato"
+                            status="valutato"
+                            icon={Check}
+                            colorClass="text-green-600 dark:text-green-400"
+                            bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                        />
+                    </div>
+
+                    {/* Grading panel */}
+                    {selectedStudentForGrading && selectedExerciseId !== "all" && (
+                        <GradingPanel />
+                    )}
+                </div>
+
+                {/* Empty state */}
+                {evaluations.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                            <Plus className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">Nessuna valutazione</h3>
+                        <p className="text-muted-foreground mb-4">
+                            Inizia assegnando un esercizio a una classe o a degli studenti
+                        </p>
+                        <Button onClick={() => setIsAssignModalOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
                             Assegna Esercizio
                         </Button>
                     </div>
+                )}
+            </div>
 
-                    {/* Filters and stats */}
-                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Filtra per classe" />
+            {/* Assign Exercise Modal */}
+            <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Assegna Esercizio</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        {/* Exercise selection */}
+                        <div className="space-y-2">
+                            <Label>Esercizio</Label>
+                            <Select value={assignExerciseId} onValueChange={setAssignExerciseId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Seleziona esercizio" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Tutte le classi</SelectItem>
-                                    {classes.map((cls) => (
-                                        <SelectItem key={cls.id} value={cls.id}>
-                                            Classe {cls.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <Select value={selectedExerciseId} onValueChange={setSelectedExerciseId}>
-                                <SelectTrigger className="w-[200px]">
-                                    <SelectValue placeholder="Filtra per esercizio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Tutti gli esercizi</SelectItem>
                                     {exercises.map((ex) => (
                                         <SelectItem key={ex.id} value={ex.id}>
                                             {ex.name}
@@ -584,197 +667,105 @@ export default function Valutazioni() {
                             </Select>
                         </div>
 
-                        {totalEvaluations > 0 && (
-                            <div className="flex items-center gap-2 text-sm">
-                                <Badge variant="outline" className="text-base px-3 py-1">
-                                    {completedEvaluations}/{totalEvaluations} valutati
-                                </Badge>
-                                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-green-500 transition-all"
-                                        style={{
-                                            width: `${(completedEvaluations / totalEvaluations) * 100}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Kanban columns and grading panel */}
-                    <div className="flex gap-6">
-                        {/* Columns */}
-                        <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
-                            <Column
-                                title="Non Valutato"
-                                status="non-valutato"
-                                icon={AlertCircle}
-                                colorClass="text-slate-600 dark:text-slate-400"
-                                bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
-                            />
-                            <Column
-                                title="Valutando"
-                                status="valutando"
-                                icon={Clock}
-                                colorClass="text-yellow-600 dark:text-yellow-400"
-                                bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-                            />
-                            <Column
-                                title="Valutato"
-                                status="valutato"
-                                icon={Check}
-                                colorClass="text-green-600 dark:text-green-400"
-                                bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                            />
-                        </div>
-
-                        {/* Grading panel */}
-                        {selectedStudentForGrading && selectedExerciseId !== "all" && (
-                            <GradingPanel />
-                        )}
-                    </div>
-
-                    {/* Empty state */}
-                    {evaluations.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-16 text-center">
-                            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                <Plus className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <h3 className="text-lg font-semibold mb-2">Nessuna valutazione</h3>
-                            <p className="text-muted-foreground mb-4">
-                                Inizia assegnando un esercizio a una classe o a degli studenti
-                            </p>
-                            <Button onClick={() => setIsAssignModalOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Assegna Esercizio
+                        {/* Assignment mode toggle */}
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant={assignMode === "class" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setAssignMode("class")}
+                            >
+                                Intera Classe
+                            </Button>
+                            <Button
+                                type="button"
+                                variant={assignMode === "students" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setAssignMode("students")}
+                            >
+                                Singoli Studenti
                             </Button>
                         </div>
-                    )}
-                </div>
 
-                {/* Assign Exercise Modal */}
-                <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
-                    <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle>Assegna Esercizio</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                            {/* Exercise selection */}
+                        {/* Class selection */}
+                        {assignMode === "class" && (
                             <div className="space-y-2">
-                                <Label>Esercizio</Label>
-                                <Select value={assignExerciseId} onValueChange={setAssignExerciseId}>
+                                <Label>Classe</Label>
+                                <Select value={assignClassId} onValueChange={setAssignClassId}>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Seleziona esercizio" />
+                                        <SelectValue placeholder="Seleziona classe" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {exercises.map((ex) => (
-                                            <SelectItem key={ex.id} value={ex.id}>
-                                                {ex.name}
+                                        {classes.map((cls) => (
+                                            <SelectItem key={cls.id} value={cls.id}>
+                                                {cls.name} ({cls.studentCount} studenti)
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
+                        )}
 
-                            {/* Assignment mode toggle */}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    variant={assignMode === "class" ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setAssignMode("class")}
-                                >
-                                    Intera Classe
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant={assignMode === "students" ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setAssignMode("students")}
-                                >
-                                    Singoli Studenti
-                                </Button>
+                        {/* Student multi-select */}
+                        {assignMode === "students" && (
+                            <div className="space-y-2">
+                                <Label>Studenti</Label>
+                                <ScrollArea className="h-[200px] border rounded-md p-3">
+                                    <div className="space-y-2">
+                                        {students.map((student) => (
+                                            <div key={student.id} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    id={student.id}
+                                                    checked={assignStudentIds.includes(student.id)}
+                                                    onCheckedChange={(checked) => {
+                                                        if (checked) {
+                                                            setAssignStudentIds([...assignStudentIds, student.id]);
+                                                        } else {
+                                                            setAssignStudentIds(
+                                                                assignStudentIds.filter((id) => id !== student.id)
+                                                            );
+                                                        }
+                                                    }}
+                                                />
+                                                <label
+                                                    htmlFor={student.id}
+                                                    className="text-sm flex-1 cursor-pointer"
+                                                >
+                                                    {student.fullName}
+                                                    <span className="text-muted-foreground ml-2">
+                                                        ({student.className})
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                                {assignStudentIds.length > 0 && (
+                                    <p className="text-sm text-muted-foreground">
+                                        {assignStudentIds.length} studenti selezionati
+                                    </p>
+                                )}
                             </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
+                            Annulla
+                        </Button>
+                        <Button
+                            onClick={handleAssignExercise}
+                            disabled={
+                                !assignExerciseId ||
+                                (assignMode === "class" && !assignClassId) ||
+                                (assignMode === "students" && assignStudentIds.length === 0)
+                            }
+                        >
+                            Assegna
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                            {/* Class selection */}
-                            {assignMode === "class" && (
-                                <div className="space-y-2">
-                                    <Label>Classe</Label>
-                                    <Select value={assignClassId} onValueChange={setAssignClassId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleziona classe" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {classes.map((cls) => (
-                                                <SelectItem key={cls.id} value={cls.id}>
-                                                    {cls.name} ({cls.studentCount} studenti)
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-
-                            {/* Student multi-select */}
-                            {assignMode === "students" && (
-                                <div className="space-y-2">
-                                    <Label>Studenti</Label>
-                                    <ScrollArea className="h-[200px] border rounded-md p-3">
-                                        <div className="space-y-2">
-                                            {students.map((student) => (
-                                                <div key={student.id} className="flex items-center gap-2">
-                                                    <Checkbox
-                                                        id={student.id}
-                                                        checked={assignStudentIds.includes(student.id)}
-                                                        onCheckedChange={(checked) => {
-                                                            if (checked) {
-                                                                setAssignStudentIds([...assignStudentIds, student.id]);
-                                                            } else {
-                                                                setAssignStudentIds(
-                                                                    assignStudentIds.filter((id) => id !== student.id)
-                                                                );
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label
-                                                        htmlFor={student.id}
-                                                        className="text-sm flex-1 cursor-pointer"
-                                                    >
-                                                        {student.fullName}
-                                                        <span className="text-muted-foreground ml-2">
-                                                            ({student.className})
-                                                        </span>
-                                                    </label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </ScrollArea>
-                                    {assignStudentIds.length > 0 && (
-                                        <p className="text-sm text-muted-foreground">
-                                            {assignStudentIds.length} studenti selezionati
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
-                                Annulla
-                            </Button>
-                            <Button
-                                onClick={handleAssignExercise}
-                                disabled={
-                                    !assignExerciseId ||
-                                    (assignMode === "class" && !assignClassId) ||
-                                    (assignMode === "students" && assignStudentIds.length === 0)
-                                }
-                            >
-                                Assegna
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </SidebarInset>
-        </SidebarProvider>
+        </>
     );
 }

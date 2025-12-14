@@ -30,6 +30,7 @@ import {
   Users,
   LogOut,
   Settings,
+  ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
@@ -76,6 +77,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Analytics",
         url: "/analytics",
         icon: BarChart3,
+      },
+      {
+        title: "Valutazioni",
+        url: "/valutazioni/all/all",
+        icon: ClipboardCheck,
       },
     ],
     classes: classes.map((item: SchoolClass) => ({
