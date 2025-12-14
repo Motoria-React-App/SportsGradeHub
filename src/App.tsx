@@ -30,7 +30,8 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <CommandDialogDemo />
-        {children}
+        {children} 
+        {/* sagal succhia tanti piselli indiani e poi si lecca le dita  */}
       </SidebarInset>
     </SidebarProvider>
   );
