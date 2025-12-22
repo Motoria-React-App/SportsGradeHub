@@ -207,6 +207,56 @@ class Client {
         return Date.now() >= (expiration.getTime() - bufferMs);
     }
 
+    // Check if access token is expired or about to expire (within 5 minutes buffer)
+    public isAccessTokenExpired(): boolean {
+        if (!this._userModel?.accessToken) return true;
+
+        try {
+            const payload = this.decodeJwt(this._userModel.accessToken);
+            if (!payload?.exp) return true;
+
+            // Add 5 minute buffer before expiration
+            const expirationMs = payload.exp * 1000;
+            const bufferMs = 5 * 60 * 1000;
+            return Date.now() >= (expirationMs - bufferMs);
+        } catch (e) {
+            return true;
+        }
+    }
+
+    // Check if refresh token is completely expired
+    public isRefreshTokenExpired(): boolean {
+        const expiration = this.getRefreshTokenExpiration();
+        if (!expiration) return true;
+        return Date.now() >= expiration.getTime();
+    }
+
+    // Validate session and refresh if needed - call this on app startup
+    public async validateAndRefreshSession(): Promise<boolean> {
+        // No user data at all
+        if (!this._userModel) {
+            return false;
+        }
+
+        // Refresh token is completely expired - need to re-login
+        if (this.isRefreshTokenExpired()) {
+            console.log("Refresh token expired, need to re-login");
+            this.logout();
+            return false;
+        }
+
+        // Access token is expired but refresh token is valid - refresh
+        if (this.isAccessTokenExpired()) {
+            console.log("Access token expired, attempting refresh...");
+            const refreshed = await this.refreshAccessToken();
+            return refreshed;
+        }
+
+        // Everything is still valid
+        console.log("Session is valid");
+        return true;
+    }
+
     // Helper to decode JWT payload safely
     private decodeJwt(token: string): any {
         try {
@@ -404,6 +454,7 @@ interface ClientContextProps {
     client: Client;
     user: UserModel | null;
     isAuthenticated: boolean;
+    isLoading: boolean;
     logout: () => void;
     classes: SchoolClass[];
     refreshClasses: () => Promise<void>;
@@ -420,23 +471,43 @@ interface ClientProviderProps {
 export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const [user, setUser] = useState<UserModel | null>(null);
     const [classes, setClasses] = useState<SchoolClass[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const client = useMemo(() => {
         const c = new Client();
         return c;
     }, []);
 
-    // Initialize user state from client on mount
+    // Initialize user state from client on mount and validate session
     useEffect(() => {
-        const persistedUser = client.loadPersistedUser();
-        if (persistedUser) {
-            setUser(persistedUser);
-        }
+        const initializeSession = async () => {
+            setIsLoading(true);
+            
+            // First load persisted user data
+            const persistedUser = client.loadPersistedUser();
+            
+            if (persistedUser) {
+                // Validate and refresh session if needed
+                const isValid = await client.validateAndRefreshSession();
+                
+                if (isValid) {
+                    // Session is valid or was refreshed successfully
+                    setUser(client.UserModel);
+                } else {
+                    // Session is invalid, user needs to re-login
+                    setUser(null);
+                }
+            }
+            
+            setIsLoading(false);
+        };
 
         // Set up callback for user changes
         client.setOnUserChange((newUser) => {
             setUser(newUser);
         });
+
+        initializeSession();
     }, [client]);
 
     const logout = useCallback(() => {
@@ -470,10 +541,11 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         client,
         user,
         isAuthenticated,
+        isLoading,
         logout,
         classes,
         refreshClasses
-    }), [client, user, isAuthenticated, logout, classes, refreshClasses]);
+    }), [client, user, isAuthenticated, isLoading, logout, classes, refreshClasses]);
 
     return (
         <ClientContext.Provider value={value}>
@@ -499,6 +571,7 @@ export const useAuth = () => {
     return {
         user: context.user,
         isAuthenticated: context.isAuthenticated,
+        isLoading: context.isLoading,
         logout: context.logout,
     };
 };

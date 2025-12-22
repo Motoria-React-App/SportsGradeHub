@@ -145,26 +145,24 @@ function ClassCard({ classData, onClick }: { classData: Class; onClick: () => vo
                 "group"
             )}
         >
-            <CardContent className="p-5">
-                <div className="flex items-center gap-4">
+            <CardContent className="p-4">
+                <div className="flex items-center gap-3">
                     <div className={cn(
-                        "flex items-center justify-center w-12 h-12 rounded-xl",
+                        "flex items-center justify-center w-12 h-12 rounded-xl shrink-0",
                         "bg-primary/10 text-primary font-bold text-lg",
                         "group-hover:bg-primary group-hover:text-primary-foreground",
                         "transition-colors duration-300"
                     )}>
-                        {classData.name.substring(0, 2)}
+                        {classData.name}
                     </div>
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{classData.name}</h3>
-                        <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {classData.studentCount} studenti
-                        </p>
-                    </div>
-                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    <span className="text-sm text-muted-foreground">
+                        {classData.studentCount} studenti
+                    </span>
+                    <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>
             </CardContent>
         </Card>
     );
 }
+
+
