@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { ClassSelector } from "@/components/dashboard/ClassSelector";
@@ -9,9 +9,18 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { classes, students, grades } from "@/data/mockData";
 import { Class } from "@/types/index";
 
+const LAST_CLASS_KEY = "sportsgrade_last_class";
+
 export default function Dashboard() {
-    // State for selected class - default to first class
-    const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || "");
+    // State for selected class - initialize from localStorage or default to first class
+    const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+        const lastClass = localStorage.getItem(LAST_CLASS_KEY);
+        // Verify the saved class exists
+        if (lastClass && classes.some(c => c.id === lastClass)) {
+            return lastClass;
+        }
+        return classes[0]?.id || "";
+    });
 
     // Derived state
     const selectedClass = classes.find(c => c.id === selectedClassId) as Class;
@@ -23,9 +32,10 @@ export default function Dashboard() {
     const classStudentIds = classStudents.map(s => s.id);
     const classGrades = grades.filter(g => classStudentIds.includes(g.studentId));
 
-    // Handler for class change
+    // Handler for class change - also saves to localStorage
     const handleClassChange = (classId: string) => {
         setSelectedClassId(classId);
+        localStorage.setItem(LAST_CLASS_KEY, classId);
     };
 
     return (

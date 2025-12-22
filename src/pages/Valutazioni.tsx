@@ -148,6 +148,11 @@ export default function Valutazioni() {
         if (classId && exerciseId) { 
             setSelectedClassId(classId);
             setSelectedExerciseId(exerciseId);
+            
+            // Save current class to localStorage for "last opened" feature
+            if (classId !== "all") {
+                localStorage.setItem("sportsgrade_last_class", classId);
+            }
         }
     }, [classId, exerciseId]);
 

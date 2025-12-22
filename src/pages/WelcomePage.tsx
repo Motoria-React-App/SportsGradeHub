@@ -8,6 +8,8 @@ import { GraduationCap, Users, ArrowRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Class } from "@/types";
 
+const LAST_CLASS_KEY = "sportsgrade_last_class";
+
 export default function WelcomePage() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
@@ -25,7 +27,13 @@ export default function WelcomePage() {
     const firstName = user?.user?.firstName || "Professore";
 
     const handleStartEvaluation = (classId: string) => {
+        // Save as last opened class
+        localStorage.setItem(LAST_CLASS_KEY, classId);
         navigate(`/valutazioni/${classId}/all`);
+    };
+
+    const handleGoToDashboard = () => {
+        navigate("/dashboard");
     };
 
     // If there's a scheduled class, show the focused welcome view
@@ -76,7 +84,7 @@ export default function WelcomePage() {
                     {/* Link to all classes */}
                     <div className="text-center mt-8">
                         <button 
-                            onClick={() => navigate("/dashboard")}
+                            onClick={handleGoToDashboard}
                             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                         >
                             Oppure vai al dashboard →
@@ -123,7 +131,7 @@ export default function WelcomePage() {
                 {/* Link to dashboard */}
                 <div className="text-center mt-8">
                     <button 
-                        onClick={() => navigate("/dashboard")}
+                        onClick={handleGoToDashboard}
                         className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                         Vai al dashboard →
