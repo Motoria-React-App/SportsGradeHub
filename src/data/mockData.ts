@@ -1,4 +1,6 @@
 import type { Student, Grade, Exercise, Class } from '../types';
+import type { ScheduleSlot } from '../types/scheduleTypes';
+import { isTimeInSlot } from '../types/scheduleTypes';
 
 // Italian first and last names for realistic mock data
 const maleNames = [
@@ -383,7 +385,48 @@ export const classes: Class[] = [
     { id: 'c6', name: '3B', year: '2024/25', studentCount: 18, averageGrade: 6.5, totalExercises: 10, studentIds: [] },
 ];
 
-// Helper to generate random date in the past
+// Teacher's weekly schedule (orario settimanale del Prof)
+export const schedule: ScheduleSlot[] = [
+    // Lunedì
+    { id: 'sch1', dayOfWeek: 'lunedi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
+    { id: 'sch2', dayOfWeek: 'lunedi', startTime: '09:00', endTime: '10:00', classId: 'c2' },
+    { id: 'sch3', dayOfWeek: 'lunedi', startTime: '11:00', endTime: '12:00', classId: 'c3' },
+    
+    // Martedì
+    { id: 'sch4', dayOfWeek: 'martedi', startTime: '08:00', endTime: '09:00', classId: 'c4' },
+    { id: 'sch5', dayOfWeek: 'martedi', startTime: '10:00', endTime: '11:00', classId: 'c5' },
+    { id: 'sch6', dayOfWeek: 'martedi', startTime: '11:00', endTime: '12:00', classId: 'c6' },
+    
+    // Mercoledì
+    { id: 'sch7', dayOfWeek: 'mercoledi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
+    { id: 'sch8', dayOfWeek: 'mercoledi', startTime: '09:00', endTime: '10:00', classId: 'c3' },
+    { id: 'sch9', dayOfWeek: 'mercoledi', startTime: '11:00', endTime: '12:00', classId: 'c5' },
+    
+    // Giovedì
+    { id: 'sch10', dayOfWeek: 'giovedi', startTime: '08:00', endTime: '09:00', classId: 'c2' },
+    { id: 'sch11', dayOfWeek: 'giovedi', startTime: '09:00', endTime: '10:00', classId: 'c4' },
+    { id: 'sch12', dayOfWeek: 'giovedi', startTime: '10:00', endTime: '11:00', classId: 'c6' },
+    
+    // Venerdì
+    { id: 'sch13', dayOfWeek: 'venerdi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
+    { id: 'sch14', dayOfWeek: 'venerdi', startTime: '09:00', endTime: '10:00', classId: 'c2' },
+    { id: 'sch15', dayOfWeek: 'venerdi', startTime: '11:00', endTime: '12:00', classId: 'c3' },
+    
+    // Sabato
+    { id: 'sch16', dayOfWeek: 'sabato', startTime: '08:00', endTime: '09:00', classId: 'c4' },
+    { id: 'sch17', dayOfWeek: 'sabato', startTime: '09:00', endTime: '10:00', classId: 'c5' },
+];
+
+// Get the currently scheduled class based on current time
+export function getCurrentScheduledClass(currentTime: Date = new Date()): Class | null {
+    const currentSlot = schedule.find(slot => isTimeInSlot(slot, currentTime));
+    
+    if (!currentSlot) {
+        return null;
+    }
+    
+    return classes.find(c => c.id === currentSlot.classId) || null;
+}
 function getRandomPastDate(daysAgo: number): string {
     const date = new Date();
     date.setDate(date.getDate() - Math.floor(Math.random() * daysAgo));

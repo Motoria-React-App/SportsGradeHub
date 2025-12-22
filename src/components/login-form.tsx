@@ -56,7 +56,7 @@ export function LoginForm({
 
 
             if (response.success) {
-                navigate("/dashboard")
+                navigate("/welcome")
             }
         } catch (error) {
             console.error("Login failed:", error)
@@ -67,7 +67,7 @@ export function LoginForm({
 
     const handleSocialLogin = (provider: 'apple' | 'google') => {
         console.log(`Login with ${provider}`)
-        navigate("/dashboard")
+        navigate("/welcome")
     }
 
     return (

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "@/provider/settingsProvider";
+import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,15 +38,39 @@ import {
     Download,
     RefreshCw,
     Trash2,
-    ArrowLeft
+    ArrowLeft,
+    Clock,
+    Plus,
+    Calendar,
 } from "lucide-react";
+import { classes } from "@/data/mockData";
+import type { DayOfWeek } from "@/types/scheduleTypes";
+import { useState } from "react";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
+    const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule } = useSchedule();
     const { theme, setTheme } = useTheme();
     const client = useClient();
     const user = client.UserModel;
     const navigate = useNavigate();
+
+    // State for adding new slot
+    const [newSlotDay, setNewSlotDay] = useState<DayOfWeek>('lunedi');
+    const [newSlotStart, setNewSlotStart] = useState('08:00');
+    const [newSlotEnd, setNewSlotEnd] = useState('09:00');
+    const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
+
+    const handleAddSlot = () => {
+        if (newSlotStart && newSlotEnd && newSlotClass) {
+            addSlot({
+                dayOfWeek: newSlotDay,
+                startTime: newSlotStart,
+                endTime: newSlotEnd,
+                classId: newSlotClass,
+            });
+        }
+    };
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10 max-w-6xl mx-auto w-full">
@@ -77,6 +102,13 @@ export default function Settings() {
                         >
                             <Palette className="h-4 w-4" />
                             Visualizzazione
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="schedule"
+                            className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
+                        >
+                            <Calendar className="h-4 w-4" />
+                            Orario
                         </TabsTrigger>
                         <TabsTrigger
                             value="export"
@@ -306,6 +338,146 @@ export default function Settings() {
                                         onCheckedChange={(checked) => updateSettings({ enableAnimations: checked })}
                                     />
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Schedule Settings */}
+                    <TabsContent value="schedule" className="space-y-6 mt-0">
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-semibold">Orario Settimanale</h2>
+                            <p className="text-sm text-muted-foreground">Gestisci l'orario delle lezioni per la pagina di benvenuto.</p>
+                        </div>
+                        <Separator />
+
+                        {/* Add new slot */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Aggiungi Lezione</CardTitle>
+                                <CardDescription>Inserisci un nuovo slot nell'orario settimanale.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Giorno</Label>
+                                        <Select value={newSlotDay} onValueChange={(val) => setNewSlotDay(val as DayOfWeek)}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DAYS_ORDER.map((day) => (
+                                                    <SelectItem key={day} value={day}>{DAY_LABELS[day]}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Ora Inizio</Label>
+                                        <Input 
+                                            type="time" 
+                                            value={newSlotStart} 
+                                            onChange={(e) => setNewSlotStart(e.target.value)} 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Ora Fine</Label>
+                                        <Input 
+                                            type="time" 
+                                            value={newSlotEnd} 
+                                            onChange={(e) => setNewSlotEnd(e.target.value)} 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Classe</Label>
+                                        <Select value={newSlotClass} onValueChange={setNewSlotClass}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {classes.map((cls) => (
+                                                    <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <Button onClick={handleAddSlot} className="w-full md:w-auto">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Aggiungi Slot
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        {/* Current schedule by day */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Orario Attuale</CardTitle>
+                                <CardDescription>{schedule.length} lezioni programmate</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {DAYS_ORDER.map((day) => {
+                                    const daySlots = getSlotsByDay(day);
+                                    if (daySlots.length === 0) return null;
+                                    
+                                    return (
+                                        <div key={day} className="space-y-2">
+                                            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                                                {DAY_LABELS[day]}
+                                            </h4>
+                                            <div className="grid gap-2">
+                                                {daySlots.map((slot) => {
+                                                    const classInfo = classes.find(c => c.id === slot.classId);
+                                                    return (
+                                                        <div 
+                                                            key={slot.id} 
+                                                            className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                                    <Clock className="h-4 w-4" />
+                                                                    {slot.startTime} - {slot.endTime}
+                                                                </div>
+                                                                <div className="font-medium">
+                                                                    {classInfo?.name || slot.classId}
+                                                                </div>
+                                                            </div>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                onClick={() => removeSlot(slot.id)}
+                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                
+                                {schedule.length === 0 && (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p>Nessuna lezione programmata</p>
+                                        <p className="text-sm">Aggiungi il tuo primo slot sopra</p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Reset schedule */}
+                        <Card className="border-destructive/50">
+                            <CardHeader>
+                                <CardTitle className="text-destructive">Reset Orario</CardTitle>
+                                <CardDescription>Ripristina l'orario predefinito di esempio.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button variant="destructive" onClick={resetSchedule}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Ripristina Orario Default
+                                </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>

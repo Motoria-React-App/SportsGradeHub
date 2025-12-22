@@ -260,7 +260,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         <SidebarFooter className="border-t border-sidebar-border">
-          <NavUser user={client.UserModel!.user} /> {/* TODO: fix */}
+          {client.UserModel?.user && <NavUser user={client.UserModel.user} />}
         </SidebarFooter>
 
         <SidebarRail />

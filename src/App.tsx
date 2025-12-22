@@ -8,6 +8,7 @@ import { CommandDialogDemo } from "@/components/commandDialog";
 import Exercises from "@/pages/Exercises";
 import LoginPage from "@/pages/LoginPage";
 import Settings from "@/pages/Settings";
+import WelcomePage from "@/pages/WelcomePage";
 
 
 // Layout wrapper for authenticated pages (with sidebar and command dialog)
@@ -47,6 +48,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
 
         {/* Authenticated routes */}
+        <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/dashboard" element={<AuthenticatedLayout><Dashboard /></AuthenticatedLayout>} />
         <Route path="/exercises" element={<AuthenticatedLayout><Exercises /></AuthenticatedLayout>} />
         <Route path="/valutazioni" element={<Navigate to="/valutazioni/all/all" replace />} />
