@@ -1,0 +1,2 @@
+﻿src/components/dashboard/CategoryPerformanceChart.tsx(60,65): error TS6133: 'index' is declared but its value is never read.
+src/components/data-table.tsx(590,12): error TS6133: 'row' is declared but its value is never read.

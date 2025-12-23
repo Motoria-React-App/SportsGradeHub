@@ -1,10 +1,10 @@
 import { Bar, BarChart, XAxis, CartesianGrid, Cell, LabelList } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Grade } from "@/types/index";
+import { UIGrade } from "@/provider/clientProvider";
 
 interface GradeDistributionProps {
-    grades: Grade[];
+    grades: UIGrade[];
 }
 
 const chartConfig = {

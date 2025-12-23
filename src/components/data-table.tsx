@@ -13,8 +13,6 @@ import {
   IconSearch,
   IconTrendingUp,
   IconTrendingDown,
-  IconEdit,
-  IconX,
 } from "@tabler/icons-react"
 import {
   ColumnDef,
@@ -30,7 +28,7 @@ import {
   useReactTable,
   VisibilityState,
 } from "@tanstack/react-table"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -77,7 +75,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import type { Student, Grade, Exercise } from "@/types"
+import type { Student } from "@/types"
 import { getGradesByStudent, exercises } from "@/data/mockData"
 import { toast } from "sonner"
 
@@ -589,7 +587,7 @@ const columns: ColumnDef<Student>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
+    cell: ({ row: _row }) => (
       <div onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

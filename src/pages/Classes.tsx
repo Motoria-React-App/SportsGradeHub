@@ -2,7 +2,7 @@
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClient } from "@/provider/clientProvider";
-import { ExerciseGroup, SchoolClass} from "@/types/types";
+import { SchoolClassExpanded, ExerciseGroupExpanded } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,7 +15,7 @@ export default function Classes() {
 
     const { id } = useParams<{ id: string }>();
     const client = useClient();
-    const [schoolClass, setSchoolClass] = useState<SchoolClass | null>(null);
+    const [schoolClass, setSchoolClass] = useState<SchoolClassExpanded | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -177,7 +177,7 @@ export default function Classes() {
 
                             {schoolClass.exerciseGroups && schoolClass.exerciseGroups.length > 0 ? (
                                 <div className="space-y-8">
-                                    {schoolClass.exerciseGroups.map((group: ExerciseGroup) => (
+                                    {schoolClass.exerciseGroups.map((group: ExerciseGroupExpanded) => (
                                         <div key={group.id} className="space-y-4">
                                             <div className="flex items-center gap-3 pb-4 border-b">
                                                 <div className="p-2 bg-primary/10 rounded-md text-primary">

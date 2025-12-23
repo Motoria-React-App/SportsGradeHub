@@ -1,10 +1,10 @@
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, PolarRadiusAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Grade } from "@/types/index";
+import { UIGrade } from "@/provider/clientProvider";
 
 interface CategoryPerformanceProps {
-    grades: Grade[];
+    grades: UIGrade[];
 }
 
 const chartConfig = {
@@ -57,7 +57,7 @@ export function CategoryPerformanceChart({ grades }: CategoryPerformanceProps) {
                         <PolarGrid className="fill-muted/10 stroke-muted/30" gridType="circle" />
                         <PolarAngleAxis
                             dataKey="subject"
-                            tick={({ x, y, textAnchor, payload, index }) => {
+                            tick={({ x, y, textAnchor, payload, index: _index }) => {
                                 return (
                                     <text
                                         x={x}

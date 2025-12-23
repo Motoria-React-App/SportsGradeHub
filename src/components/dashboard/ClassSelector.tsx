@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Check, GraduationCap, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Class } from "@/types/index";
+import { SchoolClass } from "@/types/types";
 
 interface ClassSelectorProps {
-    classes: Class[];
+    classes: SchoolClass[];
     selectedClassId: string;
     onSelectClass: (classId: string) => void;
 }
@@ -51,7 +51,7 @@ export function ClassSelector({ classes, selectedClassId, onSelectClass }: Class
 
                 <div className="flex flex-col items-start mr-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Classe</span>
-                    <span className="text-base font-bold leading-none">{selectedClass?.name} <span className="text-muted-foreground font-normal text-xs ml-1">{selectedClass?.year}</span></span>
+                    <span className="text-base font-bold leading-none">{selectedClass?.className} <span className="text-muted-foreground font-normal text-xs ml-1">{selectedClass?.schoolYear}</span></span>
                 </div>
 
                 <ChevronDown className={cn(
@@ -87,13 +87,13 @@ export function ClassSelector({ classes, selectedClassId, onSelectClass }: Class
                                 "flex items-center justify-center w-8 h-8 rounded-md mr-3 text-xs font-bold",
                                 selectedClassId === cls.id ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground"
                             )}>
-                                {cls.name.substring(0, 2)}
+                                {cls.className.substring(0, 2)}
                             </div>
 
                             <div className="flex flex-col items-start flex-1">
-                                <span>{cls.name}</span>
+                                <span>{cls.className}</span>
                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Users className="w-3 h-3" /> {cls.studentCount} studenti
+                                    <Users className="w-3 h-3" /> {cls.students.length} studenti
                                 </span>
                             </div>
 

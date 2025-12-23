@@ -1,11 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Class, Grade, Student } from "@/types/index";
+import { UIClass, UIStudent, UIGrade } from "@/provider/clientProvider";
 import { Users, GraduationCap, TrendingUp, Trophy } from "lucide-react";
 
 interface StatsCardsProps {
-    selectedClass: Class;
-    students: Student[];
-    grades: Grade[];
+    selectedClass: UIClass;
+    students: UIStudent[];
+    grades: UIGrade[];
 }
 
 export function StatsCards({ selectedClass, students, grades }: StatsCardsProps) {

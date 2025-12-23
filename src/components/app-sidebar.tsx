@@ -29,7 +29,6 @@ import {
   BarChart3,
   Users,
   LogOut,
-  Settings,
   ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"

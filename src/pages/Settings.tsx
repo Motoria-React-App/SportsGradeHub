@@ -43,13 +43,14 @@ import {
     Plus,
     Calendar,
 } from "lucide-react";
-import { classes } from "@/data/mockData";
+import { useSchoolData } from "@/provider/clientProvider";
 import type { DayOfWeek } from "@/types/scheduleTypes";
 import { useState } from "react";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
     const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule } = useSchedule();
+    const { classes } = useSchoolData();
     const { theme, setTheme } = useTheme();
     const client = useClient();
     const user = client.UserModel;
@@ -395,7 +396,7 @@ export default function Settings() {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {classes.map((cls) => (
-                                                    <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                                                    <SelectItem key={cls.id} value={cls.id}>{cls.className}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -438,7 +439,7 @@ export default function Settings() {
                                                                     {slot.startTime} - {slot.endTime}
                                                                 </div>
                                                                 <div className="font-medium">
-                                                                    {classInfo?.name || slot.classId}
+                                                                {classInfo?.className || slot.classId}
                                                                 </div>
                                                             </div>
                                                             <Button 

@@ -17,7 +17,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { exercises as mockExercises } from "@/data/mockData";
+import { useSchoolData } from "@/provider/clientProvider";
 import {
   Search,
   Plus,
@@ -155,7 +155,11 @@ const unitDisplayNames: Record<MeasurementUnit, string> = {
 const italianScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export default function Exercises() {
-  const [exercises, setExercises] = useState<Exercise[]>(mockExercises);
+  const { exercises: _backendExercises } = useSchoolData();
+  
+  // Local state for exercises - will be populated from backend or empty
+  // TODO: Replace with backendExercises when types are aligned
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);

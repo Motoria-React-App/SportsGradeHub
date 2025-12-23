@@ -1,18 +1,18 @@
 import { useNavigate, Navigate } from "react-router-dom";
-import { useAuth } from "@/provider/clientProvider";
+import { useAuth, useSchoolData } from "@/provider/clientProvider";
 import { useSchedule } from "@/provider/scheduleProvider";
-import { classes } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GraduationCap, Users, ArrowRight, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Class } from "@/types";
+import { SchoolClass } from "@/types/types";
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
 export default function WelcomePage() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
+    const { classes } = useSchoolData();
     const { getCurrentClass } = useSchedule();
     
     // Redirect to login if not authenticated
@@ -119,7 +119,7 @@ export default function WelcomePage() {
 
                 {/* Classes grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {classes.map((cls: Class) => (
+                    {classes.map((cls: SchoolClass) => (
                         <ClassCard 
                             key={cls.id} 
                             classData={cls} 
@@ -143,7 +143,7 @@ export default function WelcomePage() {
 }
 
 // Class card component for the grid view
-function ClassCard({ classData, onClick }: { classData: Class; onClick: () => void }) {
+function ClassCard({ classData, onClick }: { classData: SchoolClass; onClick: () => void }) {
     return (
         <Card 
             onClick={onClick}
@@ -161,10 +161,10 @@ function ClassCard({ classData, onClick }: { classData: Class; onClick: () => vo
                         "group-hover:bg-primary group-hover:text-primary-foreground",
                         "transition-colors duration-300"
                     )}>
-                        {classData.name}
+                        {classData.className}
                     </div>
                     <span className="text-sm text-muted-foreground">
-                        {classData.studentCount} studenti
+                        {classData.students.length} studenti
                     </span>
                     <ArrowRight className="w-5 h-5 ml-auto text-muted-foreground shrink-0 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                 </div>

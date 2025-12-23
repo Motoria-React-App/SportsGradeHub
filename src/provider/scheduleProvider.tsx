@@ -1,49 +1,26 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { ScheduleSlot, DayOfWeek } from "@/types/scheduleTypes";
 import { isTimeInSlot } from "@/types/scheduleTypes";
-import { classes } from "@/data/mockData";
-import type { Class } from "@/types";
+import { useSchoolData } from "@/provider/clientProvider";
+import type { SchoolClass } from "@/types/types";
 
 const STORAGE_KEY = "sportsgrade-schedule";
 
-// Default schedule - can be modified by the teacher
-const defaultSchedule: ScheduleSlot[] = [
-    // Lunedì
-    { id: 'sch1', dayOfWeek: 'lunedi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
-    { id: 'sch2', dayOfWeek: 'lunedi', startTime: '09:00', endTime: '10:00', classId: 'c2' },
-    { id: 'sch3', dayOfWeek: 'lunedi', startTime: '11:00', endTime: '12:00', classId: 'c3' },
-    
-    // Martedì
-    { id: 'sch4', dayOfWeek: 'martedi', startTime: '08:00', endTime: '09:00', classId: 'c4' },
-    { id: 'sch5', dayOfWeek: 'martedi', startTime: '10:00', endTime: '11:00', classId: 'c5' },
-    { id: 'sch6', dayOfWeek: 'martedi', startTime: '11:00', endTime: '12:00', classId: 'c6' },
-    
-    // Mercoledì
-    { id: 'sch7', dayOfWeek: 'mercoledi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
-    { id: 'sch8', dayOfWeek: 'mercoledi', startTime: '09:00', endTime: '10:00', classId: 'c3' },
-    { id: 'sch9', dayOfWeek: 'mercoledi', startTime: '11:00', endTime: '12:00', classId: 'c5' },
-    
-    // Giovedì
-    { id: 'sch10', dayOfWeek: 'giovedi', startTime: '08:00', endTime: '09:00', classId: 'c2' },
-    { id: 'sch11', dayOfWeek: 'giovedi', startTime: '09:00', endTime: '10:00', classId: 'c4' },
-    { id: 'sch12', dayOfWeek: 'giovedi', startTime: '10:00', endTime: '11:00', classId: 'c6' },
-    
-    // Venerdì
-    { id: 'sch13', dayOfWeek: 'venerdi', startTime: '08:00', endTime: '09:00', classId: 'c1' },
-    { id: 'sch14', dayOfWeek: 'venerdi', startTime: '09:00', endTime: '10:00', classId: 'c2' },
-    { id: 'sch15', dayOfWeek: 'venerdi', startTime: '11:00', endTime: '12:00', classId: 'c3' },
-    
-    // Sabato
-    { id: 'sch16', dayOfWeek: 'sabato', startTime: '08:00', endTime: '09:00', classId: 'c4' },
-    { id: 'sch17', dayOfWeek: 'sabato', startTime: '09:00', endTime: '10:00', classId: 'c5' },
-];
+// Default schedule - empty, user will configure
+const defaultSchedule: ScheduleSlot[] = [];
+
+interface CurrentClassInfo {
+    id: string;
+    name: string;
+    studentCount: number;
+}
 
 interface ScheduleProviderState {
     schedule: ScheduleSlot[];
     addSlot: (slot: Omit<ScheduleSlot, 'id'>) => void;
     updateSlot: (id: string, updates: Partial<ScheduleSlot>) => void;
     removeSlot: (id: string) => void;
-    getCurrentClass: () => Class | null;
+    getCurrentClass: () => CurrentClassInfo | null;
     getSlotsByDay: (day: DayOfWeek) => ScheduleSlot[];
     resetSchedule: () => void;
 }
@@ -51,6 +28,8 @@ interface ScheduleProviderState {
 const ScheduleContext = createContext<ScheduleProviderState | undefined>(undefined);
 
 export function ScheduleProvider({ children }: { children: React.ReactNode }) {
+    const { classes } = useSchoolData();
+    
     const [schedule, setSchedule] = useState<ScheduleSlot[]>(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
@@ -86,7 +65,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
         setSchedule(prev => prev.filter(slot => slot.id !== id));
     }, []);
 
-    const getCurrentClass = useCallback((): Class | null => {
+    const getCurrentClass = useCallback((): CurrentClassInfo | null => {
         const now = new Date();
         const currentSlot = schedule.find(slot => isTimeInSlot(slot, now));
         
@@ -94,8 +73,17 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
             return null;
         }
         
-        return classes.find(c => c.id === currentSlot.classId) || null;
-    }, [schedule]);
+        const foundClass = classes.find((c: SchoolClass) => c.id === currentSlot.classId);
+        if (!foundClass) {
+            return null;
+        }
+        
+        return {
+            id: foundClass.id,
+            name: foundClass.className,
+            studentCount: foundClass.students.length,
+        };
+    }, [schedule, classes]);
 
     const getSlotsByDay = useCallback((day: DayOfWeek): ScheduleSlot[] => {
         return schedule

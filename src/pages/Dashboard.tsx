@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 import { SiteHeader } from "@/components/site-header";
 import { ClassSelector } from "@/components/dashboard/ClassSelector";
@@ -6,31 +6,45 @@ import { StatsCards } from "@/components/dashboard/StatsCards";
 import { GradeDistributionChart } from "@/components/dashboard/GradeDistributionChart";
 import { CategoryPerformanceChart } from "@/components/dashboard/CategoryPerformanceChart";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { classes, students, grades } from "@/data/mockData";
-import { Class } from "@/types/index";
+import { useSchoolData } from "@/provider/clientProvider";
+import type { UIClass } from "@/provider/clientProvider";
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
 export default function Dashboard() {
+    const { classes, uiClasses, uiStudents, getUIStudentsByClass, getUIGradesByClass } = useSchoolData();
+    
     // State for selected class - initialize from localStorage or default to first class
-    const [selectedClassId, setSelectedClassId] = useState<string>(() => {
-        const lastClass = localStorage.getItem(LAST_CLASS_KEY);
-        // Verify the saved class exists
-        if (lastClass && classes.some(c => c.id === lastClass)) {
-            return lastClass;
+    const [selectedClassId, setSelectedClassId] = useState<string>("");
+    
+    // Update selectedClassId when classes load
+    useEffect(() => {
+        if (classes.length > 0 && !selectedClassId) {
+            const lastClass = localStorage.getItem(LAST_CLASS_KEY);
+            if (lastClass && classes.some(c => c.id === lastClass)) {
+                setSelectedClassId(lastClass);
+            } else {
+                setSelectedClassId(classes[0].id);
+            }
         }
-        return classes[0]?.id || "";
-    });
+    }, [classes, selectedClassId]);
 
-    // Derived state
-    const selectedClass = classes.find(c => c.id === selectedClassId) as Class;
+    // Get UI-compatible selected class
+    const selectedClass = useMemo(() => 
+        uiClasses.find(c => c.id === selectedClassId) as UIClass | undefined, 
+        [uiClasses, selectedClassId]
+    );
 
-    // Filter data for selected class
-    const classStudents = students.filter(s => s.classId === selectedClassId);
-
-    // Get grades for students in this class
-    const classStudentIds = classStudents.map(s => s.id);
-    const classGrades = grades.filter(g => classStudentIds.includes(g.studentId));
+    // Get students and grades for selected class
+    const classStudents = useMemo(() => 
+        getUIStudentsByClass(selectedClassId),
+        [getUIStudentsByClass, selectedClassId]
+    );
+    
+    const classGrades = useMemo(() => 
+        getUIGradesByClass(selectedClassId),
+        [getUIGradesByClass, selectedClassId]
+    );
 
     // Handler for class change - also saves to localStorage
     const handleClassChange = (classId: string) => {
@@ -82,9 +96,9 @@ export default function Dashboard() {
 
                             {/* Sidebar/Activity - Spans 3 columns */}
                             <div className="col-span-1 lg:col-span-3 space-y-6">
-                                <RecentActivity grades={classGrades} students={students} />
+                                <RecentActivity grades={classGrades} students={uiStudents} />
 
-                                {/* Optional: Add Quick Action or other widgets here */}
+                                {/* Quick Action Widget */}
                                 <div className="p-6 rounded-xl bg-primary/5 border border-primary/10 flex flex-col items-center justify-center text-center space-y-3">
                                     <h3 className="font-semibold text-primary">Nuova Valutazione</h3>
                                     <p className="text-sm text-muted-foreground">
@@ -99,7 +113,7 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-64 text-muted-foreground">
-                        Nessuna classe selezionata o dati non disponibili.
+                        {classes.length === 0 ? "Caricamento classi..." : "Nessuna classe selezionata o dati non disponibili."}
                     </div>
                 )}
             </main>

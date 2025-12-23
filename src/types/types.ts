@@ -2,6 +2,7 @@ export type Gender = 'M' | 'F' | 'N';
 
 export interface Student {
     id: string;
+    ownerId: string;
     firstName: string;
     lastName: string;
     birthdate?: string;
@@ -17,30 +18,34 @@ export interface Student {
 export interface ClassHistoryEntry {
     classId: string;
     schoolYear: string;
+    ownerId: string;
     archived: boolean;
 }
 
 export interface SchoolClass {
     id: string;
+    ownerId: string;
     className: string;
     schoolYear: string;
     isArchived: boolean;
-    students: Student[];          // ID Studenti
-    exerciseGroups: ExerciseGroup[];    // ID Gruppi di esercizi
+    students: string[];          // Array di ID Studenti
+    exerciseGroups: string[];    // Array di ID Gruppi di esercizi
     createdAt: string;
     updatedAt: string;
 }
 
 export interface ExerciseGroup {
     id: string;
+    ownerId: string;
     groupName: string;
-    exercises: Exercise[];
+    exercises: string[];         // Array di ID Esercizi
     createdAt: string;
     updatedAt: string;
 }
 
 export interface Exercise {
     id: string;
+    ownerId: string;
     exerciseGroupId: string;
     name: string;
     unit: 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';
@@ -58,6 +63,7 @@ export interface ScoreRange {
 
 export interface Evaluation {
     studentId: string;
+    ownerId: string;
     exerciseId: string;
     performanceValue: string | number;
     score: number;
@@ -65,3 +71,17 @@ export interface Evaluation {
     updatedAt: string;
     comments?: string;
 }
+
+// ============ EXPANDED TYPES FOR API RESPONSES ============
+// These are used when the backend returns nested data (e.g., getClassById)
+
+export interface ExerciseGroupExpanded extends Omit<ExerciseGroup, 'exercises'> {
+    exercises: Exercise[];
+}
+
+export interface SchoolClassExpanded extends Omit<SchoolClass, 'students' | 'exerciseGroups'> {
+    students: Student[];
+    studentsCount: number;
+    exerciseGroups: ExerciseGroupExpanded[];
+}
+

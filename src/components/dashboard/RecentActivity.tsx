@@ -1,10 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Grade, Student } from "@/types/index";
+import { UIGrade, UIStudent } from "@/provider/clientProvider";
 
 interface RecentActivityProps {
-    grades: Grade[];
-    students: Student[];
+    grades: UIGrade[];
+    students: UIStudent[];
 }
 
 export function RecentActivity({ grades, students }: RecentActivityProps) {
