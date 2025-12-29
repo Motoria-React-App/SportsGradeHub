@@ -4,15 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSchoolData } from "@/provider/clientProvider";
-import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Student } from "@/types/types";
+import { StudentDialog } from "@/components/student-dialog";
 
 
 export default function Students() {
-    const { students, classes } = useSchoolData();
+    const { students, classes, refreshStudents } = useSchoolData();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Dialog state
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
     const filteredStudents = useMemo(() => {
         return students.filter(student => {
@@ -36,7 +48,7 @@ export default function Students() {
                     <h1 className="text-3xl font-bold tracking-tight">Studenti</h1>
                     <p className="text-muted-foreground">Gestione anagrafica studenti ({students.length} totali)</p>
                 </div>
-                <Button className="gap-2">
+                <Button className="gap-2" onClick={() => { setSelectedStudent(null); setDialogOpen(true); }}>
                     <Plus className="h-4 w-4" />
                     Nuovo Studente
                 </Button>
@@ -125,9 +137,19 @@ export default function Students() {
                                             {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => { setSelectedStudent(student); setDialogOpen(true); }}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Modifica
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -142,7 +164,13 @@ export default function Students() {
                     </Table>
                 </CardContent>
             </Card>
+            {/* Student Dialog */}
+            <StudentDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                student={selectedStudent}
+                onSuccess={refreshStudents}
+            />
         </div>
-
     );
 }

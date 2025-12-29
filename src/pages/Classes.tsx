@@ -2,13 +2,14 @@
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClient } from "@/provider/clientProvider";
-import { SchoolClassExpanded, ExerciseGroupExpanded } from "@/types/types";
+import { SchoolClassExpanded, ExerciseGroupExpanded, Student } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StudentDialog } from "@/components/student-dialog";
 
 
 export default function Classes() {
@@ -17,26 +18,28 @@ export default function Classes() {
     const client = useClient();
     const [schoolClass, setSchoolClass] = useState<SchoolClassExpanded | null>(null);
     const [loading, setLoading] = useState(true);
+    
+    // Student dialog state
+    const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+    // Fetch class data
+    const fetchData = async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+            const classRes = await client.getClassById(id);
+            if (classRes.success && classRes.data) {
+                setSchoolClass(classRes.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch class data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!id) return;
-            setLoading(true);
-            try {
-                const classRes = await client.getClassById(id);
-
-                if (classRes.success && classRes.data) {
-                    setSchoolClass(classRes.data);
-                }
-
-
-            } catch (error) {
-                console.error("Failed to fetch class data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchData();
     }, [id, client]);
 
@@ -86,7 +89,7 @@ export default function Classes() {
                         <Activity className="w-4 h-4" />
                         Gestisci Esercizi
                     </Button>
-                    <Button className="gap-2">
+                    <Button className="gap-2" onClick={() => { setSelectedStudent(null); setStudentDialogOpen(true); }}>
                         <Plus className="w-4 h-4" />
                         Aggiungi Studente
                     </Button>
@@ -141,7 +144,7 @@ export default function Classes() {
                                                         {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm">
+                                                        <Button variant="ghost" size="sm" onClick={() => { setSelectedStudent(student); setStudentDialogOpen(true); }}>
                                                             Modifica
                                                         </Button>
                                                     </TableCell>
@@ -261,7 +264,14 @@ export default function Classes() {
                     </TabsContent>
                 </div>
             </Tabs>
+            {/* Student Dialog */}
+            <StudentDialog
+                open={studentDialogOpen}
+                onOpenChange={setStudentDialogOpen}
+                student={selectedStudent}
+                defaultClassId={schoolClass.id}
+                onSuccess={fetchData}
+            />
         </div>
-
     );
 }
