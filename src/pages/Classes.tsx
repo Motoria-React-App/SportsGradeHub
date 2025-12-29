@@ -126,7 +126,9 @@ export default function Classes() {
                                     </TableHeader>
                                     <TableBody>
                                         {schoolClass.students.length > 0 ? (
-                                            schoolClass.students.map((student) => (
+                                            [...schoolClass.students]
+                                                .sort((a, b) => a.lastName.localeCompare(b.lastName))
+                                                .map((student) => (
                                                 <TableRow key={student.id}>
                                                     <TableCell className="font-medium">{student.firstName}</TableCell>
                                                     <TableCell>{student.lastName}</TableCell>

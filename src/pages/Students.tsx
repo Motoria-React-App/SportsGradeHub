@@ -27,12 +27,14 @@ export default function Students() {
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
     const filteredStudents = useMemo(() => {
-        return students.filter(student => {
-            const matchesClass = selectedClass === "all" || student.currentClassId === selectedClass;
-            const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
-            const matchesSearch = fullName.includes(searchQuery.toLowerCase());
-            return matchesClass && matchesSearch;
-        });
+        return students
+            .filter(student => {
+                const matchesClass = selectedClass === "all" || student.currentClassId === selectedClass;
+                const fullName = `${student.firstName} ${student.lastName}`.toLowerCase();
+                const matchesSearch = fullName.includes(searchQuery.toLowerCase());
+                return matchesClass && matchesSearch;
+            })
+            .sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [students, selectedClass, searchQuery]);
 
     // Get class name by id

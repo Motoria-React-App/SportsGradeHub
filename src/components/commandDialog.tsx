@@ -49,12 +49,12 @@ export function CommandDialogDemo() {
         }
     }, [client]);
 
-    // Fetch data when dialog opens
+    // Fetch data every time dialog opens
     React.useEffect(() => {
-        if (open && !students && !isLoading) {
+        if (open) {
             getStudents();
         }
-    }, [open, students, isLoading, getStudents]);
+    }, [open, getStudents]);
 
     // Keyboard shortcut
     React.useEffect(() => {
