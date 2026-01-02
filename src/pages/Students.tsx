@@ -8,16 +8,19 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSchoolData } from "@/provider/clientProvider";
-import { Search, Plus, Filter, MoreHorizontal, Pencil } from "lucide-react";
+import { useClient, useSchoolData } from "@/provider/clientProvider";
+import { Search, Plus, Filter, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Student } from "@/types/types";
 import { StudentDialog } from "@/components/student-dialog";
+import { toast } from "sonner";
 
 
 export default function Students() {
+    const client = useClient();
     const { students, classes, refreshStudents } = useSchoolData();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
@@ -25,6 +28,24 @@ export default function Students() {
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+    // Delete student handler
+    const handleDeleteStudent = async (student: Student) => {
+        if (!confirm(`Sei sicuro di voler eliminare ${student.firstName} ${student.lastName}?`)) {
+            return;
+        }
+        try {
+            const res = await client.deleteStudent(student.id);
+            if (res.success) {
+                toast.success(`Studente "${student.firstName} ${student.lastName}" eliminato`);
+                refreshStudents();
+            } else {
+                toast.error("Errore durante l'eliminazione");
+            }
+        } catch {
+            toast.error("Errore durante l'eliminazione");
+        }
+    };
 
     const filteredStudents = useMemo(() => {
         return students
@@ -146,9 +167,20 @@ export default function Students() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => { setSelectedStudent(student); setDialogOpen(true); }}>
+                                                    <DropdownMenuItem onSelect={() => { setSelectedStudent(student); setDialogOpen(true); }}>
                                                         <Pencil className="mr-2 h-4 w-4" />
                                                         Modifica
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem 
+                                                        onSelect={(e) => {
+                                                            e.preventDefault();
+                                                            handleDeleteStudent(student);
+                                                        }}
+                                                        className="text-destructive focus:text-destructive"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Elimina
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
