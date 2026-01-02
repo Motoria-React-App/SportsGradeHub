@@ -14,13 +14,14 @@ import { Student, SchoolClass } from "@/types/types";
 import { Spinner } from "./ui/spinner";
 import { useClient } from "@/provider/clientProvider";
 import { useCommandDialog } from "@/provider/commandDialogProvider";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 
 
 export function CommandDialogDemo() {
     // Use global state from context
     const { open, setOpen } = useCommandDialog()
+    const navigate = useNavigate();
 
     const [students, setStudents] = React.useState<Student[] | null>(null)
     const [classes, setClasses] = React.useState<SchoolClass[] | null>(null)
@@ -68,33 +69,47 @@ export function CommandDialogDemo() {
         return () => document.removeEventListener("keydown", down)
     }, [setOpen])
 
+    const handleSelectClass = (classId: string) => {
+        setOpen(false);
+        navigate(`/classes/${classId}`);
+    };
+
+    const handleSelectStudent = (studentId: string) => {
+        setOpen(false);
+        navigate(`/students/${studentId}`);
+    };
+
     return (
         <>
             <CommandDialog open={open} onOpenChange={setOpen}>
-                <CommandInput placeholder="Search a student or class" />
+                <CommandInput placeholder="Cerca studente o classe..." />
                 <CommandList>
                     {isLoading && <CommandEmpty><Spinner /></CommandEmpty>}
-                    {error && <CommandEmpty>Error loading data</CommandEmpty>}
+                    {error && <CommandEmpty>Errore caricamento dati</CommandEmpty>}
                     {classes && students && (
                         <>
-                            <CommandGroup heading="Classes">
+                            <CommandGroup heading="Classi">
                                 {classes.map((cls) => (
-                                    <Link onClick={() => setOpen(false)} to={`/classes/${cls.id}`}>
-                                        <CommandItem key={cls.id}>
-                                            <User />
-                                            <span>{cls.className}</span>
-                                        </CommandItem>
-                                    </Link>
+                                    <CommandItem
+                                        key={cls.id}
+                                        value={cls.className}
+                                        onSelect={() => handleSelectClass(cls.id)}
+                                    >
+                                        <User />
+                                        <span>{cls.className}</span>
+                                    </CommandItem>
                                 ))}
                             </CommandGroup>
-                            <CommandGroup heading="Students">
+                            <CommandGroup heading="Studenti">
                                 {students.map((student) => (
-                                    <Link key={student.id} onClick={() => setOpen(false)} to={`/students/${student.id}`}>
-                                        <CommandItem>
-                                            <User />
-                                            <span>{student.firstName + " " + student.lastName}</span>
-                                        </CommandItem>
-                                    </Link>
+                                    <CommandItem
+                                        key={student.id}
+                                        value={`${student.firstName} ${student.lastName}`}
+                                        onSelect={() => handleSelectStudent(student.id)}
+                                    >
+                                        <User />
+                                        <span>{student.firstName} {student.lastName}</span>
+                                    </CommandItem>
                                 ))}
                             </CommandGroup>
                         </>
@@ -104,3 +119,4 @@ export function CommandDialogDemo() {
         </>
     )
 }
+
