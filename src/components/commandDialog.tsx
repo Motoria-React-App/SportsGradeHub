@@ -89,10 +89,12 @@ export function CommandDialogDemo() {
                             </CommandGroup>
                             <CommandGroup heading="Students">
                                 {students.map((student) => (
-                                    <CommandItem key={student.id}>
-                                        <User />
-                                        <span>{student.firstName + " " + student.lastName}</span>
-                                    </CommandItem>
+                                    <Link key={student.id} onClick={() => setOpen(false)} to={`/students/${student.id}`}>
+                                        <CommandItem>
+                                            <User />
+                                            <span>{student.firstName + " " + student.lastName}</span>
+                                        </CommandItem>
+                                    </Link>
                                 ))}
                             </CommandGroup>
                         </>

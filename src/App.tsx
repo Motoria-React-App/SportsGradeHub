@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Dashboard from "@/pages/Dashboard";
 import Classes from "@/pages/Classes";
 import Students from "@/pages/Students";
+import StudentDetail from "@/pages/StudentDetail";
 import Analytics from "@/pages/Analytics";
 import Valutazioni from "@/pages/Valutazioni";
 import { CommandDialogDemo } from "@/components/commandDialog";
@@ -55,6 +56,7 @@ function App() {
         <Route path="/valutazioni/:classId/:exerciseId" element={<AuthenticatedLayout><Valutazioni /></AuthenticatedLayout>} />
         <Route path="/classes/:id" element={<AuthenticatedLayout><Classes /></AuthenticatedLayout>} />
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
+        <Route path="/students/:id" element={<AuthenticatedLayout><StudentDetail /></AuthenticatedLayout>} />
         <Route path="/analytics" element={<AuthenticatedLayout><Analytics /></AuthenticatedLayout>} />
         <Route path="/settings" element={<AuthenticatedLayout><Settings /></AuthenticatedLayout>} />
       </Routes>

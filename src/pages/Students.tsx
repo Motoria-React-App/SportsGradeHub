@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,7 +130,7 @@ export default function Students() {
                                 filteredStudents.map((student) => (
                                     <TableRow key={student.id}>
                                         <TableCell className="font-medium">
-                                            <div className="flex items-center gap-3">
+                                            <Link to={`/students/${student.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                                                     {student.firstName[0]}{student.lastName[0]}
                                                 </div>
@@ -139,7 +140,7 @@ export default function Students() {
                                                         <div className="text-xs text-muted-foreground truncate max-w-[200px]">{student.notes}</div>
                                                     )}
                                                 </div>
-                                            </div>
+                                            </Link>
                                         </TableCell>
                                         <TableCell>
                                             <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
