@@ -1,167 +1,101 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { students, classes, exercises } from "@/data/mockData";
-import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight } from "lucide-react";
+import { useSchoolData, useClient } from "@/provider/clientProvider";
+import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
+import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Student, Exercise, CustomCriterion } from "@/types";
 import { useParams } from "react-router-dom";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Types for evaluation state
-interface StudentEvaluation {
-    studentId: string;
-    exerciseId: string;
-    criteriaValues: Record<string, number | null>; // criterion id -> value (null = not set)
-    notes: string;
-    createdAt: string;
-}
-
 type EvaluationStatus = "non-valutato" | "valutando" | "valutato";
 
-// Helper to determine status based on criteria completion
-function getEvaluationStatus(
-    evaluation: StudentEvaluation,
-    exercise: Exercise
-): EvaluationStatus {
-    const criteria = exercise.customCriteria || [];
-    if (criteria.length === 0) {
-        // For range-based exercises, check if there's a single value
-        const hasValue = evaluation.criteriaValues["value"] !== null && evaluation.criteriaValues["value"] !== undefined;
-        return hasValue ? "valutato" : "non-valutato";
+// Helper to determine status based on evaluation value
+function getEvaluationStatus(evaluation: Evaluation): EvaluationStatus {
+    if (evaluation.score > 0) return "valutato";
+    if (evaluation.performanceValue !== null && evaluation.performanceValue !== undefined && evaluation.performanceValue !== "") {
+        return "valutando";
     }
-
-    const filledCount = criteria.filter(
-        (c) => evaluation.criteriaValues[c.id] !== null && evaluation.criteriaValues[c.id] !== undefined
-    ).length;
-
-    if (filledCount === 0) return "non-valutato";
-    if (filledCount === criteria.length) return "valutato";
-    return "valutando";
+    return "non-valutato";
 }
 
-// Calculate final grade from criteria
-// Calculate final grade from criteria or ranges
-function calculateFinalGrade(evaluation: StudentEvaluation, exercise: Exercise, student?: Student): number | null {
-    const criteria = exercise.customCriteria || [];
-
-    // Range-based evaluation
-    if (criteria.length === 0) {
-        const rawValue = evaluation.criteriaValues["value"];
-        if (rawValue === null || rawValue === undefined) return null;
-
-        // If no student provided or no ranges, fallback to raw value (as grade)
-        if (!student || (!exercise.rangesMale && !exercise.rangesFemale)) {
-            return rawValue;
+// Calculate score from performance value using evaluation ranges
+function calculateScore(
+    performanceValue: number,
+    exercise: Exercise,
+    studentGender: Gender
+): number | null {
+    if (!exercise.evaluationRanges) return null;
+    
+    const ranges = exercise.evaluationRanges[studentGender] || exercise.evaluationRanges['M'];
+    if (!ranges || ranges.length === 0) return null;
+    
+    // Find matching range
+    for (const range of ranges) {
+        if (performanceValue >= range.min && performanceValue <= range.max) {
+            return range.score;
         }
-
-        // Determine ranges based on gender
-        const ranges = student.gender === 'M'
-            ? exercise.rangesMale
-            : exercise.rangesFemale;
-
-        if (!ranges) return rawValue; // Fallback if specific gender ranges missing
-
-        // Find matching range
-        const matchedRange = ranges.find(r => rawValue >= r.minValue && rawValue <= r.maxValue);
-
-        return matchedRange ? matchedRange.score : null;
     }
-
-    // Criteria-based evaluation
-    const values = criteria
-        .map((c) => evaluation.criteriaValues[c.id])
-        .filter((v): v is number => v !== null && v !== undefined);
-
-    if (values.length === 0) return null;
-    return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
-}
-
-// Helper component for buffered input
-function BufferedInput({
-    value,
-    onCommit,
-    ...props
-}: Omit<React.ComponentProps<typeof Input>, "value" | "onChange" | "onBlur" | "onKeyDown"> & {
-    value: number | null | undefined;
-    onCommit: (val: number | null) => void;
-}) {
-    const [localValue, setLocalValue] = useState<string>(value?.toString() ?? "");
-
-    // Sync with prop changes (e.g. when switching student)
-    useEffect(() => {
-        setLocalValue(value?.toString() ?? "");
-    }, [value]);
-
-    const handleCommit = () => {
-        if (localValue === "") {
-            onCommit(null);
-            return;
-        }
-        const parsed = parseFloat(localValue);
-        // If parsed is NaN, we treat it as null (cleared) or revert? 
-        // Let's treat valid numbers as updates.
-        if (!isNaN(parsed)) {
-            // Only commit if different
-            if (parsed !== value) {
-                onCommit(parsed);
-            }
-        } else {
-            // If invalid input, maybe clear it?
-            if (value !== null) onCommit(null);
-        }
-    };
-
-    return (
-        <Input
-            {...props}
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleCommit}
-            onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                    handleCommit();
-                    (e.currentTarget as HTMLInputElement).blur();
-                }
-            }}
-        />
-    );
+    
+    return null;
 }
 
 export default function Valutazioni() {
+    const { 
+        students, 
+        classes, 
+        exercises, 
+        evaluations,
+        refreshEvaluations,
+    } = useSchoolData();
+    const client = useClient();
+
     // Filters
     const [selectedClassId, setSelectedClassId] = useState<string>("all");
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
 
     const { classId, exerciseId } = useParams();
-    console.log(classId, exerciseId);
+    
     useEffect(() => {
         if (classId && exerciseId) { 
             setSelectedClassId(classId);
             setSelectedExerciseId(exerciseId);
             
-            // Save current class to localStorage for "last opened" feature
             if (classId !== "all") {
                 localStorage.setItem("sportsgrade_last_class", classId);
             }
         }
     }, [classId, exerciseId]);
 
-    // Evaluations state (in real app, this would come from backend)
-    const [evaluations, setEvaluations] = useState<StudentEvaluation[]>([]);
-
     // Modal states
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
-    const [selectedStudentForGrading, setSelectedStudentForGrading] = useState<string | null>(null);
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [selectedEvaluationForGrading, setSelectedEvaluationForGrading] = useState<Evaluation | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+
+    // Session management - stores the start time of current session per exercise
+    // Evaluations created before this time are hidden (considered "old session")
+    const [sessionStartTimes, setSessionStartTimes] = useState<Record<string, string>>({});
 
     // Assignment modal state
     const [assignExerciseId, setAssignExerciseId] = useState<string>("");
@@ -169,119 +103,209 @@ export default function Valutazioni() {
     const [assignStudentIds, setAssignStudentIds] = useState<string[]>([]);
     const [assignMode, setAssignMode] = useState<"class" | "students">("class");
 
-    // Get current exercise
-    // const currentExercise = exercises.find((e) => e.id === selectedExerciseId);
+    // Grading panel state
+    const [performanceInputValue, setPerformanceInputValue] = useState<string>("");
+    const [notesValue, setNotesValue] = useState<string>("");
 
-    // Filter evaluations based on selected filters
+    // Get students for a class
+    const getStudentsForClass = useCallback((classId: string) => {
+        return students.filter(s => s.currentClassId === classId);
+    }, [students]);
+
+    // Filter and deduplicate evaluations based on selected filters
+    // Keep only the LATEST evaluation for each studentId+exerciseId pair
     const filteredEvaluations = useMemo(() => {
-        return evaluations.filter((ev) => {
+        // First, deduplicate: keep only the latest evaluation for each student+exercise pair
+        const latestEvaluations = new Map<string, Evaluation>();
+        
+        evaluations.forEach((ev) => {
+            const key = `${ev.studentId}-${ev.exerciseId}`;
+            const existing = latestEvaluations.get(key);
+            
+            // Keep the one with the latest createdAt or updatedAt
+            if (!existing || new Date(ev.createdAt) > new Date(existing.createdAt)) {
+                latestEvaluations.set(key, ev);
+            }
+        });
+
+        // Then filter by selected class, exercise, and session time
+        return Array.from(latestEvaluations.values()).filter((ev) => {
             const student = students.find((s) => s.id === ev.studentId);
             if (!student) return false;
 
-            const matchesClass = selectedClassId === "all" || student.classId === selectedClassId;
+            const matchesClass = selectedClassId === "all" || student.currentClassId === selectedClassId;
             const matchesExercise = selectedExerciseId === "all" || ev.exerciseId === selectedExerciseId;
+
+            // Session filtering: hide evaluations from before the session start time
+            const sessionStart = sessionStartTimes[ev.exerciseId];
+            if (sessionStart) {
+                const evalTime = new Date(ev.createdAt).getTime();
+                const sessionTime = new Date(sessionStart).getTime();
+                if (evalTime < sessionTime) {
+                    return false; // This evaluation is from a previous session
+                }
+            }
 
             return matchesClass && matchesExercise;
         });
-    }, [evaluations, selectedClassId, selectedExerciseId]);
+    }, [evaluations, students, selectedClassId, selectedExerciseId, sessionStartTimes]);
 
     // Group evaluations by status
     const groupedEvaluations = useMemo(() => {
-        const groups: Record<EvaluationStatus, StudentEvaluation[]> = {
+        const groups: Record<EvaluationStatus, Evaluation[]> = {
             "non-valutato": [],
             "valutando": [],
             "valutato": [],
         };
 
         filteredEvaluations.forEach((ev) => {
-            const exercise = exercises.find((e) => e.id === ev.exerciseId);
-            if (exercise) {
-                const status = getEvaluationStatus(ev, exercise);
-                groups[status].push(ev);
+            let status = getEvaluationStatus(ev);
+
+            // If this evaluation is currently selected for grading, force status to "valutando"
+            // This ensures the user sees who they are currently evaluating in the middle column
+            if (selectedEvaluationForGrading && 
+                ev.studentId === selectedEvaluationForGrading.studentId && 
+                ev.exerciseId === selectedEvaluationForGrading.exerciseId) {
+                status = "valutando";
             }
+
+            groups[status].push(ev);
         });
 
         return groups;
-    }, [filteredEvaluations]);
+    }, [filteredEvaluations, selectedEvaluationForGrading]);
 
-    // Handle assigning exercise
-    const handleAssignExercise = () => {
+    // Handle assigning exercise to students (creates evaluations)
+    const handleAssignExercise = async () => {
         if (!assignExerciseId) return;
 
         let studentIds: string[] = [];
         if (assignMode === "class" && assignClassId) {
-            studentIds = students.filter((s) => s.classId === assignClassId).map((s) => s.id);
+            studentIds = students.filter((s) => s.currentClassId === assignClassId).map((s) => s.id);
         } else {
             studentIds = assignStudentIds;
         }
 
-        const exercise = exercises.find((e) => e.id === assignExerciseId);
-        if (!exercise) return;
+        if (studentIds.length === 0) return;
 
-        // Create initial criteria values (all null)
-        const initialCriteria: Record<string, number | null> = {};
-        if (exercise.customCriteria && exercise.customCriteria.length > 0) {
-            exercise.customCriteria.forEach((c) => {
-                initialCriteria[c.id] = null;
-            });
-        } else {
-            initialCriteria["value"] = null;
-        }
-
-        // Create evaluations for each student (avoid duplicates)
-        const newEvaluations: StudentEvaluation[] = [];
-        studentIds.forEach((studentId) => {
-            const exists = evaluations.some(
-                (ev) => ev.studentId === studentId && ev.exerciseId === assignExerciseId
-            );
-            if (!exists) {
-                newEvaluations.push({
-                    studentId,
-                    exerciseId: assignExerciseId,
-                    criteriaValues: { ...initialCriteria },
-                    notes: "",
-                    createdAt: new Date().toISOString(),
-                });
+        setIsSubmitting(true);
+        try {
+            // Create evaluations for each student (avoid duplicates)
+            for (const studentId of studentIds) {
+                const exists = evaluations.some(
+                    (ev) => ev.studentId === studentId && ev.exerciseId === assignExerciseId
+                );
+                if (!exists) {
+                    await client.createEvaluation({
+                        studentId,
+                        exerciseId: assignExerciseId,
+                        performanceValue: "",
+                        score: 0,
+                        comments: "",
+                    });
+                }
             }
-        });
 
-        setEvaluations([...evaluations, ...newEvaluations]);
-        setIsAssignModalOpen(false);
-        setAssignExerciseId("");
-        setAssignClassId("");
-        setAssignStudentIds([]);
+            await refreshEvaluations();
+            setIsAssignModalOpen(false);
+            setAssignExerciseId("");
+            setAssignClassId("");
+            setAssignStudentIds([]);
 
-        // Auto-select the exercise filter
-        if (selectedExerciseId === "all") {
-            setSelectedExerciseId(assignExerciseId);
+            // Auto-select the exercise filter
+            if (selectedExerciseId === "all") {
+                setSelectedExerciseId(assignExerciseId);
+            }
+        } catch (error) {
+            console.error("Error assigning exercise:", error);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    // Handle updating a criterion value
-    const handleUpdateCriterion = (studentId: string, criterionId: string, value: number) => {
-        setEvaluations((prev) =>
-            prev.map((ev) => {
-                if (ev.studentId === studentId && ev.exerciseId === selectedExerciseId) {
-                    return {
-                        ...ev,
-                        criteriaValues: { ...ev.criteriaValues, [criterionId]: value },
-                    };
-                }
-                return ev;
-            })
-        );
+    // Select an evaluation for grading
+    const selectEvaluationForGrading = (evaluation: Evaluation) => {
+        setSelectedEvaluationForGrading(evaluation);
+        setPerformanceInputValue(evaluation.performanceValue?.toString() || "");
+        setNotesValue(evaluation.comments || "");
     };
 
-    // Handle updating notes
-    const handleUpdateNotes = (studentId: string, notes: string) => {
-        setEvaluations((prev) =>
-            prev.map((ev) => {
-                if (ev.studentId === studentId && ev.exerciseId === selectedExerciseId) {
-                    return { ...ev, notes };
+    // Save evaluation changes - this creates a new record (backend will have duplicates, but we deduplicate on frontend)
+    const handleSaveEvaluation = async (confirmed: boolean) => {
+        if (!selectedEvaluationForGrading) return;
+
+        const student = students.find(s => s.id === selectedEvaluationForGrading.studentId);
+        const exercise = exercises.find(e => e.id === selectedEvaluationForGrading.exerciseId);
+        if (!student || !exercise) return;
+
+        setIsSaving(true);
+        try {
+            const performanceNum = parseFloat(performanceInputValue);
+            let calculatedScore = 0;
+            
+            // Only calculate score if confirmed, otherwise leave as 0 (Draft)
+            if (confirmed && !isNaN(performanceNum)) {
+                const score = calculateScore(performanceNum, exercise, student.gender);
+                if (score !== null) {
+                    calculatedScore = score;
                 }
-                return ev;
-            })
-        );
+            }
+
+            // Create new evaluation with updated values
+            // The frontend deduplication will keep only the latest one
+            await client.createEvaluation({
+                studentId: selectedEvaluationForGrading.studentId,
+                exerciseId: selectedEvaluationForGrading.exerciseId,
+                performanceValue: performanceInputValue,
+                score: calculatedScore,
+                comments: notesValue,
+            });
+
+            await refreshEvaluations();
+            
+            // Only close if confirmed, otherwise keep open to show "Saved Draft" status or similar? 
+            // Actually, usually user might want to move to next. 
+            // If draft, maybe keep open. If confirmed, close.
+            if (confirmed) {
+                setSelectedEvaluationForGrading(null);
+            } else {
+                // If draft, we might want to update the local selected state to reflect the new ID if we were using it, 
+                // but here we use studentId+exerciseId so it should remain valid.
+                // We just need to trigger a refresh of the "selectedEvaluationForGrading" object 
+                // because it might need to reflect the new "Saved" status (even if draft).
+                // However, since we rely on `evaluations` which is refreshed, and we select by ID...
+                // Actually `selectedEvaluationForGrading` is a separate state object. 
+                // We should probably update it or re-fetch it.
+                // For simplicity, we can close or just update the object.
+                // Let's update the object manually so UI reflects change without closing.
+                setSelectedEvaluationForGrading({
+                    ...selectedEvaluationForGrading,
+                    performanceValue: performanceInputValue,
+                    score: calculatedScore,
+                    comments: notesValue,
+                    // We don't have the new ID, but that's okay for display
+                } as Evaluation);
+            }
+        } catch (error) {
+            console.error("Error saving evaluation:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Reset current session - set a new session start time to hide old evaluations
+    const handleResetSession = () => {
+        if (selectedExerciseId === "all") return;
+        
+        // Set the session start time for this exercise to NOW
+        // This will filter out all evaluations created before this time
+        setSessionStartTimes(prev => ({
+            ...prev,
+            [selectedExerciseId]: new Date().toISOString()
+        }));
+        
+        setIsResetDialogOpen(false);
+        setSelectedEvaluationForGrading(null);
     };
 
     // Get student details
@@ -292,6 +316,12 @@ export default function Valutazioni() {
     // Get exercise details
     const getExercise = (exerciseId: string): Exercise | undefined => {
         return exercises.find((e) => e.id === exerciseId);
+    };
+
+    // Get class name
+    const getClassName = (classId: string): string => {
+        const cls = classes.find(c => c.id === classId);
+        return cls?.className || "N/A";
     };
 
     // Column component
@@ -331,8 +361,8 @@ export default function Valutazioni() {
                                 const exercise = getExercise(ev.exerciseId);
                                 if (!student || !exercise) return null;
 
-                                const finalGrade = calculateFinalGrade(ev, exercise, student);
-                                const isSelected = selectedStudentForGrading === ev.studentId;
+                                const isSelected = selectedEvaluationForGrading?.studentId === ev.studentId &&
+                                    selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
 
                                 return (
                                     <Card
@@ -341,7 +371,7 @@ export default function Valutazioni() {
                                             "cursor-pointer transition-all hover:shadow-md",
                                             isSelected && "ring-2 ring-primary"
                                         )}
-                                        onClick={() => setSelectedStudentForGrading(ev.studentId)}
+                                        onClick={() => selectEvaluationForGrading(ev)}
                                     >
                                         <CardContent className="p-3">
                                             <div className="flex items-center gap-3">
@@ -349,22 +379,22 @@ export default function Valutazioni() {
                                                     <User className="h-5 w-5 text-primary" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-medium truncate">{student.fullName}</p>
+                                                    <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <Badge variant="outline" className="text-xs">
-                                                            {student.className}
+                                                            {getClassName(student.currentClassId)}
                                                         </Badge>
                                                         <span className="truncate">{exercise.name}</span>
                                                     </div>
                                                 </div>
-                                                {finalGrade !== null && (
+                                                {ev.score > 0 && (
                                                     <div
                                                         className={cn(
                                                             "text-lg font-bold",
-                                                            finalGrade >= 6 ? "text-green-600" : "text-red-600"
+                                                            ev.score >= 6 ? "text-green-600" : "text-red-600"
                                                         )}
                                                     >
-                                                        {finalGrade}
+                                                        {ev.score}
                                                     </div>
                                                 )}
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -382,21 +412,19 @@ export default function Valutazioni() {
 
     // Grading panel component
     const GradingPanel = () => {
-        if (!selectedStudentForGrading || selectedExerciseId === "all") return null;
+        if (!selectedEvaluationForGrading) return null;
 
-        const evaluation = evaluations.find(
-            (ev) => ev.studentId === selectedStudentForGrading && ev.exerciseId === selectedExerciseId
-        );
-        if (!evaluation) return null;
-
-        const student = getStudent(selectedStudentForGrading);
-        const exercise = getExercise(selectedExerciseId);
+        const student = getStudent(selectedEvaluationForGrading.studentId);
+        const exercise = getExercise(selectedEvaluationForGrading.exerciseId);
         if (!student || !exercise) return null;
 
-        const criteria = exercise.customCriteria || [];
-        const isRangeBased = criteria.length === 0;
-        const finalGrade = calculateFinalGrade(evaluation, exercise, student);
-        const status = getEvaluationStatus(evaluation, exercise);
+        const status = getEvaluationStatus(selectedEvaluationForGrading);
+
+        // Calculate score preview
+        const performanceNum = parseFloat(performanceInputValue);
+        const previewScore = !isNaN(performanceNum) 
+            ? calculateScore(performanceNum, exercise, student.gender)
+            : null;
 
         return (
             <Card className="w-full max-w-md">
@@ -406,7 +434,7 @@ export default function Valutazioni() {
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setSelectedStudentForGrading(null)}
+                            onClick={() => setSelectedEvaluationForGrading(null)}
                         >
                             <X className="h-4 w-4" />
                         </Button>
@@ -416,9 +444,9 @@ export default function Valutazioni() {
                             <User className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p className="font-semibold">{student.fullName}</p>
+                            <p className="font-semibold">{student.firstName} {student.lastName}</p>
                             <p className="text-sm text-muted-foreground">
-                                {student.className} • {exercise.name}
+                                {getClassName(student.currentClassId)} • {exercise.name}
                             </p>
                         </div>
                     </div>
@@ -446,69 +474,41 @@ export default function Valutazioni() {
                         </Badge>
                     </div>
 
-                    {/* Criteria sliders */}
-                    <div className="space-y-4">
-                        {isRangeBased ? (
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Prestazione ({exercise.unit || 'valore'})</Label>
-                                    <div className="flex gap-2">
-                                        <BufferedInput
-                                            type="number"
-                                            step="0.01"
-                                            placeholder={`Inserisci ${exercise.unit || 'valore'}`}
-                                            value={evaluation.criteriaValues["value"]}
-                                            onCommit={(val) => {
-                                                handleUpdateCriterion(student.id, "value", val as any);
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-
-                                {evaluation.criteriaValues["value"] !== null && finalGrade !== null && (
-                                    <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-800 p-2 rounded">
-                                        <span className="text-sm font-medium">Voto Calcolato:</span>
-                                        <Badge variant={finalGrade >= 6 ? "default" : "destructive"}>
-                                            {finalGrade}
-                                        </Badge>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            criteria.map((criterion: CustomCriterion) => (
-                                <div key={criterion.id} className="space-y-2">
-                                    <div className="flex justify-between">
-                                        <Label>{criterion.name}</Label>
-                                        <span className="text-sm font-medium">
-                                            {evaluation.criteriaValues[criterion.id] ?? "-"}/{criterion.maxScore}
-                                        </span>
-                                    </div>
-                                    <Slider
-                                        value={[evaluation.criteriaValues[criterion.id] ?? 1]}
-                                        onValueChange={(vals) =>
-                                            handleUpdateCriterion(student.id, criterion.id, vals[0])
-                                        }
-                                        min={1}
-                                        max={criterion.maxScore}
-                                        step={0.5}
-                                    />
-                                </div>
-                            ))
-                        )}
+                    {/* Performance input */}
+                    <div className="space-y-2">
+                        <Label>Prestazione ({exercise.unit})</Label>
+                        <Input
+                            type="number"
+                            step="0.01"
+                            placeholder={`Inserisci ${exercise.unit}`}
+                            value={performanceInputValue}
+                            onChange={(e) => setPerformanceInputValue(e.target.value)}
+                        />
                     </div>
 
-                    {/* Final grade */}
-                    {finalGrade !== null && (
+                    {/* Score preview */}
+                    {previewScore !== null ? (
                         <div className="p-4 rounded-lg bg-muted/50 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Voto Finale</p>
+                            <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
                             <p
                                 className={cn(
                                     "text-3xl font-bold",
-                                    finalGrade >= 6 ? "text-green-600" : "text-red-600"
+                                    previewScore >= 6 ? "text-green-600" : "text-red-600"
                                 )}
                             >
-                                {finalGrade}
+                                {previewScore}
                             </p>
+                        </div>
+                    ) : (
+                        <div className="p-4 rounded-lg bg-muted/50 text-center">
+                            <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                         </div>
+                    )}
+                    
+                    {!exercise.evaluationRanges && (
+                        <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                            ⚠️ Questo esercizio non ha fasce di valutazione configurate. 
+                            Vai alla pagina Esercizi per configurarle.
                         </div>
                     )}
 
@@ -516,11 +516,39 @@ export default function Valutazioni() {
                     <div className="space-y-2">
                         <Label>Note</Label>
                         <Textarea
-                            value={evaluation.notes}
-                            onChange={(e) => handleUpdateNotes(student.id, e.target.value)}
+                            value={notesValue}
+                            onChange={(e) => setNotesValue(e.target.value)}
                             placeholder="Aggiungi note sulla prestazione..."
                             rows={3}
                         />
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <Button 
+                            variant="outline"
+                            onClick={() => handleSaveEvaluation(false)}
+                            disabled={isSaving || !performanceInputValue}
+                        >
+                            {isSaving ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="mr-2 h-4 w-4" />
+                            )}
+                            Salva Bozza
+                        </Button>
+                        <Button 
+                            
+                            onClick={() => handleSaveEvaluation(true)}
+                            disabled={isSaving || !performanceInputValue || previewScore === null}
+                        >
+                            {isSaving ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Check className="mr-2 h-4 w-4" />
+                            )}
+                            Conferma Voto
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -533,7 +561,6 @@ export default function Valutazioni() {
 
     return (
         <>
-
             <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -542,11 +569,23 @@ export default function Valutazioni() {
                         <p className="text-muted-foreground">
                             Gestisci le valutazioni degli studenti
                         </p>
+                </div>
+                    <div className="flex items-center gap-2">
+                        {selectedExerciseId !== "all" && filteredEvaluations.length > 0 && (
+                            <Button 
+                                variant="outline" 
+                                className="gap-2 text-destructive hover:text-destructive" 
+                                onClick={() => setIsResetDialogOpen(true)}
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                                Nuova Sessione
+                            </Button>
+                        )}
+                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)}>
+                            <Plus className="h-4 w-4" />
+                            Assegna Esercizio
+                        </Button>
                     </div>
-                    <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)}>
-                        <Plus className="h-4 w-4" />
-                        Assegna Esercizio
-                    </Button>
                 </div>
 
                 {/* Filters and stats */}
@@ -560,7 +599,7 @@ export default function Valutazioni() {
                                 <SelectItem value="all">Tutte le classi</SelectItem>
                                 {classes.map((cls) => (
                                     <SelectItem key={cls.id} value={cls.id}>
-                                        Classe {cls.name}
+                                        Classe {cls.className}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -625,7 +664,7 @@ export default function Valutazioni() {
                     </div>
 
                     {/* Grading panel */}
-                    {selectedStudentForGrading && selectedExerciseId !== "all" && (
+                    {selectedEvaluationForGrading && (
                         <GradingPanel />
                     )}
                 </div>
@@ -703,7 +742,7 @@ export default function Valutazioni() {
                                     <SelectContent>
                                         {classes.map((cls) => (
                                             <SelectItem key={cls.id} value={cls.id}>
-                                                {cls.name} ({cls.studentCount} studenti)
+                                                {cls.className} ({getStudentsForClass(cls.id).length} studenti)
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -736,9 +775,9 @@ export default function Valutazioni() {
                                                     htmlFor={student.id}
                                                     className="text-sm flex-1 cursor-pointer"
                                                 >
-                                                    {student.fullName}
+                                                    {student.firstName} {student.lastName}
                                                     <span className="text-muted-foreground ml-2">
-                                                        ({student.className})
+                                                        ({getClassName(student.currentClassId)})
                                                     </span>
                                                 </label>
                                             </div>
@@ -760,17 +799,38 @@ export default function Valutazioni() {
                         <Button
                             onClick={handleAssignExercise}
                             disabled={
+                                isSubmitting ||
                                 !assignExerciseId ||
                                 (assignMode === "class" && !assignClassId) ||
                                 (assignMode === "students" && assignStudentIds.length === 0)
                             }
                         >
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Assegna
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
+            {/* Reset Session Confirmation Dialog */}
+            <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Nuova Sessione di Valutazione</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Vuoi iniziare una nuova sessione di valutazione? 
+                            Le valutazioni esistenti rimarranno salvate nel sistema.
+                            Puoi riassegnare l'esercizio alla classe per ricominciare.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetSession}>
+                            Conferma
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

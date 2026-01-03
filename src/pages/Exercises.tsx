@@ -32,6 +32,8 @@ import {
   Star,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { IconGenderMale, IconGenderFemale } from "@tabler/icons-react";
 
@@ -79,6 +81,21 @@ export default function Exercises() {
   // New group dialog
   const [newGroupDialogOpen, setNewGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  
+  // Detail/Edit dialog
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    exerciseGroupId: "",
+    unit: "cm" as BackendUnit,
+    maxScore: 10,
+  });
+  const [editRangesMale, setEditRangesMale] = useState<ScoreRange[]>([]);
+  const [editRangesFemale, setEditRangesFemale] = useState<ScoreRange[]>([]);
+  const [editUseGenderRanges, setEditUseGenderRanges] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   // Form state for new exercise
@@ -290,6 +307,97 @@ export default function Exercises() {
     setDeleteDialogOpen(true);
   };
 
+  const openDetailDialog = (exercise: Exercise) => {
+    setSelectedExercise(exercise);
+    setEditFormData({
+      name: exercise.name,
+      exerciseGroupId: exercise.exerciseGroupId,
+      unit: exercise.unit,
+      maxScore: exercise.maxScore || 10,
+    });
+    // Load ranges if they exist
+    if (exercise.evaluationRanges?.M) {
+      setEditRangesMale(exercise.evaluationRanges.M);
+    } else {
+      setEditRangesMale([{ min: 0, max: 100, score: 6 }]);
+    }
+    if (exercise.evaluationRanges?.F) {
+      setEditRangesFemale(exercise.evaluationRanges.F);
+      setEditUseGenderRanges(true);
+    } else {
+      setEditRangesFemale([{ min: 0, max: 100, score: 6 }]);
+      setEditUseGenderRanges(false);
+    }
+    setIsEditing(false);
+    setDetailDialogOpen(true);
+  };
+
+  const handleUpdateExercise = async () => {
+    if (!selectedExercise) return;
+
+    setIsUpdating(true);
+    try {
+      // Build evaluation ranges
+      let evaluationRanges: Partial<Record<Gender, ScoreRange[]>> | undefined;
+      if (editRangesMale.length > 0) {
+        evaluationRanges = {
+          M: editRangesMale,
+          F: editUseGenderRanges ? editRangesFemale : editRangesMale,
+        };
+      }
+
+      const response = await client.updateExercise(selectedExercise.id, {
+        name: editFormData.name,
+        exerciseGroupId: editFormData.exerciseGroupId,
+        unit: editFormData.unit,
+        maxScore: editFormData.maxScore,
+        evaluationRanges,
+      });
+
+      if (response.success) {
+        await refreshExercises();
+        setIsEditing(false);
+        setDetailDialogOpen(false);
+      } else {
+        console.error("Failed to update exercise:", response.error);
+      }
+    } catch (error) {
+      console.error("Error updating exercise:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Edit range management
+  const addEditRange = (gender: 'M' | 'F') => {
+    const newRange = { min: 0, max: 100, score: 6 };
+    if (gender === 'M') {
+      setEditRangesMale([...editRangesMale, newRange]);
+    } else {
+      setEditRangesFemale([...editRangesFemale, newRange]);
+    }
+  };
+
+  const removeEditRange = (gender: 'M' | 'F', index: number) => {
+    if (gender === 'M' && editRangesMale.length > 1) {
+      setEditRangesMale(editRangesMale.filter((_, i) => i !== index));
+    } else if (gender === 'F' && editRangesFemale.length > 1) {
+      setEditRangesFemale(editRangesFemale.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateEditRange = (gender: 'M' | 'F', index: number, field: keyof ScoreRange, value: number) => {
+    if (gender === 'M') {
+      const updated = [...editRangesMale];
+      updated[index] = { ...updated[index], [field]: value };
+      setEditRangesMale(updated);
+    } else {
+      const updated = [...editRangesFemale];
+      updated[index] = { ...updated[index], [field]: value };
+      setEditRangesFemale(updated);
+    }
+  };
+
   // Render range editor for a gender
   const renderRangeEditor = (ranges: ScoreRange[], gender: 'M' | 'F', label: string) => (
     <div className="space-y-3">
@@ -496,7 +604,7 @@ export default function Exercises() {
                             <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" size="sm" onClick={() => openDeleteDialog(ex)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" size="sm">
+                            <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" size="sm" onClick={() => openDetailDialog(ex)}>
                               Dettagli <Dumbbell className="ml-2 h-3 w-3" />
                             </Button>
                           </CardFooter>
@@ -716,6 +824,338 @@ export default function Exercises() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Exercise Detail/Edit Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={(open) => { setDetailDialogOpen(open); if (!open) setIsEditing(false); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <Dumbbell className="h-5 w-5" />
+                {isEditing ? "Modifica Esercizio" : "Dettagli Esercizio"}
+              </DialogTitle>
+              {!isEditing && (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifica
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
+
+          {selectedExercise && (
+            <div className="space-y-6 py-4">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Nome Esercizio</Label>
+                  {isEditing ? (
+                    <Input
+                      value={editFormData.name}
+                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md font-medium">{selectedExercise.name}</div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Gruppo</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editFormData.exerciseGroupId} 
+                        onValueChange={(value) => setEditFormData({ ...editFormData, exerciseGroupId: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {exerciseGroups.map((group) => (
+                            <SelectItem key={group.id} value={group.id}>
+                              {group.groupName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="p-3 bg-muted rounded-md">{getGroupName(selectedExercise.exerciseGroupId)}</div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Unità di Misura</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editFormData.unit} 
+                        onValueChange={(value) => setEditFormData({ ...editFormData, unit: value as BackendUnit })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="cm">Centimetri (cm)</SelectItem>
+                          <SelectItem value="m">Metri (m)</SelectItem>
+                          <SelectItem value="sec">Secondi (sec)</SelectItem>
+                          <SelectItem value="reps">Ripetizioni</SelectItem>
+                          <SelectItem value="qualitativo">Qualitativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="p-3 bg-muted rounded-md">{unitDisplayNames[selectedExercise.unit] || selectedExercise.unit}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Punteggio Massimo</Label>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={editFormData.maxScore}
+                      onChange={(e) => setEditFormData({ ...editFormData, maxScore: parseInt(e.target.value) || 10 })}
+                    />
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">{selectedExercise.maxScore || 10}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Evaluation Ranges Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Fasce di Valutazione</Label>
+                  {isEditing && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="edit-use-gender-ranges"
+                        checked={editUseGenderRanges}
+                        onChange={(e) => setEditUseGenderRanges(e.target.checked)}
+                        className="rounded"
+                      />
+                      <Label htmlFor="edit-use-gender-ranges" className="text-sm cursor-pointer">
+                        Fasce diverse per M/F
+                      </Label>
+                    </div>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    {/* Male Ranges */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <IconGenderMale className="h-4 w-4 text-blue-500" />
+                          {editUseGenderRanges ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                        </Label>
+                        <Button type="button" variant="outline" size="sm" onClick={() => addEditRange('M')} className="h-7 text-xs">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Aggiungi
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {editRangesMale.map((range, index) => (
+                          <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
+                            <div className="flex-1 grid grid-cols-3 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Min</Label>
+                                <Input
+                                  type="number"
+                                  value={range.min}
+                                  onChange={(e) => updateEditRange('M', index, 'min', parseFloat(e.target.value) || 0)}
+                                  className="h-8"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Max</Label>
+                                <Input
+                                  type="number"
+                                  value={range.max}
+                                  onChange={(e) => updateEditRange('M', index, 'max', parseFloat(e.target.value) || 0)}
+                                  className="h-8"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Voto</Label>
+                                <Select
+                                  value={range.score.toString()}
+                                  onValueChange={(v) => updateEditRange('M', index, 'score', parseInt(v))}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {italianScores.map((score) => (
+                                      <SelectItem key={score} value={score.toString()}>
+                                        {score}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            {editRangesMale.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeEditRange('M', index)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Female Ranges (only if gender ranges enabled) */}
+                    {editUseGenderRanges && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-medium flex items-center gap-2">
+                            <IconGenderFemale className="h-4 w-4 text-pink-500" />
+                            Fasce Femmine
+                          </Label>
+                          <Button type="button" variant="outline" size="sm" onClick={() => addEditRange('F')} className="h-7 text-xs">
+                            <Plus className="h-3 w-3 mr-1" />
+                            Aggiungi
+                          </Button>
+                        </div>
+                        <div className="space-y-2">
+                          {editRangesFemale.map((range, index) => (
+                            <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
+                              <div className="flex-1 grid grid-cols-3 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Min</Label>
+                                  <Input
+                                    type="number"
+                                    value={range.min}
+                                    onChange={(e) => updateEditRange('F', index, 'min', parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Max</Label>
+                                  <Input
+                                    type="number"
+                                    value={range.max}
+                                    onChange={(e) => updateEditRange('F', index, 'max', parseFloat(e.target.value) || 0)}
+                                    className="h-8"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Voto</Label>
+                                  <Select
+                                    value={range.score.toString()}
+                                    onValueChange={(v) => updateEditRange('F', index, 'score', parseInt(v))}
+                                  >
+                                    <SelectTrigger className="h-8">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {italianScores.map((score) => (
+                                        <SelectItem key={score} value={score.toString()}>
+                                          {score}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              {editRangesFemale.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeEditRange('F', index)}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* View Mode - Show ranges */
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    {selectedExercise.evaluationRanges?.M ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium flex items-center gap-2">
+                            <IconGenderMale className="h-4 w-4 text-blue-500" />
+                            Fasce Maschi
+                          </Label>
+                          <div className="grid grid-cols-3 gap-2 text-sm">
+                            {selectedExercise.evaluationRanges.M.map((range, i) => (
+                              <div key={i} className="p-2 bg-background rounded border text-center">
+                                {range.min}-{range.max} → <strong>{range.score}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        {selectedExercise.evaluationRanges?.F && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium flex items-center gap-2">
+                              <IconGenderFemale className="h-4 w-4 text-pink-500" />
+                              Fasce Femmine
+                            </Label>
+                            <div className="grid grid-cols-3 gap-2 text-sm">
+                              {selectedExercise.evaluationRanges.F.map((range, i) => (
+                                <div key={i} className="p-2 bg-background rounded border text-center">
+                                  {range.min}-{range.max} → <strong>{range.score}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nessuna fascia di valutazione configurata</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Metadata */}
+              {!isEditing && (
+                <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t">
+                  <p>Creato: {new Date(selectedExercise.createdAt).toLocaleDateString('it-IT')}</p>
+                  <p>Aggiornato: {new Date(selectedExercise.updatedAt).toLocaleDateString('it-IT')}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            {isEditing ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  Annulla
+                </Button>
+                <Button onClick={handleUpdateExercise} disabled={isUpdating}>
+                  {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" />
+                  Salva Modifiche
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+                Chiudi
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
