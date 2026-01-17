@@ -1,17 +1,34 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
-import { useSchoolData } from "@/provider/clientProvider";
-import { ArrowLeft, Award, TrendingUp, Calendar, BookOpen } from "lucide-react";
+import { useSchoolData, useClient } from "@/provider/clientProvider";
+import { ArrowLeft, Award, TrendingUp, Calendar, BookOpen, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import type { Evaluation } from "@/types/types";
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
-    const { students, classes, evaluations, exercises, exerciseGroups } = useSchoolData();
+    const { students, classes, evaluations, exercises, exerciseGroups, refreshEvaluations } = useSchoolData();
+    const client = useClient();
+
+    // Delete evaluation state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [evaluationToDelete, setEvaluationToDelete] = useState<Evaluation | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Find the student
     const student = useMemo(() => {
@@ -24,10 +41,12 @@ export default function StudentDetail() {
         return classes.find(c => c.id === student.currentClassId);
     }, [student, classes]);
 
-    // Get evaluations for this student
+    // Get evaluations for this student (only confirmed ones with score > 0)
     const studentEvaluations = useMemo(() => {
         if (!student) return [];
-        return evaluations.filter(e => e.studentId === student.id);
+        // Filter to only include evaluations with score > 0 (confirmed/valutato)
+        // Excludes NON VALUTATO and VALUTANDO which have score = 0
+        return evaluations.filter(e => e.studentId === student.id && e.score > 0);
     }, [evaluations, student]);
 
     // Get exercise info for an evaluation
@@ -354,6 +373,7 @@ export default function StudentDetail() {
                                     <TableHead>Prestazione</TableHead>
                                     <TableHead>Voto</TableHead>
                                     <TableHead>Data</TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -381,6 +401,19 @@ export default function StudentDetail() {
                                             <TableCell className="text-muted-foreground">
                                                 {new Date(ev.createdAt).toLocaleDateString("it-IT")}
                                             </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => {
+                                                        setEvaluationToDelete(ev);
+                                                        setDeleteDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     );
                                 })}
@@ -398,6 +431,55 @@ export default function StudentDetail() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Eliminare questa valutazione?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Stai per eliminare la valutazione per l'esercizio "{evaluationToDelete ? getExerciseInfo(evaluationToDelete.exerciseId).name : ''}".
+                            Questa azione non può essere annullata.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={isDeleting}
+                            onClick={async (e) => {
+                                e.preventDefault();
+                                if (!evaluationToDelete) return;
+                                
+                                setIsDeleting(true);
+                                try {
+                                    const response = await client.deleteEvaluation(evaluationToDelete.id);
+                                    if (response.success) {
+                                        await refreshEvaluations();
+                                        setDeleteDialogOpen(false);
+                                        setEvaluationToDelete(null);
+                                    } else {
+                                        console.error("Failed to delete evaluation:", response.error);
+                                    }
+                                } catch (error) {
+                                    console.error("Error deleting evaluation:", error);
+                                } finally {
+                                    setIsDeleting(false);
+                                }
+                            }}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Eliminazione...
+                                </>
+                            ) : (
+                                "Elimina"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

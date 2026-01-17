@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
-import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw } from "lucide-react";
+import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useParams } from "react-router-dom";
 import {
@@ -92,6 +92,8 @@ export default function Valutazioni() {
     const [selectedEvaluationForGrading, setSelectedEvaluationForGrading] = useState<Evaluation | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Session management - stores the start time of current session per exercise
     // Evaluations created before this time are hidden (considered "old session")
@@ -306,6 +308,27 @@ export default function Valutazioni() {
         
         setIsResetDialogOpen(false);
         setSelectedEvaluationForGrading(null);
+    };
+
+    // Handle deleting an evaluation
+    const handleDeleteEvaluation = async () => {
+        if (!selectedEvaluationForGrading) return;
+
+        setIsDeleting(true);
+        try {
+            const response = await client.deleteEvaluation(selectedEvaluationForGrading.id);
+            if (response.success) {
+                await refreshEvaluations();
+                setSelectedEvaluationForGrading(null);
+                setIsDeleteDialogOpen(false);
+            } else {
+                console.error("Failed to delete evaluation:", response.error);
+            }
+        } catch (error) {
+            console.error("Error deleting evaluation:", error);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Get student details
@@ -550,6 +573,17 @@ export default function Valutazioni() {
                             Conferma Voto
                         </Button>
                     </div>
+
+                    {/* Delete button */}
+                    <Button 
+                        variant="ghost"
+                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
+                        onClick={() => setIsDeleteDialogOpen(true)}
+                        disabled={isDeleting}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Elimina Valutazione
+                    </Button>
                 </CardContent>
             </Card>
         );
@@ -827,6 +861,39 @@ export default function Valutazioni() {
                         <AlertDialogCancel>Annulla</AlertDialogCancel>
                         <AlertDialogAction onClick={handleResetSession}>
                             Conferma
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Delete Evaluation Confirmation Dialog */}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Eliminare questa valutazione?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Stai per eliminare la valutazione per questo studente.
+                            Questa azione non può essere annullata.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={isDeleting}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteEvaluation();
+                            }}
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Eliminazione...
+                                </>
+                            ) : (
+                                "Elimina"
+                            )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

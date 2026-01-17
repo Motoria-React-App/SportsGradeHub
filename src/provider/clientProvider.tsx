@@ -61,7 +61,9 @@ function toUIStudent(
     evaluations: Evaluation[]
 ): UIStudent {
     const studentClass = classes.find(c => c.id === student.currentClassId);
-    const studentEvals = evaluations.filter(e => e.studentId === student.id);
+    // Filter to only include confirmed evaluations (score > 0)
+    // Excludes NON VALUTATO and VALUTANDO which have score = 0
+    const studentEvals = evaluations.filter(e => e.studentId === student.id && e.score > 0);
     const avgGrade = studentEvals.length > 0
         ? studentEvals.reduce((sum, e) => sum + e.score, 0) / studentEvals.length
         : 0;
@@ -125,7 +127,9 @@ function toUIClass(
 ): UIClass {
     const classStudents = students.filter(s => s.currentClassId === schoolClass.id);
     const classStudentIds = classStudents.map(s => s.id);
-    const classEvals = evaluations.filter(e => classStudentIds.includes(e.studentId));
+    // Filter to only include confirmed evaluations (score > 0)
+    // Excludes NON VALUTATO and VALUTANDO which have score = 0
+    const classEvals = evaluations.filter(e => classStudentIds.includes(e.studentId) && e.score > 0);
     const avgGrade = classEvals.length > 0
         ? classEvals.reduce((sum, e) => sum + e.score, 0) / classEvals.length
         : 0;
@@ -318,7 +322,7 @@ class Client {
         return await this.sendRequest<Evaluation[]>(`/api/evaluations/student/${studentId}`, "GET");
     }
 
-    public async createEvaluation(data: Omit<Evaluation, 'ownerId' | 'createdAt' | 'updatedAt'>) {
+    public async createEvaluation(data: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) {
         return await this.sendRequest<Evaluation>("/api/evaluations", "POST", data);
     }
 

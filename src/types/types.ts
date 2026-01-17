@@ -62,6 +62,7 @@ export interface ScoreRange {
 }
 
 export interface Evaluation {
+    id: string;
     studentId: string;
     ownerId: string;
     exerciseId: string;
