@@ -374,18 +374,18 @@ export default function Settings() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Ora Inizio</Label>
-                                        <Input 
-                                            type="time" 
-                                            value={newSlotStart} 
-                                            onChange={(e) => setNewSlotStart(e.target.value)} 
+                                        <Input
+                                            type="time"
+                                            value={newSlotStart}
+                                            onChange={(e) => setNewSlotStart(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Ora Fine</Label>
-                                        <Input 
-                                            type="time" 
-                                            value={newSlotEnd} 
-                                            onChange={(e) => setNewSlotEnd(e.target.value)} 
+                                        <Input
+                                            type="time"
+                                            value={newSlotEnd}
+                                            onChange={(e) => setNewSlotEnd(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -419,7 +419,7 @@ export default function Settings() {
                                 {DAYS_ORDER.map((day) => {
                                     const daySlots = getSlotsByDay(day);
                                     if (daySlots.length === 0) return null;
-                                    
+
                                     return (
                                         <div key={day} className="space-y-2">
                                             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
@@ -429,8 +429,8 @@ export default function Settings() {
                                                 {daySlots.map((slot) => {
                                                     const classInfo = classes.find(c => c.id === slot.classId);
                                                     return (
-                                                        <div 
-                                                            key={slot.id} 
+                                                        <div
+                                                            key={slot.id}
                                                             className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border"
                                                         >
                                                             <div className="flex items-center gap-3">
@@ -439,12 +439,12 @@ export default function Settings() {
                                                                     {slot.startTime} - {slot.endTime}
                                                                 </div>
                                                                 <div className="font-medium">
-                                                                {classInfo?.className || slot.classId}
+                                                                    {classInfo?.className || slot.classId}
                                                                 </div>
                                                             </div>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="sm" 
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
                                                                 onClick={() => removeSlot(slot.id)}
                                                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                             >
@@ -457,7 +457,7 @@ export default function Settings() {
                                         </div>
                                     );
                                 })}
-                                
+
                                 {schedule.length === 0 && (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -648,7 +648,7 @@ export default function Settings() {
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-medium">{user?.user.email || "Utente Ospite"}</h3>
-                                        <p className="text-sm text-muted-foreground">Insegnante</p>
+                                        <p className="text-sm text-muted-foreground">{user?.user.email == "admin@gmail.com" ? "Amministratore" : "Docente"}</p>
                                     </div>
                                 </div>
 
@@ -659,13 +659,33 @@ export default function Settings() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="role">Ruolo</Label>
-                                        <Input id="role" value="Amministratore" disabled />
+                                        <Input id="role" value={user?.user.email == "admin@gmail.com" ? "Amministratore" : "Docente"} disabled />
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex justify-between border-t px-6 py-4">
                                 <p className="text-sm text-muted-foreground">
-                                    Sessione scade tra: {client.isRefreshTokenNearExpiry(24) ? "breve" : "24 ore"}
+                                    Sessione scade: {(() => {
+                                        const expiration = client.getRefreshTokenExpiration();
+                                        if (!expiration) return "Non disponibile";
+
+                                        const now = new Date();
+                                        const diffMs = expiration.getTime() - now.getTime();
+
+                                        if (diffMs <= 0) return "Scaduta";
+
+                                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                        const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                                        if (diffDays > 0) {
+                                            return `tra ${diffDays} giorn${diffDays === 1 ? 'o' : 'i'}`;
+                                        } else if (diffHours > 0) {
+                                            return `tra ${diffHours} or${diffHours === 1 ? 'a' : 'e'}`;
+                                        } else {
+                                            const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                                            return `tra ${diffMinutes} minut${diffMinutes === 1 ? 'o' : 'i'}`;
+                                        }
+                                    })()}
                                 </p>
                                 <Button variant="destructive" onClick={() => client.logout()}>
                                     <LogOut className="mr-2 h-4 w-4" />

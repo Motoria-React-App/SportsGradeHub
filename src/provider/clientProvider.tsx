@@ -67,7 +67,7 @@ function toUIStudent(
     const avgGrade = studentEvals.length > 0
         ? studentEvals.reduce((sum, e) => sum + e.score, 0) / studentEvals.length
         : 0;
-    
+
     let performanceLevel: UIStudent['performanceLevel'] = 'average';
     if (avgGrade >= 8) performanceLevel = 'excellent';
     else if (avgGrade >= 7) performanceLevel = 'good';
@@ -85,7 +85,7 @@ function toUIStudent(
         dateOfBirth: student.birthdate,
         averageGrade: Math.round(avgGrade * 10) / 10,
         totalGrades: studentEvals.length,
-        lastActivityDate: studentEvals.length > 0 
+        lastActivityDate: studentEvals.length > 0
             ? studentEvals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].createdAt
             : student.createdAt,
         performanceLevel,
@@ -103,7 +103,7 @@ function toUIGrade(
 ): UIGrade {
     const exercise = exercises.find(e => e.id === evaluation.exerciseId);
     const group = exercise ? exerciseGroups.find(g => g.id === exercise.exerciseGroupId) : null;
-    
+
     return {
         id: `${evaluation.studentId}-${evaluation.exerciseId}`,
         studentId: evaluation.studentId,
@@ -641,6 +641,7 @@ class Client {
             const response = await fetch(url, {
                 method: "GET",
                 headers: headers,
+                credentials: "include",
             });
             return await this.handleResponse<T>(response);
 
@@ -664,6 +665,7 @@ class Client {
             const response = await fetch(url, {
                 method: "POST",
                 headers: headers,
+                credentials: "include",
                 body: JSON.stringify(body),
             });
 
@@ -685,6 +687,7 @@ class Client {
             const response = await fetch(url, {
                 method: "PUT",
                 headers: headers,
+                credentials: "include",
                 body: body ? JSON.stringify(body) : undefined,
             });
 
@@ -705,6 +708,7 @@ class Client {
 
             const response = await fetch(url, {
                 method: "DELETE",
+                credentials: "include",
                 headers: headers,
             });
 
@@ -726,9 +730,9 @@ class Client {
         };
 
 
-        if (this._userModel?.accessToken) {
-            headers["authorization"] = `Bearer ${this._userModel.accessToken}`;
-        }
+        // if (this._userModel?.accessToken) {
+        //     headers["authorization"] = `Bearer ${this._userModel.accessToken}`;
+        // }
 
 
         return headers;
@@ -790,14 +794,14 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     useEffect(() => {
         const initializeSession = async () => {
             setIsLoading(true);
-            
+
             // First load persisted user data
             const persistedUser = client.loadPersistedUser();
-            
+
             if (persistedUser) {
                 // Validate and refresh session if needed
                 const isValid = await client.validateAndRefreshSession();
-                
+
                 if (isValid) {
                     // Session is valid or was refreshed successfully
                     setUser(client.UserModel);
@@ -806,7 +810,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
                     setUser(null);
                 }
             }
-            
+
             setIsLoading(false);
         };
 
@@ -960,29 +964,29 @@ export const useSchoolData = () => {
     if (context === undefined) {
         throw new Error("useSchoolData must be used within a ClientProvider");
     }
-    
+
     // Compute UI-compatible data
-    const uiStudents = useMemo(() => 
+    const uiStudents = useMemo(() =>
         context.students.map(s => toUIStudent(s, context.classes, context.evaluations)),
         [context.students, context.classes, context.evaluations]
     );
-    
-    const uiGrades = useMemo(() => 
+
+    const uiGrades = useMemo(() =>
         context.evaluations.map(e => toUIGrade(e, context.exercises, context.exerciseGroups)),
         [context.evaluations, context.exercises, context.exerciseGroups]
     );
-    
-    const uiClasses = useMemo(() => 
+
+    const uiClasses = useMemo(() =>
         context.classes.map(c => toUIClass(c, context.evaluations, context.students)),
         [context.classes, context.evaluations, context.students]
     );
-    
+
     // Helper to get UI students for a specific class
-    const getUIStudentsByClass = useCallback((classId: string) => 
+    const getUIStudentsByClass = useCallback((classId: string) =>
         uiStudents.filter(s => s.classId === classId),
         [uiStudents]
     );
-    
+
     // Helper to get UI grades for a specific class
     const getUIGradesByClass = useCallback((classId: string) => {
         const classStudentIds = uiStudents
@@ -990,7 +994,7 @@ export const useSchoolData = () => {
             .map(s => s.id);
         return uiGrades.filter(g => classStudentIds.includes(g.studentId));
     }, [uiStudents, uiGrades]);
-    
+
     return {
         // Raw backend data
         classes: context.classes,
