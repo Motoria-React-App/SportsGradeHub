@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UIClass, UIStudent, UIGrade } from "@/provider/clientProvider";
 import { Users, GraduationCap, TrendingUp, Trophy } from "lucide-react";
+import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 
 interface StatsCardsProps {
     selectedClass: UIClass;
@@ -9,13 +10,17 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ selectedClass, students, grades }: StatsCardsProps) {
+    const { formatGrade, getGradeColor } = useGradeFormatter();
+
     // Calculate metrics
     const studentCount = students.length;
 
     // Calculate average grade
-    const averageGrade = grades.length > 0
-        ? (grades.reduce((sum, g) => sum + g.finalGrade, 0) / grades.length).toFixed(1)
-        : "N/A";
+    const averageGradeValue = grades.length > 0
+        ? grades.reduce((sum, g) => sum + g.finalGrade, 0) / grades.length
+        : null;
+    const averageGrade = averageGradeValue !== null ? formatGrade(averageGradeValue) : "N/A";
+    const averageGradeColor = averageGradeValue !== null ? getGradeColor(averageGradeValue) : "";
 
     const lastMonthGrades = grades.filter(g => {
         const gradeDate = new Date(g.date);
@@ -67,7 +72,7 @@ export function StatsCards({ selectedClass, students, grades }: StatsCardsProps)
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{averageGrade}</div>
+                    <div className={`text-2xl font-bold ${averageGradeColor}`}>{averageGrade}</div>
                     <p className="text-xs text-muted-foreground">
                         Basata su {grades.length} valutazioni
                     </p>
@@ -98,7 +103,7 @@ export function StatsCards({ selectedClass, students, grades }: StatsCardsProps)
                 <CardContent>
                     <div className="text-2xl font-bold capitalize">{bestCategory}</div>
                     <p className="text-xs text-muted-foreground">
-                        Media: {bestScore > 0 ? bestScore.toFixed(1) : '-'}
+                        Media: {bestScore > 0 ? formatGrade(bestScore) : '-'}
                     </p>
                 </CardContent>
             </Card>

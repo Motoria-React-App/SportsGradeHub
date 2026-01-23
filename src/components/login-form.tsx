@@ -18,6 +18,7 @@ import {
 } from "./ui/field"
 import { Input } from "./ui/input"
 import { useClient } from "@/provider/clientProvider"
+import { useSettings } from "@/provider/settingsProvider"
 import { toast } from "sonner"
 
 
@@ -36,6 +37,20 @@ export function LoginForm({
 
 
     const client = useClient();
+    const { settings } = useSettings();
+
+    // Map defaultView setting to route
+    const getDefaultRoute = () => {
+        switch (settings.defaultView) {
+            case 'valutazioni':
+                return '/valutazioni';
+            case 'exercises':
+                return '/exercises';
+            case 'dashboard':
+            default:
+                return '/welcome';
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -57,7 +72,7 @@ export function LoginForm({
 
             if (response.success) {
 
-                navigate("/welcome")
+                navigate(getDefaultRoute())
             }
 
         } catch (error) {
@@ -69,7 +84,7 @@ export function LoginForm({
 
     const handleSocialLogin = (_provider: 'apple' | 'google') => {
 
-        navigate("/welcome")
+        navigate(getDefaultRoute())
     }
 
     return (

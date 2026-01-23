@@ -14,6 +14,7 @@ import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
 import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useParams } from "react-router-dom";
 import {
     AlertDialog,
@@ -68,6 +69,7 @@ export default function Valutazioni() {
         refreshEvaluations,
     } = useSchoolData();
     const client = useClient();
+    const { formatGrade, getGradeColor } = useGradeFormatter();
 
     // Filters
     const [selectedClassId, setSelectedClassId] = useState<string>("all");
@@ -414,10 +416,10 @@ export default function Valutazioni() {
                                                     <div
                                                         className={cn(
                                                             "text-lg font-bold",
-                                                            ev.score >= 6 ? "text-green-600" : "text-red-600"
+                                                            getGradeColor(ev.score)
                                                         )}
                                                     >
-                                                        {ev.score}
+                                                        {formatGrade(ev.score)}
                                                     </div>
                                                 )}
                                                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -516,10 +518,10 @@ export default function Valutazioni() {
                             <p
                                 className={cn(
                                     "text-3xl font-bold",
-                                    previewScore >= 6 ? "text-green-600" : "text-red-600"
+                                    getGradeColor(previewScore)
                                 )}
                             >
-                                {previewScore}
+                                {formatGrade(previewScore)}
                             </p>
                         </div>
                     ) : (

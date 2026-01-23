@@ -1,6 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UIGrade, UIStudent } from "@/provider/clientProvider";
+import { useGradeFormatter } from "@/hooks/useGradeFormatter";
+import { useDateFormatter } from "@/hooks/useDateFormatter";
 
 interface RecentActivityProps {
     grades: UIGrade[];
@@ -8,6 +10,9 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ grades, students }: RecentActivityProps) {
+    const { formatGrade, getGradeColor } = useGradeFormatter();
+    const { formatDate } = useDateFormatter();
+
     // Sort by date descending and take top 5
     const recentGrades = [...grades]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -46,11 +51,11 @@ export function RecentActivity({ grades, students }: RecentActivityProps) {
                                         </p>
                                     </div>
                                     <div className="flex flex-col items-end gap-0.5">
-                                        <div className="text-sm font-bold">
-                                            {grade.finalGrade.toFixed(1)}
+                                        <div className={`text-sm font-bold ${getGradeColor(grade.finalGrade)}`}>
+                                            {formatGrade(grade.finalGrade)}
                                         </div>
                                         <div className="text-xs text-muted-foreground">
-                                            {new Date(grade.date).toLocaleDateString("it-IT", { day: '2-digit', month: '2-digit' })}
+                                            {formatDate(grade.date)}
                                         </div>
                                     </div>
                                 </div>

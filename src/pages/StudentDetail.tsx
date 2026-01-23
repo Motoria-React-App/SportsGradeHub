@@ -8,6 +8,8 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGri
 import { useSchoolData, useClient } from "@/provider/clientProvider";
 import { ArrowLeft, Award, TrendingUp, Calendar, BookOpen, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGradeFormatter } from "@/hooks/useGradeFormatter";
+import { useDateFormatter } from "@/hooks/useDateFormatter";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -24,6 +26,8 @@ export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
     const { students, classes, evaluations, exercises, exerciseGroups, refreshEvaluations } = useSchoolData();
     const client = useClient();
+    const { formatGrade, getGradeColor, isPassing } = useGradeFormatter();
+    const { formatDate } = useDateFormatter();
 
     // Delete evaluation state
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -200,9 +204,9 @@ export default function StudentDetail() {
                     <CardContent>
                         <div className={cn(
                             "text-3xl font-bold",
-                            stats.averageScore >= 6 ? "text-green-600" : stats.averageScore > 0 ? "text-red-600" : ""
+                            stats.averageScore > 0 ? getGradeColor(stats.averageScore) : ""
                         )}>
-                            {stats.averageScore > 0 ? stats.averageScore : "-"}
+                            {stats.averageScore > 0 ? formatGrade(stats.averageScore) : "-"}
                         </div>
                     </CardContent>
                 </Card>
@@ -214,8 +218,8 @@ export default function StudentDetail() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold text-green-600">
-                            {stats.bestScore > 0 ? stats.bestScore : "-"}
+                        <div className={cn("text-3xl font-bold", getGradeColor(stats.bestScore))}>
+                            {stats.bestScore > 0 ? formatGrade(stats.bestScore) : "-"}
                         </div>
                     </CardContent>
                 </Card>
@@ -229,9 +233,9 @@ export default function StudentDetail() {
                     <CardContent>
                         <div className={cn(
                             "text-3xl font-bold",
-                            stats.worstScore >= 6 ? "text-green-600" : stats.worstScore > 0 ? "text-red-600" : ""
+                            stats.worstScore > 0 ? getGradeColor(stats.worstScore) : ""
                         )}>
-                            {stats.worstScore > 0 ? stats.worstScore : "-"}
+                            {stats.worstScore > 0 ? formatGrade(stats.worstScore) : "-"}
                         </div>
                     </CardContent>
                 </Card>
@@ -273,7 +277,7 @@ export default function StudentDetail() {
                                             {exerciseScoresData.map((entry, index) => (
                                                 <Cell
                                                     key={`cell-${index}`}
-                                                    fill={entry.score >= 6 ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
+                                                    fill={isPassing(entry.score) ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
                                                 />
                                             ))}
                                         </Bar>
@@ -340,7 +344,7 @@ export default function StudentDetail() {
                                                 {groupScoresData.map((entry, index) => (
                                                     <Cell
                                                         key={`cell-${index}`}
-                                                        fill={entry.score >= 6 ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
+                                                        fill={isPassing(entry.score) ? "hsl(142, 76%, 36%)" : "hsl(0, 84%, 60%)"}
                                                     />
                                                 ))}
                                             </Bar>
@@ -391,15 +395,15 @@ export default function StudentDetail() {
                                             <TableCell>
                                                 <span className={cn(
                                                     "inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold",
-                                                    ev.score >= 6
+                                                    isPassing(ev.score)
                                                         ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                                                         : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                                                 )}>
-                                                    {ev.score}
+                                                    {formatGrade(ev.score)}
                                                 </span>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">
-                                                {new Date(ev.createdAt).toLocaleDateString("it-IT")}
+                                                {formatDate(ev.createdAt)}
                                             </TableCell>
                                             <TableCell>
                                                 <Button

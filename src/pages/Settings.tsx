@@ -44,6 +44,7 @@ import {
     Calendar,
 } from "lucide-react";
 import { useSchoolData } from "@/provider/clientProvider";
+import { useExport } from "@/hooks/useExport";
 import type { DayOfWeek } from "@/types/scheduleTypes";
 import { useState } from "react";
 
@@ -55,12 +56,14 @@ export default function Settings() {
     const client = useClient();
     const user = client.UserModel;
     const navigate = useNavigate();
+    const { exportAllEvaluations, exportAllStudents } = useExport();
 
     // State for adding new slot
     const [newSlotDay, setNewSlotDay] = useState<DayOfWeek>('lunedi');
     const [newSlotStart, setNewSlotStart] = useState('08:00');
     const [newSlotEnd, setNewSlotEnd] = useState('09:00');
     const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
+    const [isExporting, setIsExporting] = useState(false);
 
     const handleAddSlot = () => {
         if (newSlotStart && newSlotEnd && newSlotClass) {
@@ -325,20 +328,6 @@ export default function Settings() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                <Separator />
-
-                                <div className="flex items-center justify-between space-x-2">
-                                    <Label htmlFor="animations" className="flex flex-col space-y-1">
-                                        <span>Abilita Animazioni</span>
-                                        <span className="font-normal text-sm text-muted-foreground">Riproduci animazioni e transizioni nell'interfaccia.</span>
-                                    </Label>
-                                    <Switch
-                                        id="animations"
-                                        checked={settings.enableAnimations}
-                                        onCheckedChange={(checked) => updateSettings({ enableAnimations: checked })}
-                                    />
-                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -536,16 +525,40 @@ export default function Settings() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Esportazione Rapida</CardTitle>
-                                <CardDescription>Scarica i tuoi dati immediatamente.</CardDescription>
+                                <CardDescription>Scarica i tuoi dati immediatamente nel formato selezionato ({settings.exportFormat.toUpperCase()}).</CardDescription>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4">
-                                <Button variant="outline" className="w-full justify-start">
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full justify-start"
+                                    disabled={isExporting}
+                                    onClick={async () => {
+                                        setIsExporting(true);
+                                        try {
+                                            await exportAllEvaluations();
+                                        } finally {
+                                            setIsExporting(false);
+                                        }
+                                    }}
+                                >
                                     <Download className="mr-2 h-4 w-4" />
-                                    Esporta tutte le valutazioni (CSV)
+                                    {isExporting ? "Esportazione..." : `Esporta tutte le valutazioni`}
                                 </Button>
-                                <Button variant="outline" className="w-full justify-start">
+                                <Button 
+                                    variant="outline" 
+                                    className="w-full justify-start"
+                                    disabled={isExporting}
+                                    onClick={async () => {
+                                        setIsExporting(true);
+                                        try {
+                                            await exportAllStudents();
+                                        } finally {
+                                            setIsExporting(false);
+                                        }
+                                    }}
+                                >
                                     <Download className="mr-2 h-4 w-4" />
-                                    Esporta elenco studenti completo
+                                    {isExporting ? "Esportazione..." : `Esporta elenco studenti completo`}
                                 </Button>
                             </CardContent>
                         </Card>
