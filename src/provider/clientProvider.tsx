@@ -147,14 +147,13 @@ function toUIClass(
 
 export interface UserModel {
     success: boolean;
-    accessToken: string;
-    refreshToken: string;
     expiresIn: number;
+    accessToken?: string;
+    refreshToken?: string;
     user: {
         uid: string;
         email: string;
-        firstName: string;
-        lastName: string;
+        displayName: string;
         avatar?: string;
     }
 }
@@ -199,12 +198,29 @@ class Client {
 
 
     // Check if user is authenticated
-    public isAuthenticated(): boolean {
-        return this._userModel !== null && !!this._userModel.accessToken;
+    public async isAuthenticated(): Promise<boolean> {
+        try {
+            const response = await this.sendRequest<UserModel>('/api/user', "GET");  // Endpoint che restituisce user da verifyJWT
+            if (response.success) {
+                this._userModel = response.data;
+
+                return true;
+            }
+
+            return false;
+        } catch {
+
+            return false;
+        }
     }
 
-    // Logout - clear user data
-    public logout() {
+    // Logout - clear user data and cookies
+    public async logout() {
+        try {
+            await this.sendRequest("/auth/logout", "POST");
+        } catch (e) {
+            console.error("Logout error", e);
+        }
         this.UserModel = null;
     }
 
@@ -335,6 +351,7 @@ class Client {
 
         if (res.success) {
             this.UserModel = res.data;
+            this.isAuthenticated()
         }
 
         return res;
@@ -343,8 +360,11 @@ class Client {
     public async login(email: string, password: string) {
         const res = await this.sendRequest<UserModel>("/auth/login", "POST", { email, password });
 
+
         if (res.success) {
             this.UserModel = res.data;
+
+            this.isAuthenticated()
         }
 
         return res;
@@ -394,27 +414,20 @@ class Client {
 
 
 
-    // Refresh the access token using the refresh token
+
+    // Refresh the access token using the refresh token (via cookie)
     public async refreshAccessToken(): Promise<boolean> {
-        if (!this._userModel?.refreshToken) {
-            console.error("No refresh token available");
-            return false;
-        }
-
         try {
-            const response = await this.sendRequest<{ accessToken: string; expiresIn?: number }>("/auth/refresh-token", "POST", { refreshToken: this._userModel.refreshToken });
+            // No body needed, refresh token is in the cookie
+            const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST");
 
-            if (response.success && response.data?.accessToken) {
-                // Aggiorna solo l'accessToken, mantieni il resto
-                this._userModel = {
-                    ...this._userModel,
-                    accessToken: response.data.accessToken,
-                    expiresIn: response.data.expiresIn || this._userModel.expiresIn,
-                };
-                // Persisti l'utente aggiornato
-                this.persistUser(this._userModel);
-                this.onUserChange?.(this._userModel);
-                console.log("Access token refreshed successfully");
+            if (response.success) {
+                // If the server returns a new access token in body, update it (optional depending on implementation)
+                // But primarily we rely on the cookie being updated by the response headers
+
+                // We might want to re-fetch the user to ensure we have the latest state
+                // but for now, just marking as success is enough for the interceptor to retry
+
                 return true;
             }
 
@@ -425,95 +438,27 @@ class Client {
         }
     }
 
-
-
-    // Get the expiration date of the refresh token
+    // Get the expiration date of the refresh token - NOT POSSIBLE with HttpOnly cookies
     public getRefreshTokenExpiration(): Date | null {
-        if (!this._userModel?.refreshToken) return null;
-
-        try {
-            const payload = this.decodeJwt(this._userModel.refreshToken);
-            if (payload?.exp) {
-                return new Date(payload.exp * 1000); // JWT exp is in seconds
-            }
-        } catch (e) {
-            console.error("Failed to decode refresh token", e);
-        }
         return null;
     }
 
-    // Check if refresh token is about to expire (e.g. within X hours)
-    public isRefreshTokenNearExpiry(hoursBuffer: number = 24): boolean {
-        const expiration = this.getRefreshTokenExpiration();
-        if (!expiration) return false;
-
-        const bufferMs = hoursBuffer * 60 * 60 * 1000;
-        return Date.now() >= (expiration.getTime() - bufferMs);
+    // Check if refresh token is about to expire - NOT POSSIBLE with HttpOnly cookies
+    public isRefreshTokenNearExpiry(_hoursBuffer: number = 24): boolean {
+        return false;
     }
 
-    // Check if access token is expired or about to expire (within 5 minutes buffer)
+    // Check if access token is expired - NOT POSSIBLE with HttpOnly cookies
+    // We rely on the API returning 401
     public isAccessTokenExpired(): boolean {
-        if (!this._userModel?.accessToken) return true;
-
-        try {
-            const payload = this.decodeJwt(this._userModel.accessToken);
-            if (!payload?.exp) return true;
-
-            // Add 5 minute buffer before expiration
-            const expirationMs = payload.exp * 1000;
-            const bufferMs = 5 * 60 * 1000;
-            return Date.now() >= (expirationMs - bufferMs);
-        } catch (e) {
-            return true;
-        }
-    }
-
-    // Check if refresh token is completely expired
-    public isRefreshTokenExpired(): boolean {
-        const expiration = this.getRefreshTokenExpiration();
-        if (!expiration) return true;
-        return Date.now() >= expiration.getTime();
+        return false;
     }
 
     // Validate session and refresh if needed - call this on app startup
     public async validateAndRefreshSession(): Promise<boolean> {
-        // No user data at all
-        if (!this._userModel) {
-            return false;
-        }
-
-        // Refresh token is completely expired - need to re-login
-        if (this.isRefreshTokenExpired()) {
-            console.log("Refresh token expired, need to re-login");
-            this.logout();
-            return false;
-        }
-
-        // Access token is expired but refresh token is valid - refresh
-        if (this.isAccessTokenExpired()) {
-            console.log("Access token expired, attempting refresh...");
-            const refreshed = await this.refreshAccessToken();
-            return refreshed;
-        }
-
-        // Everything is still valid
-        console.log("Session is valid");
-        return true;
-    }
-
-    // Helper to decode JWT payload safely
-    private decodeJwt(token: string): any {
-        try {
-            const base64Url = token.split('.')[1];
-            if (!base64Url) return null;
-
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = window.atob(base64);
-
-            return JSON.parse(jsonPayload);
-        } catch (e) {
-            return null;
-        }
+        // Just try to fetch the user. If it succeeds (potentially after auto-refresh), we are good.
+        // If it fails, we are not logged in.
+        return await this.isAuthenticated();
     }
 
 
@@ -547,12 +492,12 @@ class Client {
 
             // Se riceviamo 401 e non è già un retry, prova a refreshare il token
             if (!result.success && result.error?.statusCode === 401 && !isRetry) {
-                console.log("Access token expired, attempting refresh...");
+
                 const refreshed = await this.refreshAccessToken();
 
                 if (refreshed) {
                     // Riprova la richiesta originale
-                    console.log("Token refreshed, retrying original request...");
+
                     return await this.sendRequest<T>(endpoint, method, body, true);
                 } else {
                     // Refresh fallito, l'utente deve riloggarsi
@@ -909,7 +854,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         }
     }, [user, refreshAllData]);
 
-    const isAuthenticated = user !== null && !!user.accessToken;
+    const isAuthenticated = user !== null;
 
     const value = useMemo(() => ({
         client,

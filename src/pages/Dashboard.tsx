@@ -13,10 +13,10 @@ const LAST_CLASS_KEY = "sportsgrade_last_class";
 
 export default function Dashboard() {
     const { classes, uiClasses, uiStudents, getUIStudentsByClass, getUIGradesByClass } = useSchoolData();
-    
+
     // State for selected class - initialize from localStorage or default to first class
     const [selectedClassId, setSelectedClassId] = useState<string>("");
-    
+
     // Update selectedClassId when classes load
     useEffect(() => {
         if (classes.length > 0 && !selectedClassId) {
@@ -30,18 +30,18 @@ export default function Dashboard() {
     }, [classes, selectedClassId]);
 
     // Get UI-compatible selected class
-    const selectedClass = useMemo(() => 
-        uiClasses.find(c => c.id === selectedClassId) as UIClass | undefined, 
+    const selectedClass = useMemo(() =>
+        uiClasses.find(c => c.id === selectedClassId) as UIClass | undefined,
         [uiClasses, selectedClassId]
     );
 
     // Get students and grades for selected class
-    const classStudents = useMemo(() => 
+    const classStudents = useMemo(() =>
         getUIStudentsByClass(selectedClassId),
         [getUIStudentsByClass, selectedClassId]
     );
-    
-    const classGrades = useMemo(() => 
+
+    const classGrades = useMemo(() =>
         getUIGradesByClass(selectedClassId),
         [getUIGradesByClass, selectedClassId]
     );
@@ -54,7 +54,7 @@ export default function Dashboard() {
 
     return (
         <div className="flex flex-col h-full bg-background/50">
-            <SiteHeader />
+            {/* <SiteHeader /> */}
 
             <main className="flex-1 p-4 md:p-8 space-y-8 overflow-y-auto w-full max-w-7xl mx-auto">
                 {/* Header Section with Selector */}
@@ -113,7 +113,7 @@ export default function Dashboard() {
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-64 text-muted-foreground">
-                        {classes.length === 0 ? "Caricamento classi..." : "Nessuna classe selezionata o dati non disponibili."}
+                        {classes.length === 0 ? "Nessuna classe disponibile" : "Nessuna classe selezionata o dati non disponibili."}
                     </div>
                 )}
             </main>

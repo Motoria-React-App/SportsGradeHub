@@ -18,8 +18,25 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import ScrollToTop from "@/components/ScrollToTop";
+import { useAuth, useClient } from "./provider/clientProvider";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <SidebarProvider
       style={
@@ -39,6 +56,18 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+
+  const client = useClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+
+      await client.isAuthenticated();
+
+    };
+    checkAuth();
+  }, []);
+
 
   return (
     <Router>

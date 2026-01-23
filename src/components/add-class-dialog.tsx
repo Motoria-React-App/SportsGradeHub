@@ -126,7 +126,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
             ? students.filter(s => s.firstName.trim() || s.lastName.trim())
             : parseRawStudents()
 
-        console.log(finalStudents);
+
         // Validate students have at least first or last name
         const invalidStudents = finalStudents.filter(s => !s.firstName.trim() && !s.lastName.trim())
         if (invalidStudents.length > 0) {

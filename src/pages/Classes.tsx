@@ -18,7 +18,7 @@ export default function Classes() {
     const client = useClient();
     const [schoolClass, setSchoolClass] = useState<SchoolClassExpanded | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
     // Student dialog state
     const [studentDialogOpen, setStudentDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -43,7 +43,7 @@ export default function Classes() {
         fetchData();
     }, [id, client]);
 
-    console.log(schoolClass);
+
 
     if (loading) {
         return (
@@ -129,29 +129,29 @@ export default function Classes() {
                                             [...schoolClass.students]
                                                 .sort((a, b) => a.lastName.localeCompare(b.lastName))
                                                 .map((student) => (
-                                                <TableRow key={student.id}>
-                                                    <TableCell className="font-medium">{student.firstName}</TableCell>
-                                                    <TableCell>{student.lastName}</TableCell>
-                                                    <TableCell>
-                                                        <span className={cn(
-                                                            "p-2 py-1 rounded text-xs font-semibold",
-                                                            student.gender === 'M' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                                                                student.gender === 'F' ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" :
-                                                                    "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                        )}>
-                                                            {student.gender}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="ghost" size="sm" onClick={() => { setSelectedStudent(student); setStudentDialogOpen(true); }}>
-                                                            Modifica
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
+                                                    <TableRow key={student.id}>
+                                                        <TableCell className="font-medium">{student.firstName}</TableCell>
+                                                        <TableCell>{student.lastName}</TableCell>
+                                                        <TableCell>
+                                                            <span className={cn(
+                                                                "p-2 py-1 rounded text-xs font-semibold",
+                                                                student.gender === 'M' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
+                                                                    student.gender === 'F' ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" :
+                                                                        "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                                                            )}>
+                                                                {student.gender}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button variant="ghost" size="sm" onClick={() => { setSelectedStudent(student); setStudentDialogOpen(true); }}>
+                                                                Modifica
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">

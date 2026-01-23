@@ -665,29 +665,9 @@ export default function Settings() {
                             </CardContent>
                             <CardFooter className="flex justify-between border-t px-6 py-4">
                                 <p className="text-sm text-muted-foreground">
-                                    Sessione scade: {(() => {
-                                        const expiration = client.getRefreshTokenExpiration();
-                                        if (!expiration) return "Non disponibile";
 
-                                        const now = new Date();
-                                        const diffMs = expiration.getTime() - now.getTime();
-
-                                        if (diffMs <= 0) return "Scaduta";
-
-                                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                                        const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-                                        if (diffDays > 0) {
-                                            return `tra ${diffDays} giorn${diffDays === 1 ? 'o' : 'i'}`;
-                                        } else if (diffHours > 0) {
-                                            return `tra ${diffHours} or${diffHours === 1 ? 'a' : 'e'}`;
-                                        } else {
-                                            const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                                            return `tra ${diffMinutes} minut${diffMinutes === 1 ? 'o' : 'i'}`;
-                                        }
-                                    })()}
                                 </p>
-                                <Button variant="destructive" onClick={() => client.logout()}>
+                                <Button variant="destructive" onClick={async () => await client.logout()}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     Logout
                                 </Button>

@@ -28,15 +28,12 @@ import {
   Activity,
   BarChart3,
   Users,
-  LogOut,
   ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
 import { Link } from "react-router-dom"
 import { AddClassDialog } from "./add-class-dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { Button } from "./ui/button"
 import { Kbd, KbdGroup } from "./ui/kbd"
 
 // Types
@@ -235,28 +232,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         </SidebarContent>
 
-        {client.isRefreshTokenNearExpiry(52) && (
-          <Card className="gap-4 py-4 m-2 shadow-none">
-            <CardHeader className="px-4">
-              <CardTitle className="text-sm">Scadenza Sessione</CardTitle>
-              <CardDescription>
-                La tua sessione scade il {client.getRefreshTokenExpiration()?.toLocaleDateString() || "Non disponibile"} <br />
-                Per una maggiore sicurezza, dovrai rieffettuare il Login
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4">
-              <Button
-                onClick={() => client.logout()}
-                className="w-full cursor-pointer"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
 
-            </CardContent>
-          </Card>
-        )
-        }
 
         <SidebarFooter className="border-t border-sidebar-border">
           {client.UserModel?.user && <NavUser user={client.UserModel.user} />}

@@ -25,7 +25,7 @@ export default function Students() {
     const { students, classes, refreshStudents } = useSchoolData();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
-    
+
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -173,7 +173,7 @@ export default function Students() {
                                                         Modifica
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator />
-                                                    <DropdownMenuItem 
+                                                    <DropdownMenuItem
                                                         onSelect={(e) => {
                                                             e.preventDefault();
                                                             handleDeleteStudent(student);
@@ -191,7 +191,7 @@ export default function Students() {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                        {students.length === 0 ? "Caricamento studenti..." : "Nessuno studente trovato."}
+                                        {students.length === 0 ? "Nessuno studente disponibile" : "Nessuno studente trovato."}
                                     </TableCell>
                                 </TableRow>
                             )}
