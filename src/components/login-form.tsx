@@ -17,7 +17,7 @@ import {
     FieldSeparator,
 } from "./ui/field"
 import { Input } from "./ui/input"
-import { useAuth, useClient } from "@/provider/clientProvider"
+import { useClient } from "@/provider/clientProvider"
 import { toast } from "sonner"
 
 
@@ -67,7 +67,7 @@ export function LoginForm({
         }
     }
 
-    const handleSocialLogin = (provider: 'apple' | 'google') => {
+    const handleSocialLogin = (_provider: 'apple' | 'google') => {
 
         navigate("/welcome")
     }

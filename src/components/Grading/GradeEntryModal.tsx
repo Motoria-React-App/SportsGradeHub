@@ -33,15 +33,15 @@ export function GradeEntryModal({ isOpen, onClose }: GradeEntryModalProps) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         // In a real app, this would save to the backend
-
-        studentId: selectedStudentId,
+        console.log({
+            studentId: selectedStudentId,
             exerciseId: selectedExerciseId,
-                date,
-                criteria: { technical, effort, teamwork, overall },
-        notes
-    });
-    onClose();
-};
+            date,
+            criteria: { technical, effort, teamwork, overall },
+            notes
+        });
+        onClose();
+    };
 
 return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 
-import { SiteHeader } from "@/components/site-header";
+
+
 import { ClassSelector } from "@/components/dashboard/ClassSelector";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { GradeDistributionChart } from "@/components/dashboard/GradeDistributionChart";
