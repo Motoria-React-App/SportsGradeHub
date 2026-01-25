@@ -424,7 +424,7 @@ export default function Exercises() {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Min</Label>
                 <Input
-                  type="number"
+                  type="text"
                   value={range.min}
                   onChange={(e) => updateRange(gender, index, 'min', parseFloat(e.target.value) || 0)}
                   className="h-8"
@@ -433,7 +433,7 @@ export default function Exercises() {
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Max</Label>
                 <Input
-                  type="number"
+                  type="text"
                   value={range.max}
                   onChange={(e) => updateRange(gender, index, 'max', parseFloat(e.target.value) || 0)}
                   className="h-8"
@@ -701,7 +701,7 @@ export default function Exercises() {
                 <Label htmlFor="max-score">Punteggio Massimo</Label>
                 <Input
                   id="max-score"
-                  type="number"
+                  type="text"
                   min="1"
                   max="10"
                   value={formData.maxScore}
@@ -911,9 +911,7 @@ export default function Exercises() {
                   <Label>Punteggio Massimo</Label>
                   {isEditing ? (
                     <Input
-                      type="number"
-                      min="1"
-                      max="10"
+                      type="text"
                       value={editFormData.maxScore}
                       onChange={(e) => setEditFormData({ ...editFormData, maxScore: parseInt(e.target.value) || 10 })}
                     />

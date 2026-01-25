@@ -46,25 +46,25 @@ function calculateScore(
     studentGender: Gender
 ): number | null {
     if (!exercise.evaluationRanges) return null;
-    
+
     const ranges = exercise.evaluationRanges[studentGender] || exercise.evaluationRanges['M'];
     if (!ranges || ranges.length === 0) return null;
-    
+
     // Find matching range
     for (const range of ranges) {
         if (performanceValue >= range.min && performanceValue <= range.max) {
             return range.score;
         }
     }
-    
+
     return null;
 }
 
 export default function Valutazioni() {
-    const { 
-        students, 
-        classes, 
-        exercises, 
+    const {
+        students,
+        classes,
+        exercises,
         evaluations,
         refreshEvaluations,
     } = useSchoolData();
@@ -76,12 +76,12 @@ export default function Valutazioni() {
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
 
     const { classId, exerciseId } = useParams();
-    
+
     useEffect(() => {
-        if (classId && exerciseId) { 
+        if (classId && exerciseId) {
             setSelectedClassId(classId);
             setSelectedExerciseId(exerciseId);
-            
+
             if (classId !== "all") {
                 localStorage.setItem("sportsgrade_last_class", classId);
             }
@@ -121,11 +121,11 @@ export default function Valutazioni() {
     const filteredEvaluations = useMemo(() => {
         // First, deduplicate: keep only the latest evaluation for each student+exercise pair
         const latestEvaluations = new Map<string, Evaluation>();
-        
+
         evaluations.forEach((ev) => {
             const key = `${ev.studentId}-${ev.exerciseId}`;
             const existing = latestEvaluations.get(key);
-            
+
             // Keep the one with the latest createdAt or updatedAt
             if (!existing || new Date(ev.createdAt) > new Date(existing.createdAt)) {
                 latestEvaluations.set(key, ev);
@@ -167,8 +167,8 @@ export default function Valutazioni() {
 
             // If this evaluation is currently selected for grading, force status to "valutando"
             // This ensures the user sees who they are currently evaluating in the middle column
-            if (selectedEvaluationForGrading && 
-                ev.studentId === selectedEvaluationForGrading.studentId && 
+            if (selectedEvaluationForGrading &&
+                ev.studentId === selectedEvaluationForGrading.studentId &&
                 ev.exerciseId === selectedEvaluationForGrading.exerciseId) {
                 status = "valutando";
             }
@@ -246,7 +246,7 @@ export default function Valutazioni() {
         try {
             const performanceNum = parseFloat(performanceInputValue);
             let calculatedScore = 0;
-            
+
             // Only calculate score if confirmed, otherwise leave as 0 (Draft)
             if (confirmed && !isNaN(performanceNum)) {
                 const score = calculateScore(performanceNum, exercise, student.gender);
@@ -266,7 +266,7 @@ export default function Valutazioni() {
             });
 
             await refreshEvaluations();
-            
+
             // Only close if confirmed, otherwise keep open to show "Saved Draft" status or similar? 
             // Actually, usually user might want to move to next. 
             // If draft, maybe keep open. If confirmed, close.
@@ -300,14 +300,14 @@ export default function Valutazioni() {
     // Reset current session - set a new session start time to hide old evaluations
     const handleResetSession = () => {
         if (selectedExerciseId === "all") return;
-        
+
         // Set the session start time for this exercise to NOW
         // This will filter out all evaluations created before this time
         setSessionStartTimes(prev => ({
             ...prev,
             [selectedExerciseId]: new Date().toISOString()
         }));
-        
+
         setIsResetDialogOpen(false);
         setSelectedEvaluationForGrading(null);
     };
@@ -447,7 +447,7 @@ export default function Valutazioni() {
 
         // Calculate score preview
         const performanceNum = parseFloat(performanceInputValue);
-        const previewScore = !isNaN(performanceNum) 
+        const previewScore = !isNaN(performanceNum)
             ? calculateScore(performanceNum, exercise, student.gender)
             : null;
 
@@ -503,8 +503,7 @@ export default function Valutazioni() {
                     <div className="space-y-2">
                         <Label>Prestazione ({exercise.unit})</Label>
                         <Input
-                            type="number"
-                            step="0.01"
+                            type="text"
                             placeholder={`Inserisci ${exercise.unit}`}
                             value={performanceInputValue}
                             onChange={(e) => setPerformanceInputValue(e.target.value)}
@@ -527,12 +526,12 @@ export default function Valutazioni() {
                     ) : (
                         <div className="p-4 rounded-lg bg-muted/50 text-center">
                             <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                         </div>
+                        </div>
                     )}
-                    
+
                     {!exercise.evaluationRanges && (
                         <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                            ⚠️ Questo esercizio non ha fasce di valutazione configurate. 
+                            ⚠️ Questo esercizio non ha fasce di valutazione configurate.
                             Vai alla pagina Esercizi per configurarle.
                         </div>
                     )}
@@ -550,7 +549,7 @@ export default function Valutazioni() {
 
                     {/* Action buttons */}
                     <div className="grid grid-cols-2 gap-3 pt-2">
-                        <Button 
+                        <Button
                             variant="outline"
                             onClick={() => handleSaveEvaluation(false)}
                             disabled={isSaving || !performanceInputValue}
@@ -562,8 +561,8 @@ export default function Valutazioni() {
                             )}
                             Salva Bozza
                         </Button>
-                        <Button 
-                            
+                        <Button
+
                             onClick={() => handleSaveEvaluation(true)}
                             disabled={isSaving || !performanceInputValue || previewScore === null}
                         >
@@ -577,7 +576,7 @@ export default function Valutazioni() {
                     </div>
 
                     {/* Delete button */}
-                    <Button 
+                    <Button
                         variant="ghost"
                         className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
                         onClick={() => setIsDeleteDialogOpen(true)}
@@ -605,12 +604,12 @@ export default function Valutazioni() {
                         <p className="text-muted-foreground">
                             Gestisci le valutazioni degli studenti
                         </p>
-                </div>
+                    </div>
                     <div className="flex items-center gap-2">
                         {selectedExerciseId !== "all" && filteredEvaluations.length > 0 && (
-                            <Button 
-                                variant="outline" 
-                                className="gap-2 text-destructive hover:text-destructive" 
+                            <Button
+                                variant="outline"
+                                className="gap-2 text-destructive hover:text-destructive"
                                 onClick={() => setIsResetDialogOpen(true)}
                             >
                                 <RotateCcw className="h-4 w-4" />
@@ -854,7 +853,7 @@ export default function Valutazioni() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Nuova Sessione di Valutazione</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Vuoi iniziare una nuova sessione di valutazione? 
+                            Vuoi iniziare una nuova sessione di valutazione?
                             Le valutazioni esistenti rimarranno salvate nel sistema.
                             Puoi riassegnare l'esercizio alla classe per ricominciare.
                         </AlertDialogDescription>
