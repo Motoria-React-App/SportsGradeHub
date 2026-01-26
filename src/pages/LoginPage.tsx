@@ -1,4 +1,4 @@
-import { GalleryVerticalEnd, Loader2 } from "lucide-react"
+import { GalleryVerticalEnd } from "lucide-react"
 import { Navigate } from "react-router-dom"
 import { LoginForm } from "../components/login-form"
 import { useAuth } from "@/provider/clientProvider"
