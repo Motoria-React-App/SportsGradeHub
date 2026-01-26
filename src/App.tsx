@@ -20,15 +20,16 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useAuth, useClient } from "./provider/clientProvider";
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-svh flex-col items-center justify-center">
+        <div className="flex items-center font-bold gap-2 self-center text-7xl animate-pulse">
+          SportsGradeHub
+        </div>
       </div>
     );
   }
