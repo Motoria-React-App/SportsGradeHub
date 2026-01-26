@@ -435,160 +435,14 @@ export default function Valutazioni() {
         );
     };
 
-    // Grading panel component
-    const GradingPanel = () => {
-        if (!selectedEvaluationForGrading) return null;
-
-        const student = getStudent(selectedEvaluationForGrading.studentId);
-        const exercise = getExercise(selectedEvaluationForGrading.exerciseId);
-        if (!student || !exercise) return null;
-
-        const status = getEvaluationStatus(selectedEvaluationForGrading);
-
-        // Calculate score preview
-        const performanceNum = parseFloat(performanceInputValue);
-        const previewScore = !isNaN(performanceNum)
-            ? calculateScore(performanceNum, exercise, student.gender)
-            : null;
-
-        return (
-            <Card className="w-full max-w-md">
-                <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">Valutazione</CardTitle>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedEvaluationForGrading(null)}
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                        <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                            <User className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                            <p className="font-semibold">{student.firstName} {student.lastName}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {getClassName(student.currentClassId)} • {exercise.name}
-                            </p>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {/* Status badge */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Stato:</span>
-                        <Badge
-                            variant={
-                                status === "valutato"
-                                    ? "default"
-                                    : status === "valutando"
-                                        ? "secondary"
-                                        : "outline"
-                            }
-                            className={cn(
-                                status === "valutato" && "bg-green-600",
-                                status === "valutando" && "bg-yellow-500 text-black"
-                            )}
-                        >
-                            {status === "non-valutato" && "Non Valutato"}
-                            {status === "valutando" && "Valutando"}
-                            {status === "valutato" && "Valutato"}
-                        </Badge>
-                    </div>
-
-                    {/* Performance input */}
-                    <div className="space-y-2">
-                        <Label>Prestazione ({exercise.unit})</Label>
-                        <Input
-                            type="text"
-                            placeholder={`Inserisci ${exercise.unit}`}
-                            value={performanceInputValue}
-                            onChange={(e) => setPerformanceInputValue(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Score preview */}
-                    {previewScore !== null ? (
-                        <div className="p-4 rounded-lg bg-muted/50 text-center">
-                            <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                            <p
-                                className={cn(
-                                    "text-3xl font-bold",
-                                    getGradeColor(previewScore)
-                                )}
-                            >
-                                {formatGrade(previewScore)}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="p-4 rounded-lg bg-muted/50 text-center">
-                            <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                        </div>
-                    )}
-
-                    {!exercise.evaluationRanges && (
-                        <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                            ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                            Vai alla pagina Esercizi per configurarle.
-                        </div>
-                    )}
-
-                    {/* Notes */}
-                    <div className="space-y-2">
-                        <Label>Note</Label>
-                        <Textarea
-                            value={notesValue}
-                            onChange={(e) => setNotesValue(e.target.value)}
-                            placeholder="Aggiungi note sulla prestazione..."
-                            rows={3}
-                        />
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleSaveEvaluation(false)}
-                            disabled={isSaving || !performanceInputValue}
-                        >
-                            {isSaving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="mr-2 h-4 w-4" />
-                            )}
-                            Salva Bozza
-                        </Button>
-                        <Button
-
-                            onClick={() => handleSaveEvaluation(true)}
-                            disabled={isSaving || !performanceInputValue || previewScore === null}
-                        >
-                            {isSaving ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Check className="mr-2 h-4 w-4" />
-                            )}
-                            Conferma Voto
-                        </Button>
-                    </div>
-
-                    {/* Delete button */}
-                    <Button
-                        variant="ghost"
-                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
-                        onClick={() => setIsDeleteDialogOpen(true)}
-                        disabled={isDeleting}
-                    >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Elimina Valutazione
-                    </Button>
-                </CardContent>
-            </Card>
-        );
-    };
+    // Grading panel data (calculated outside render to avoid inline component issues)
+    const gradingStudent = selectedEvaluationForGrading ? getStudent(selectedEvaluationForGrading.studentId) : null;
+    const gradingExercise = selectedEvaluationForGrading ? getExercise(selectedEvaluationForGrading.exerciseId) : null;
+    const gradingStatus = selectedEvaluationForGrading ? getEvaluationStatus(selectedEvaluationForGrading) : null;
+    const gradingPerformanceNum = parseFloat(performanceInputValue);
+    const gradingPreviewScore = (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent)
+        ? calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender)
+        : null;
 
     // Stats
     const totalEvaluations = filteredEvaluations.length;
@@ -699,8 +553,141 @@ export default function Valutazioni() {
                     </div>
 
                     {/* Grading panel */}
-                    {selectedEvaluationForGrading && (
-                        <GradingPanel />
+                    {selectedEvaluationForGrading && gradingStudent && gradingExercise && (
+                        <Card className="w-full max-w-md">
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <CardTitle className="text-lg">Valutazione</CardTitle>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setSelectedEvaluationForGrading(null)}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                        <User className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {/* Status badge */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm text-muted-foreground">Stato:</span>
+                                    <Badge
+                                        variant={
+                                            gradingStatus === "valutato"
+                                                ? "default"
+                                                : gradingStatus === "valutando"
+                                                    ? "secondary"
+                                                    : "outline"
+                                        }
+                                        className={cn(
+                                            gradingStatus === "valutato" && "bg-green-600",
+                                            gradingStatus === "valutando" && "bg-yellow-500 text-black"
+                                        )}
+                                    >
+                                        {gradingStatus === "non-valutato" && "Non Valutato"}
+                                        {gradingStatus === "valutando" && "Valutando"}
+                                        {gradingStatus === "valutato" && "Valutato"}
+                                    </Badge>
+                                </div>
+
+                                {/* Performance input */}
+                                <div className="space-y-2">
+                                    <Label>Prestazione ({gradingExercise.unit})</Label>
+                                    <Input
+                                        type="text"
+                                        placeholder={`Inserisci ${gradingExercise.unit}`}
+                                        value={performanceInputValue}
+                                        onChange={(e) => setPerformanceInputValue(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Score preview */}
+                                {gradingPreviewScore !== null ? (
+                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                        <p
+                                            className={cn(
+                                                "text-3xl font-bold",
+                                                getGradeColor(gradingPreviewScore)
+                                            )}
+                                        >
+                                            {formatGrade(gradingPreviewScore)}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                    </div>
+                                )}
+
+                                {!gradingExercise.evaluationRanges && (
+                                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
+                                        Vai alla pagina Esercizi per configurarle.
+                                    </div>
+                                )}
+
+                                {/* Notes */}
+                                <div className="space-y-2">
+                                    <Label>Note</Label>
+                                    <Textarea
+                                        value={notesValue}
+                                        onChange={(e) => setNotesValue(e.target.value)}
+                                        placeholder="Aggiungi note sulla prestazione..."
+                                        rows={3}
+                                    />
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleSaveEvaluation(false)}
+                                        disabled={isSaving || !performanceInputValue}
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Save className="mr-2 h-4 w-4" />
+                                        )}
+                                        Salva Bozza
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleSaveEvaluation(true)}
+                                        disabled={isSaving || !performanceInputValue || gradingPreviewScore === null}
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Check className="mr-2 h-4 w-4" />
+                                        )}
+                                        Conferma Voto
+                                    </Button>
+                                </div>
+
+                                {/* Delete button */}
+                                <Button
+                                    variant="ghost"
+                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
+                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                    disabled={isDeleting}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Elimina Valutazione
+                                </Button>
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
 
