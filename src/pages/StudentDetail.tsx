@@ -28,14 +28,14 @@ import {
     Legend,
 } from 'recharts';
 import { useSchoolData } from '@/provider/clientProvider';
-import { ArrowLeft, TrendingUp, Calendar, BookOpen, Users } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Users } from 'lucide-react';
 import { useGradeFormatter } from '@/hooks/useGradeFormatter';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
-import type { Student, ClassHistoryEntry, Evaluation, Exercise, ExerciseGroup, SchoolClass } from '@/types/types';
+import type { Student, ClassHistoryEntry, Evaluation, Exercise, SchoolClass } from '@/types/types';
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
-    const { students, classes, evaluations, exercises, exerciseGroups } = useSchoolData();
+    const { students, classes, evaluations, exercises } = useSchoolData();
     const { formatGrade } = useGradeFormatter();
     const { formatDate } = useDateFormatter();
 
