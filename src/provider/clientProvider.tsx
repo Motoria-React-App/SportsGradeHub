@@ -418,7 +418,7 @@ class Client {
     // Refresh the access token using the refresh token (via cookie)
     public async refreshAccessToken(): Promise<boolean> {
         try {
-            // No body needed, refresh token is in the cookie
+            // Refresh token is sent via cookie automatically
             const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST");
 
             if (response.success) {
@@ -601,17 +601,13 @@ class Client {
                 throw new ApiError("URL is not valid", 400, "Bad Request");
             }
 
-            if (!body) {
-                throw new ApiError("Body is not valid", 400, "Bad Request");
-            }
-
             const headers = this._Headers();
 
             const response = await fetch(url, {
                 method: "POST",
                 headers: headers,
                 credentials: "include",
-                body: JSON.stringify(body),
+                body: body ? JSON.stringify(body) : undefined,
             });
 
             return await this.handleResponse<T>(response);
