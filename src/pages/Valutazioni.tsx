@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -526,7 +527,7 @@ export default function Valutazioni() {
                 </div>
 
                 {/* Kanban columns and grading panel */}
-                <div className="flex gap-6">
+                <div className="flex gap-6 items-start relative">
                     {/* Columns */}
                     <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
                         <Column
@@ -552,9 +553,18 @@ export default function Valutazioni() {
                         />
                     </div>
 
-                    {/* Grading panel */}
-                    {selectedEvaluationForGrading && gradingStudent && gradingExercise && (
-                        <Card className="w-full max-w-md">
+                    {/* Grading panel - positioned fixed on right */}
+                    <AnimatePresence>
+                        {selectedEvaluationForGrading && gradingStudent && gradingExercise && (
+                            <motion.div
+                                key="grading-panel"
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 50 }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                className="fixed right-6 top-24 z-50"
+                            >
+                                <Card className="w-[400px] shadow-xl border-2">
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between">
                                     <CardTitle className="text-lg">Valutazione</CardTitle>
@@ -688,7 +698,9 @@ export default function Valutazioni() {
                                 </Button>
                             </CardContent>
                         </Card>
-                    )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Empty state */}
