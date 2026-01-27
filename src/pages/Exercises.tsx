@@ -55,8 +55,8 @@ const unitIcons: Record<string, React.ReactNode> = {
   qualitativo: <Star className="h-4 w-4" />,
 };
 
-// Italian scores 1-10
-const italianScores = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Italian scores 1-10 (including half grades)
+const italianScores = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 
 // Backend unit type
 type BackendUnit = 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';
@@ -443,7 +443,7 @@ export default function Exercises() {
                 <Label className="text-xs text-muted-foreground">Voto</Label>
                 <Select
                   value={range.score.toString()}
-                  onValueChange={(v) => updateRange(gender, index, 'score', parseInt(v))}
+                  onValueChange={(v) => updateRange(gender, index, 'score', parseFloat(v))}
                 >
                   <SelectTrigger className="h-8">
                     <SelectValue />
@@ -981,7 +981,7 @@ export default function Exercises() {
                                 <Label className="text-xs text-muted-foreground">Voto</Label>
                                 <Select
                                   value={range.score.toString()}
-                                  onValueChange={(v) => updateEditRange('M', index, 'score', parseInt(v))}
+                                  onValueChange={(v) => updateEditRange('M', index, 'score', parseFloat(v))}
                                 >
                                   <SelectTrigger className="h-8">
                                     <SelectValue />
@@ -1051,7 +1051,7 @@ export default function Exercises() {
                                   <Label className="text-xs text-muted-foreground">Voto</Label>
                                   <Select
                                     value={range.score.toString()}
-                                    onValueChange={(v) => updateEditRange('F', index, 'score', parseInt(v))}
+                                    onValueChange={(v) => updateEditRange('F', index, 'score', parseFloat(v))}
                                   >
                                     <SelectTrigger className="h-8">
                                       <SelectValue />
