@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSettings } from "@/provider/settingsProvider";
+import { useSettings, SchoolPeriod } from "@/provider/settingsProvider";
 import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,12 @@ import {
     Clock,
     Plus,
     Calendar,
+    AlertTriangle,
+
 } from "lucide-react";
 import { useSchoolData } from "@/provider/clientProvider";
 import { useExport } from "@/hooks/useExport";
+import { useDateFormatter } from "@/hooks/useDateFormatter";
 import type { DayOfWeek } from "@/types/scheduleTypes";
 import { useState } from "react";
 
@@ -57,6 +60,7 @@ export default function Settings() {
     const user = client.UserModel;
     const navigate = useNavigate();
     const { exportAllEvaluations, exportAllStudents } = useExport();
+    const { formatDate } = useDateFormatter();
 
     // State for adding new slot
     const [newSlotDay, setNewSlotDay] = useState<DayOfWeek>('lunedi');
@@ -64,6 +68,11 @@ export default function Settings() {
     const [newSlotEnd, setNewSlotEnd] = useState('09:00');
     const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
     const [isExporting, setIsExporting] = useState(false);
+
+    // State for adding new period
+    const [newPeriodName, setNewPeriodName] = useState('');
+    const [newPeriodStart, setNewPeriodStart] = useState('');
+    const [newPeriodEnd, setNewPeriodEnd] = useState('');
 
     const handleAddSlot = () => {
         if (newSlotStart && newSlotEnd && newSlotClass) {
@@ -75,6 +84,56 @@ export default function Settings() {
             });
         }
     };
+
+    const handleDateChange = (value: string, setter: (val: string) => void) => {
+        // Remove non-digit characters
+        let val = value.replace(/\D/g, '');
+        
+        // Limit length
+        if (val.length > 8) val = val.slice(0, 8);
+        
+        // Add slashes
+        if (val.length > 4) {
+            val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
+        } else if (val.length > 2) {
+            val = val.slice(0, 2) + '/' + val.slice(2);
+        }
+        
+        setter(val);
+    };
+
+    const handleAddPeriod = () => {
+        if (newPeriodName && newPeriodStart.length === 10 && newPeriodEnd.length === 10) {
+            // Convert DD/MM/YYYY to YYYY-MM-DD for storage
+            const [startDay, startMonth, startYear] = newPeriodStart.split('/');
+            const [endDay, endMonth, endYear] = newPeriodEnd.split('/');
+            
+            const isoStartDate = `${startYear}-${startMonth}-${startDay}`;
+            const isoEndDate = `${endYear}-${endMonth}-${endDay}`;
+
+            const newPeriod: SchoolPeriod = {
+                id: crypto.randomUUID(),
+                name: newPeriodName,
+                startDate: isoStartDate,
+                endDate: isoEndDate,
+            };
+            updateSettings({
+                schoolPeriods: [...settings.schoolPeriods, newPeriod],
+            });
+            setNewPeriodName('');
+            setNewPeriodStart('');
+            setNewPeriodEnd('');
+        }
+    };
+
+    const handleRemovePeriod = (periodId: string) => {
+        updateSettings({
+            schoolPeriods: settings.schoolPeriods.filter(p => p.id !== periodId),
+            currentPeriodId: settings.currentPeriodId === periodId ? null : settings.currentPeriodId,
+        });
+    };
+
+
 
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10 max-w-6xl mx-auto w-full">
@@ -113,6 +172,13 @@ export default function Settings() {
                         >
                             <Calendar className="h-4 w-4" />
                             Orario
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="justifications"
+                            className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
+                        >
+                            <AlertTriangle className="h-4 w-4" />
+                            Giustifiche
                         </TabsTrigger>
                         <TabsTrigger
                             value="export"
@@ -468,6 +534,151 @@ export default function Settings() {
                                     <RefreshCw className="h-4 w-4 mr-2" />
                                     Ripristina Orario Default
                                 </Button>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Justifications Settings */}
+                    <TabsContent value="justifications" className="space-y-6 mt-0">
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-semibold">Giustifiche e Periodi</h2>
+                            <p className="text-sm text-muted-foreground">Configura la soglia massima di giustifiche e i periodi scolastici.</p>
+                        </div>
+                        <Separator />
+
+                        {/* Max Justifications */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Soglia Giustifiche</CardTitle>
+                                <CardDescription>Numero massimo di giustifiche consentite per periodo. Oltre questa soglia verrà mostrato un avviso.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Massimo Giustifiche</Label>
+                                        <p className="text-sm text-muted-foreground">Soglia per periodo scolastico.</p>
+                                    </div>
+                                    <Select
+                                        value={settings.maxJustifications.toString()}
+                                        onValueChange={(val) => updateSettings({ maxJustifications: parseInt(val) })}
+                                    >
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="Seleziona" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                                                <SelectItem key={n} value={n.toString()}>{n}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Add new period */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Aggiungi Periodo Scolastico</CardTitle>
+                                <CardDescription>Definisci i periodi dell'anno scolastico (es. Trimestre, Pentamestre).</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Nome Periodo</Label>
+                                        <Input
+                                            placeholder="es. Trimestre"
+                                            value={newPeriodName}
+                                            onChange={(e) => setNewPeriodName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Data Inizio</Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="GG/MM/AAAA"
+                                            value={newPeriodStart}
+                                            onChange={(e) => handleDateChange(e.target.value, setNewPeriodStart)}
+                                            maxLength={10}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Data Fine</Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="GG/MM/AAAA"
+                                            value={newPeriodEnd}
+                                            onChange={(e) => handleDateChange(e.target.value, setNewPeriodEnd)}
+                                            maxLength={10}
+                                        />
+                                    </div>
+                                    <div className="flex items-end">
+                                        <Button onClick={handleAddPeriod} className="w-full" disabled={!newPeriodName || newPeriodStart.length !== 10 || newPeriodEnd.length !== 10}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Aggiungi
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Current periods */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Periodi Configurati</CardTitle>
+                                <CardDescription>
+                                    {settings.schoolPeriods.length} periodi configurati. 
+                                    {settings.currentPeriodId && ` Periodo attivo: ${settings.schoolPeriods.find(p => p.id === settings.currentPeriodId)?.name || 'Nessuno'}`}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {settings.schoolPeriods.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p>Nessun periodo configurato</p>
+                                        <p className="text-sm">Aggiungi il tuo primo periodo sopra</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-3">
+                                        {settings.schoolPeriods.map((period) => {
+                                            const isActive = settings.currentPeriodId === period.id;
+                                            const startFormatted = formatDate(period.startDate);
+                                            const endFormatted = formatDate(period.endDate);
+                                            
+                                            return (
+                                                <div
+                                                    key={period.id}
+                                                    className={`flex items-center justify-between p-4 rounded-lg border ${isActive ? 'bg-primary/10 border-primary' : 'bg-secondary/50'}`}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div>
+                                                            <div className="font-medium flex items-center gap-2">
+                                                                {period.name}
+                                                                {isActive && (
+                                                                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                                                                        Attivo
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {startFormatted} - {endFormatted}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleRemovePeriod(period.id)}
+                                                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

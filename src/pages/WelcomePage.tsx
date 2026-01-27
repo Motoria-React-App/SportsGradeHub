@@ -1,8 +1,11 @@
-import { useNavigate, Navigate } from "react-router-dom";
-import { useAuth } from "@/provider/clientProvider";
+import { useNavigate, Navigate, Link } from "react-router-dom";
+import { useAuth, useSchoolData } from "@/provider/clientProvider";
 import { useSchedule } from "@/provider/scheduleProvider";
-import { Button } from "@/components/ui/button"
-import { GraduationCap, Users, ArrowRight } from "lucide-react";
+import { useSettings } from "@/provider/settingsProvider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GraduationCap, Users, ArrowRight, AlertTriangle } from "lucide-react";
+import type { Student, Justification } from "@/types/types";
 
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
@@ -11,6 +14,8 @@ export default function WelcomePage() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { getCurrentClass } = useSchedule();
+    const { students } = useSchoolData();
+    const { settings } = useSettings();
 
     // Redirect to login if not authenticated
 
@@ -23,6 +28,29 @@ export default function WelcomePage() {
 
     // Extract first name from user
     const displayName = user?.user?.displayName || "Professore";
+
+    // Get current period for justification counting
+    const currentPeriod = settings.schoolPeriods.find(
+        (p: any) => p.id === settings.currentPeriodId
+    );
+    
+    const getJustificationsInPeriod = (justifications: Justification[]) => {
+        if (!currentPeriod) return justifications.length;
+        return justifications.filter((j) => {
+            const jDate = new Date(j.date);
+            return jDate >= new Date(currentPeriod.startDate) && jDate <= new Date(currentPeriod.endDate);
+        }).length;
+    };
+    
+    // Get students over limit for current class
+    const studentsOverLimit = scheduledClass 
+        ? students
+            .filter((s: Student) => s.currentClassId === scheduledClass.id)
+            .filter((s: Student) => {
+                const count = getJustificationsInPeriod(s.justifications || []);
+                return count >= settings.maxJustifications;
+            })
+        : [];
 
     const handleStartEvaluation = (classId: string) => {
         // Save as last opened class
@@ -66,6 +94,39 @@ export default function WelcomePage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Warning for students over limit */}
+                    {studentsOverLimit.length > 0 && (
+                        <Card className="mb-6 border-destructive bg-destructive/5">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    Attenzione Giustifiche
+                                </CardTitle>
+                                <CardDescription>
+                                    {studentsOverLimit.length} student{studentsOverLimit.length > 1 ? 'i' : 'e'} ha{studentsOverLimit.length > 1 ? 'nno' : ''} superato la soglia
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                <div className="flex flex-wrap gap-2">
+                                    {studentsOverLimit.slice(0, 5).map((s: Student) => (
+                                        <Link
+                                            key={s.id}
+                                            to={`/students/${s.id}`}
+                                            className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full hover:bg-destructive/20 transition-colors"
+                                        >
+                                            {s.firstName} {s.lastName}
+                                        </Link>
+                                    ))}
+                                    {studentsOverLimit.length > 5 && (
+                                        <span className="text-xs text-muted-foreground px-2 py-1">
+                                            +{studentsOverLimit.length - 5} altri
+                                        </span>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* CTA Button */}
                     <div className="flex justify-center">

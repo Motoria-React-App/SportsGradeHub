@@ -12,10 +12,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useClient, useSchoolData } from "@/provider/clientProvider";
-import { Search, Plus, Filter, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useSettings } from "@/provider/settingsProvider";
+import { Search, Plus, Filter, MoreHorizontal, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Student } from "@/types/types";
+import { Student, Justification } from "@/types/types";
 import { StudentDialog } from "@/components/student-dialog";
 import { toast } from "sonner";
 
@@ -23,6 +25,7 @@ import { toast } from "sonner";
 export default function Students() {
     const client = useClient();
     const { students, classes, refreshStudents } = useSchoolData();
+    const { settings } = useSettings();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
 
@@ -63,6 +66,24 @@ export default function Students() {
     const getClassName = (classId: string) => {
         const cls = classes.find(c => c.id === classId);
         return cls?.className || "N/A";
+    };
+
+    // Check if student exceeds justification limit
+    const currentPeriod = settings.schoolPeriods.find(
+        (p: any) => p.id === settings.currentPeriodId
+    );
+    
+    const getJustificationsInPeriod = (justifications: Justification[]) => {
+        if (!currentPeriod) return justifications.length;
+        return justifications.filter((j) => {
+            const jDate = new Date(j.date);
+            return jDate >= new Date(currentPeriod.startDate) && jDate <= new Date(currentPeriod.endDate);
+        }).length;
+    };
+
+    const isOverLimit = (student: Student) => {
+        const count = getJustificationsInPeriod(student.justifications || []);
+        return count >= settings.maxJustifications;
     };
 
     return (
@@ -134,10 +155,24 @@ export default function Students() {
                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                                                     {student.firstName[0]}{student.lastName[0]}
                                                 </div>
-                                                <div>
-                                                    <div>{student.firstName} {student.lastName}</div>
-                                                    {student.notes && (
-                                                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">{student.notes}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <div>
+                                                        <div>{student.firstName} {student.lastName}</div>
+                                                        {student.notes && (
+                                                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">{student.notes}</div>
+                                                        )}
+                                                    </div>
+                                                    {isOverLimit(student) && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>Soglia giustifiche superata ({getJustificationsInPeriod(student.justifications || [])}/{settings.maxJustifications})</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
                                                     )}
                                                 </div>
                                             </Link>

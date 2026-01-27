@@ -1,5 +1,13 @@
 export type Gender = 'M' | 'F' | 'N';
 
+// Tipo per la singola giustifica
+export interface Justification {
+    id: string;         // UUID per identificare la giustifica
+    date: string;       // Data della giustifica (YYYY-MM-DD)
+    note?: string;      // Nota opzionale
+    createdAt: string;  // Quando è stata registrata
+}
+
 export interface Student {
     id: string;
     ownerId: string;
@@ -7,7 +15,7 @@ export interface Student {
     lastName: string;
     birthdate?: string;
     gender: Gender;
-    justifiedDays: string[];
+    justifications: Justification[];  // Array di giustifiche con dettagli
     currentClassId: string;
     classHistory: ClassHistoryEntry[];
     notes?: string;

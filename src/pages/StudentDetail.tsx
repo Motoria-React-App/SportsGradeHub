@@ -18,6 +18,17 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
     LineChart,
     Line,
     XAxis,
@@ -27,19 +38,32 @@ import {
     ResponsiveContainer,
     Legend,
 } from 'recharts';
-import { useSchoolData } from '@/provider/clientProvider';
-import { ArrowLeft, TrendingUp, Calendar, Users } from 'lucide-react';
+import { useSchoolData, useClient } from '@/provider/clientProvider';
+import { useSettings } from '@/provider/settingsProvider';
+import { ArrowLeft, TrendingUp, Calendar, Users, AlertTriangle, Plus, Trash2, Settings } from 'lucide-react';
 import { useGradeFormatter } from '@/hooks/useGradeFormatter';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
-import type { Student, ClassHistoryEntry, Evaluation, Exercise, SchoolClass } from '@/types/types';
+import type { Student, ClassHistoryEntry, Evaluation, Exercise, SchoolClass, Justification } from '@/types/types';
+import { toast } from 'sonner';
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
-    const { students, classes, evaluations, exercises } = useSchoolData();
+    const { students, classes, evaluations, exercises, refreshStudents } = useSchoolData();
+    const { settings } = useSettings();
+    const client = useClient();
     const { formatGrade } = useGradeFormatter();
     const { formatDate } = useDateFormatter();
 
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
+    
+    // Justification dialog state
+    const [justificationDialogOpen, setJustificationDialogOpen] = useState(false);
+    const [newJustificationDate, setNewJustificationDate] = useState(() => {
+        const d = new Date();
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    });
+    const [newJustificationNote, setNewJustificationNote] = useState('');
+    const [isAddingJustification, setIsAddingJustification] = useState(false);
 
     const student = useMemo(
         () => students.find((s: Student) => s.id === id),
@@ -179,6 +203,23 @@ export default function StudentDetail() {
                 </Card>
             </div>
 
+            {/* Giustifiche Section */}
+            <JustificationsCard 
+                student={student}
+                settings={settings}
+                formatDate={formatDate}
+                client={client}
+                refreshStudents={refreshStudents}
+                justificationDialogOpen={justificationDialogOpen}
+                setJustificationDialogOpen={setJustificationDialogOpen}
+                newJustificationDate={newJustificationDate}
+                setNewJustificationDate={setNewJustificationDate}
+                newJustificationNote={newJustificationNote}
+                setNewJustificationNote={setNewJustificationNote}
+                isAddingJustification={isAddingJustification}
+                setIsAddingJustification={setIsAddingJustification}
+            />
+
             {/* Cronologia Classi */}
             <Card>
                 <CardHeader>
@@ -301,5 +342,275 @@ export default function StudentDetail() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+// Justifications Card Component
+interface JustificationsCardProps {
+    student: Student;
+    settings: any;
+    formatDate: (date: string) => string;
+    client: any;
+    refreshStudents: () => Promise<void>;
+    justificationDialogOpen: boolean;
+    setJustificationDialogOpen: (open: boolean) => void;
+    newJustificationDate: string;
+    setNewJustificationDate: (date: string) => void;
+    newJustificationNote: string;
+    setNewJustificationNote: (note: string) => void;
+    isAddingJustification: boolean;
+    setIsAddingJustification: (loading: boolean) => void;
+}
+
+function JustificationsCard({
+    student,
+    settings,
+    formatDate,
+    client,
+    refreshStudents,
+    justificationDialogOpen,
+    setJustificationDialogOpen,
+    newJustificationDate,
+    setNewJustificationDate,
+    newJustificationNote,
+    setNewJustificationNote,
+    isAddingJustification,
+    setIsAddingJustification,
+}: JustificationsCardProps) {
+    
+    const justifications = student.justifications || [];
+    
+    // Get current period
+    const currentPeriod = settings.schoolPeriods.find(
+        (p: any) => p.id === settings.currentPeriodId
+    );
+    
+    // Filter justifications for current period
+    // Filter justifications for current period
+    const justificationsInPeriod = currentPeriod
+        ? justifications.filter((j: any) => {
+            const jDate = j.date.split('T')[0];
+            const startDate = currentPeriod.startDate.split('T')[0];
+            const endDate = currentPeriod.endDate.split('T')[0];
+            return jDate >= startDate && jDate <= endDate;
+        })
+        : justifications;
+    
+    const justificationCount = justificationsInPeriod.length;
+    const isOverLimit = justificationCount >= settings.maxJustifications;
+    
+    const handleDateChange = (value: string, setter: (val: string) => void) => {
+        // Remove non-digit characters
+        let val = value.replace(/\D/g, '');
+        
+        // Limit length
+        if (val.length > 8) val = val.slice(0, 8);
+        
+        // Add slashes
+        if (val.length > 4) {
+            val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
+        } else if (val.length > 2) {
+            val = val.slice(0, 2) + '/' + val.slice(2);
+        }
+        
+        setter(val);
+    };
+
+    const handleAddJustification = async () => {
+        // Basic validation for DD/MM/YYYY
+        if (newJustificationDate.length !== 10) {
+            toast.error('Inserisci una data valida (GG/MM/AAAA)');
+            return;
+        }
+
+        setIsAddingJustification(true);
+        try {
+            const newId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+            
+            // Convert DD/MM/YYYY to YYYY-MM-DD
+            const [day, month, year] = newJustificationDate.split('/');
+            const isoDate = `${year}-${month}-${day}`;
+
+            const newJustification: Justification = {
+                id: newId,
+                date: isoDate,
+                note: newJustificationNote,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Create new array with existing justifications + new one
+            const updatedJustifications = [...(student.justifications || []), newJustification];
+            
+            await client.updateStudent(student.id, {
+                justifications: updatedJustifications
+            } as any);
+            
+            await refreshStudents();
+            setJustificationDialogOpen(false);
+            
+            // Reset to today formatted as DD/MM/YYYY
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            setNewJustificationDate(`${dd}/${mm}/${yyyy}`);
+            
+            setNewJustificationNote('');
+            toast.success('Giustifica aggiunta con successo');
+        } catch (error) {
+            toast.error('Errore durante l\'aggiunta della giustifica');
+            console.error(error);
+        } finally {
+            setIsAddingJustification(false);
+        }
+    };
+    
+    const handleRemoveJustification = async (justificationId: string) => {
+        try {
+            const updatedJustifications = (student.justifications || []).filter((j: Justification) => j.id !== justificationId);
+            
+            await client.updateStudent(student.id, {
+                justifications: updatedJustifications
+            } as any);
+            
+            await refreshStudents();
+            toast.success('Giustifica rimossa');
+        } catch (error) {
+            toast.error('Errore durante la rimozione');
+            console.error(error);
+        }
+    };
+    
+    return (
+        <>
+            <Card className={isOverLimit ? 'border-destructive' : ''}>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className={`h-5 w-5 ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`} />
+                                Giustifiche
+                                {currentPeriod && (
+                                    <Badge variant="outline" className="ml-2">{currentPeriod.name}</Badge>
+                                )}
+                            </CardTitle>
+                            <CardDescription>
+                                {currentPeriod 
+                                    ? `Periodo: ${formatDate(currentPeriod.startDate)} - ${formatDate(currentPeriod.endDate)}`
+                                    : (
+                                        <span className="flex items-center gap-2">
+                                            Nessun periodo selezionato.{' '}
+                                            <Link to="/settings" className="text-primary hover:underline inline-flex items-center gap-1">
+                                                <Settings className="h-3 w-3" />
+                                                Vai alle impostazioni
+                                            </Link>
+                                        </span>
+                                    )
+                                }
+                            </CardDescription>
+                        </div>
+                        <Button 
+                            onClick={() => setJustificationDialogOpen(true)}
+                            disabled={!currentPeriod}
+                            title={!currentPeriod ? 'Prima devi impostare un periodo nelle impostazioni' : undefined}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Aggiungi
+                        </Button>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {/* Count and Alert */}
+                    <div className={`p-4 rounded-lg border ${isOverLimit ? 'bg-destructive/10 border-destructive' : 'bg-secondary/50'}`}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-3xl font-bold">{justificationCount}</div>
+                                <div className="text-sm text-muted-foreground">
+                                    di {settings.maxJustifications} giustifiche massime
+                                </div>
+                            </div>
+                            {isOverLimit && (
+                                <div className="text-destructive font-medium flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5" />
+                                    Soglia superata!
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Justifications List */}
+                    {justificationsInPeriod.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-4">
+                            Nessuna giustifica registrata {currentPeriod ? 'in questo periodo' : ''}
+                        </p>
+                    ) : (
+                        <div className="space-y-2">
+                            {justificationsInPeriod.map((j: any) => (
+                                <div 
+                                    key={j.id} 
+                                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border"
+                                >
+                                    <div>
+                                        <div className="font-medium">{formatDate(j.date)}</div>
+                                        {j.note && (
+                                            <div className="text-sm text-muted-foreground">{j.note}</div>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleRemoveJustification(j.id)}
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+            
+            {/* Add Justification Dialog */}
+            <Dialog open={justificationDialogOpen} onOpenChange={setJustificationDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Aggiungi Giustifica</DialogTitle>
+                        <DialogDescription>
+                            Registra una nuova giustifica per {student.firstName} {student.lastName}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Data</Label>
+                            <Input
+                                type="text"
+                                placeholder="GG/MM/AAAA"
+                                value={newJustificationDate}
+                                onChange={(e) => handleDateChange(e.target.value, setNewJustificationDate)}
+                                maxLength={10}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Nota (opzionale)</Label>
+                            <Textarea
+                                placeholder="Motivo della giustifica..."
+                                value={newJustificationNote}
+                                onChange={(e) => setNewJustificationNote(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setJustificationDialogOpen(false)}>
+                            Annulla
+                        </Button>
+                        <Button onClick={handleAddJustification} disabled={isAddingJustification}>
+                            {isAddingJustification ? 'Aggiunta...' : 'Aggiungi'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

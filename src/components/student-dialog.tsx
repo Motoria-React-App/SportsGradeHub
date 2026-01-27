@@ -130,7 +130,7 @@ export function StudentDialog({
                     birthdate: formData.birthdate || undefined,
                     notes: formData.notes || undefined,
                     currentClassId: formData.currentClassId,
-                    justifiedDays: [],
+                    justifications: [],
                     classHistory: [],
                 })
 

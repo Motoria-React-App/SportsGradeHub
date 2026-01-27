@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
+// Periodo scolastico personalizzabile
+export interface SchoolPeriod {
+    id: string;
+    name: string;       // es. "Trimestre", "Pentamestre"
+    startDate: string;  // es. "2024-09-15"
+    endDate: string;    // es. "2024-12-22"
+}
+
 export interface AppSettings {
     // Grading
     passingGrade: number;           // default: 6
@@ -18,6 +26,11 @@ export interface AppSettings {
     // Export
     exportFormat: 'csv' | 'excel' | 'pdf';  // default: 'csv'
     includeNotesInExport: boolean;  // default: true
+
+    // Justifications (Giustifiche)
+    maxJustifications: number;          // default: 3 (soglia massima per periodo)
+    schoolPeriods: SchoolPeriod[];      // periodi scolastici configurabili
+    currentPeriodId: string | null;     // ID del periodo attivo
 }
 
 const defaultSettings: AppSettings = {
@@ -33,6 +46,10 @@ const defaultSettings: AppSettings = {
     enableAnimations: true,
     exportFormat: 'csv',
     includeNotesInExport: true,
+    // Justifications defaults
+    maxJustifications: 3,
+    schoolPeriods: [],
+    currentPeriodId: null,
 };
 
 interface SettingsProviderState {
@@ -80,6 +97,20 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
     const updateSettings = (newSettings: Partial<AppSettings>) => {
         setSettings((prev) => ({ ...prev, ...newSettings }));
     };
+
+    // Automatic period activation
+    useEffect(() => {
+        const today = new Date().toISOString().split('T')[0];
+        const activePeriod = settings.schoolPeriods.find(p => 
+            today >= p.startDate && today <= p.endDate
+        );
+
+        const activePeriodId = activePeriod ? activePeriod.id : null;
+
+        if (settings.currentPeriodId !== activePeriodId) {
+            updateSettings({ currentPeriodId: activePeriodId });
+        }
+    }, [settings.schoolPeriods, settings.currentPeriodId]);
 
     const resetSettings = () => {
         setSettings(defaultSettings);
