@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 export default function Students() {
     const client = useClient();
+    const navigate = useNavigate();
     const { students, classes, refreshStudents } = useSchoolData();
     const { settings } = useSettings();
     const [selectedClass, setSelectedClass] = useState<string>("all");
@@ -149,9 +150,13 @@ export default function Students() {
                         <TableBody>
                             {filteredStudents.length > 0 ? (
                                 filteredStudents.map((student) => (
-                                    <TableRow key={student.id}>
+                                    <TableRow 
+                                        key={student.id} 
+                                        className="cursor-pointer hover:bg-muted/50"
+                                        onClick={() => navigate(`/students/${student.id}`)}
+                                    >
                                         <TableCell className="font-medium">
-                                            <Link to={`/students/${student.id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
+                                            <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                                                     {student.firstName[0]}{student.lastName[0]}
                                                 </div>
@@ -175,7 +180,7 @@ export default function Students() {
                                                         </TooltipProvider>
                                                     )}
                                                 </div>
-                                            </Link>
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
@@ -197,7 +202,7 @@ export default function Students() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
+                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                                     <Button variant="ghost" size="icon">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>

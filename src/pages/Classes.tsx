@@ -1,5 +1,5 @@
 
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useClient } from "@/provider/clientProvider";
 import { SchoolClassExpanded, ExerciseGroupExpanded, Student } from "@/types/types";
@@ -15,6 +15,7 @@ import { StudentDialog } from "@/components/student-dialog";
 export default function Classes() {
 
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const client = useClient();
     const [schoolClass, setSchoolClass] = useState<SchoolClassExpanded | null>(null);
     const [loading, setLoading] = useState(true);
@@ -129,9 +130,17 @@ export default function Classes() {
                                             [...schoolClass.students]
                                                 .sort((a, b) => a.lastName.localeCompare(b.lastName))
                                                 .map((student) => (
-                                                    <TableRow key={student.id}>
-                                                        <TableCell className="font-medium">{student.firstName}</TableCell>
-                                                        <TableCell>{student.lastName}</TableCell>
+                                                    <TableRow 
+                                                        key={student.id} 
+                                                        className="cursor-pointer hover:bg-muted/50"
+                                                        onClick={() => navigate(`/students/${student.id}`)}
+                                                    >
+                                                        <TableCell className="font-medium">
+                                                            {student.firstName}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {student.lastName}
+                                                        </TableCell>
                                                         <TableCell>
                                                             <span className={cn(
                                                                 "p-2 py-1 rounded text-xs font-semibold",
@@ -146,7 +155,15 @@ export default function Classes() {
                                                             {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
                                                         </TableCell>
                                                         <TableCell className="text-right">
-                                                            <Button variant="ghost" size="sm" onClick={() => { setSelectedStudent(student); setStudentDialogOpen(true); }}>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    setSelectedStudent(student); 
+                                                                    setStudentDialogOpen(true); 
+                                                                }}
+                                                            >
                                                                 Modifica
                                                             </Button>
                                                         </TableCell>
