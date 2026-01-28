@@ -1,28 +1,91 @@
 
-import { Link, useParams, useNavigate } from "react-router-dom";
+
+import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useClient } from "@/provider/clientProvider";
+import { useClient, useSchoolData } from "@/provider/clientProvider";
+import { useSettings } from "@/provider/settingsProvider";
 import { SchoolClassExpanded, ExerciseGroupExpanded, Student } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Plus, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { StudentDialog } from "@/components/student-dialog";
+import { StudentsTable } from "@/components/students-table";
 
 
 export default function Classes() {
 
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
     const client = useClient();
+    const { evaluations, classes } = useSchoolData();
+    const { settings } = useSettings();
     const [schoolClass, setSchoolClass] = useState<SchoolClassExpanded | null>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+
+    // Selection handlers
+    const toggleSelectAll = () => {
+        if (!schoolClass) return;
+        if (selectedStudents.size === schoolClass.students.length) {
+            setSelectedStudents(new Set());
+        } else {
+            setSelectedStudents(new Set(schoolClass.students.map(s => s.id)));
+        }
+    };
+
+    const toggleSelectStudent = (studentId: string) => {
+        const newSelected = new Set(selectedStudents);
+        if (newSelected.has(studentId)) {
+            newSelected.delete(studentId);
+        } else {
+            newSelected.add(studentId);
+        }
+        setSelectedStudents(newSelected);
+    };
 
     // Student dialog state
     const [studentDialogOpen, setStudentDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+    // Calculate average score for a student in current year
+    const getStudentYearAverage = (studentId: string): number | null => {
+        const currentYear = new Date().getFullYear();
+        const studentEvals = evaluations.filter(
+            (e: any) =>
+                e.studentId === studentId &&
+                e.score > 0 &&
+                new Date(e.createdAt).getFullYear() === currentYear
+        );
+
+        if (studentEvals.length === 0) return null;
+
+        const sum = studentEvals.reduce((acc: number, e: any) => acc + e.score, 0);
+        return Math.round((sum / studentEvals.length) * 10) / 10;
+    };
+
+    // Get class name by id
+    const getClassName = (classId: string) => {
+        const cls = classes.find((c: any) => c.id === classId);
+        return cls?.className || "N/A";
+    };
+
+    // Check if student exceeds justification limit
+    const currentPeriod = settings.schoolPeriods.find(
+        (p: any) => p.id === settings.currentPeriodId
+    );
+
+    const getJustificationsInPeriod = (justifications: any[]) => {
+        if (!currentPeriod) return justifications.length;
+        return justifications.filter((j: any) => {
+            const jDate = new Date(j.date);
+            return jDate >= new Date(currentPeriod.startDate) && jDate <= new Date(currentPeriod.endDate);
+        }).length;
+    };
+
+    const isOverLimit = (student: Student) => {
+        const count = getJustificationsInPeriod(student.justifications || []);
+        return count >= settings.maxJustifications;
+    };
 
     // Fetch class data
     const fetchData = async () => {
@@ -114,70 +177,25 @@ export default function Classes() {
                                     Gestisci l'anagrafica degli studenti della classe {schoolClass.className}.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Nome</TableHead>
-                                            <TableHead>Cognome</TableHead>
-                                            <TableHead className="w-[100px]">Sesso</TableHead>
-                                            <TableHead>Data di Nascita</TableHead>
-                                            <TableHead className="text-right">Azioni</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {schoolClass.students.length > 0 ? (
-                                            [...schoolClass.students]
-                                                .sort((a, b) => a.lastName.localeCompare(b.lastName))
-                                                .map((student) => (
-                                                    <TableRow 
-                                                        key={student.id} 
-                                                        className="cursor-pointer hover:bg-muted/50"
-                                                        onClick={() => navigate(`/students/${student.id}`)}
-                                                    >
-                                                        <TableCell className="font-medium">
-                                                            {student.firstName}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {student.lastName}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className={cn(
-                                                                "p-2 py-1 rounded text-xs font-semibold",
-                                                                student.gender === 'M' ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" :
-                                                                    student.gender === 'F' ? "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300" :
-                                                                        "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                                                            )}>
-                                                                {student.gender}
-                                                            </span>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="sm" 
-                                                                onClick={(e) => { 
-                                                                    e.stopPropagation(); 
-                                                                    setSelectedStudent(student); 
-                                                                    setStudentDialogOpen(true); 
-                                                                }}
-                                                            >
-                                                                Modifica
-                                                            </Button>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                                    Nessuno studente in questa classe.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
+                            <CardContent className="p-0">
+                                <StudentsTable
+                                    students={[...schoolClass.students].sort((a, b) => a.lastName.localeCompare(b.lastName))}
+                                    onEdit={(student) => {
+                                        setSelectedStudent(student);
+                                        setStudentDialogOpen(true);
+                                    }}
+                                    showCheckboxes={false}
+                                    showNotes={true}
+                                    showYearAverage={true}
+                                    getYearAverage={getStudentYearAverage}
+                                    getClassName={getClassName}
+                                    isOverLimit={isOverLimit}
+                                    getJustificationsCount={(student) => getJustificationsInPeriod(student.justifications || [])}
+                                    maxJustifications={settings.maxJustifications}
+                                    selectedStudents={selectedStudents}
+                                    onToggleSelect={toggleSelectStudent}
+                                    onToggleSelectAll={toggleSelectAll}
+                                />
                             </CardContent>
                         </Card>
                     </TabsContent>
