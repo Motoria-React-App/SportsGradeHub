@@ -16,7 +16,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
-import type { Exercise, Gender, ScoreRange } from "@/types/types";
+import type { Exercise, Gender, ScoreRange, EvaluationCriterion } from "@/types/types";
 import {
   Search,
   Plus,
@@ -97,6 +97,9 @@ export default function Exercises() {
   const [editRangesFemale, setEditRangesFemale] = useState<ScoreRange[]>([]);
   const [editUseGenderRanges, setEditUseGenderRanges] = useState(false);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [deleteGroupDialogOpen, setDeleteGroupDialogOpen] = useState(false);
 
   // Form state for new exercise
   const [formData, setFormData] = useState({
@@ -115,6 +118,16 @@ export default function Exercises() {
   ]);
   const [useGenderRanges, setUseGenderRanges] = useState(false);
   const [showRanges, setShowRanges] = useState(false);
+
+  // Evaluation type state (for new exercise)
+  const [evaluationType, setEvaluationType] = useState<'range' | 'criteria'>('range');
+  const [criteria, setCriteria] = useState<EvaluationCriterion[]>([
+    { name: '', maxScore: 10 }
+  ]);
+
+  // Evaluation type state (for edit)
+  const [editEvaluationType, setEditEvaluationType] = useState<'range' | 'criteria'>('range');
+  const [editCriteria, setEditCriteria] = useState<EvaluationCriterion[]>([]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -147,9 +160,18 @@ export default function Exercises() {
     return group?.groupName || "Gruppo Sconosciuto";
   };
 
-  // Get ordered groups that have exercises
-  const orderedGroupsWithExercises = useMemo(() => {
-    return Object.keys(exercisesByGroup).sort((a, b) => 
+  // Get ordered groups - show ALL groups (including empty ones)
+  const orderedGroups = useMemo(() => {
+    // Get groups that have exercises
+    const groupsWithExercises = Object.keys(exercisesByGroup);
+    
+    // Get all group IDs
+    const allGroupIds = exerciseGroups.map(g => g.id);
+    
+    // Combine and deduplicate, ensuring all groups are included
+    const allGroups = [...new Set([...allGroupIds, ...groupsWithExercises])];
+    
+    return allGroups.sort((a, b) => 
       getGroupName(a).localeCompare(getGroupName(b))
     );
   }, [exercisesByGroup, exerciseGroups]);
@@ -212,6 +234,8 @@ export default function Exercises() {
     setRangesFemale([{ min: 0, max: 100, score: 6 }]);
     setUseGenderRanges(false);
     setShowRanges(false);
+    setEvaluationType('range');
+    setCriteria([{ name: '', maxScore: 10 }]);
     setErrors({});
   };
 
@@ -233,12 +257,17 @@ export default function Exercises() {
         }
       }
 
+      // Build evaluation criteria if type is 'criteria'
+      const validCriteria = criteria.filter(c => c.name.trim() !== '');
+      
       const response = await client.createExercise({
         name: formData.name,
         exerciseGroupId: formData.exerciseGroupId,
         unit: formData.unit,
         maxScore: formData.maxScore,
-        evaluationRanges,
+        evaluationType,
+        evaluationRanges: evaluationType === 'range' ? evaluationRanges : undefined,
+        evaluationCriteria: evaluationType === 'criteria' ? validCriteria : undefined,
       });
 
       if (response.success) {
@@ -294,12 +323,41 @@ export default function Exercises() {
         setNewGroupName("");
       } else {
         console.error("Failed to create group:", response.error);
+        alert("Errore: " + (response.error?.message || "Errore sconosciuto"));
       }
     } catch (error) {
       console.error("Error creating group:", error);
+      alert("Errore di rete durante la creazione del gruppo");
     } finally {
       setIsCreatingGroup(false);
     }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!groupToDelete) return;
+
+    setIsDeletingGroup(true);
+    try {
+      const response = await client.deleteExerciseGroup(groupToDelete);
+      if (response.success) {
+        await refreshExerciseGroups();
+        setDeleteGroupDialogOpen(false);
+        setGroupToDelete(null);
+      } else {
+        console.error("Failed to delete group:", response.error);
+        alert("Errore durante l'eliminazione del gruppo");
+      }
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      alert("Errore di rete durante l'eliminazione");
+    } finally {
+      setIsDeletingGroup(false);
+    }
+  };
+
+  const openDeleteGroupDialog = (groupId: string) => {
+    setGroupToDelete(groupId);
+    setDeleteGroupDialogOpen(true);
   };
 
   const openDeleteDialog = (exercise: Exercise) => {
@@ -315,6 +373,16 @@ export default function Exercises() {
       unit: exercise.unit,
       maxScore: exercise.maxScore || 10,
     });
+    // Load evaluation type (default to 'range' for backwards compatibility)
+    setEditEvaluationType(exercise.evaluationType || 'range');
+    
+    // Load criteria if they exist
+    if (exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0) {
+      setEditCriteria(exercise.evaluationCriteria);
+    } else {
+      setEditCriteria([{ name: '', maxScore: 10 }]);
+    }
+    
     // Load ranges if they exist
     if (exercise.evaluationRanges?.M) {
       setEditRangesMale(exercise.evaluationRanges.M);
@@ -339,19 +407,24 @@ export default function Exercises() {
     try {
       // Build evaluation ranges
       let evaluationRanges: Partial<Record<Gender, ScoreRange[]>> | undefined;
-      if (editRangesMale.length > 0) {
+      if (editEvaluationType === 'range' && editRangesMale.length > 0) {
         evaluationRanges = {
           M: editRangesMale,
           F: editUseGenderRanges ? editRangesFemale : editRangesMale,
         };
       }
+      
+      // Build evaluation criteria
+      const validCriteria = editCriteria.filter(c => c.name.trim() !== '');
 
       const response = await client.updateExercise(selectedExercise.id, {
         name: editFormData.name,
         exerciseGroupId: editFormData.exerciseGroupId,
         unit: editFormData.unit,
         maxScore: editFormData.maxScore,
-        evaluationRanges,
+        evaluationType: editEvaluationType,
+        evaluationRanges: editEvaluationType === 'range' ? evaluationRanges : undefined,
+        evaluationCriteria: editEvaluationType === 'criteria' ? validCriteria : undefined,
       });
 
       if (response.success) {
@@ -530,16 +603,16 @@ export default function Exercises() {
 
       {/* Exercise Groups Display */}
       <div className="space-y-8">
-        {orderedGroupsWithExercises.length === 0 && (
+        {orderedGroups.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nessun esercizio trovato</p>
-            <p className="text-sm mt-2">Crea un gruppo e aggiungi esercizi per iniziare</p>
+            <p>Nessun gruppo trovato</p>
+            <p className="text-sm mt-2">Crea un gruppo per iniziare</p>
           </div>
         )}
 
-        {orderedGroupsWithExercises.map((groupId) => {
-          const groupExercises = exercisesByGroup[groupId];
+        {orderedGroups.map((groupId) => {
+          const groupExercises = exercisesByGroup[groupId] || [];
           const groupName = getGroupName(groupId);
 
           return (
@@ -557,6 +630,14 @@ export default function Exercises() {
                   <span>{groupExercises.length}</span>
                   <span className="opacity-75">eserciz{groupExercises.length === 1 ? 'io' : 'i'}</span>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => openDeleteGroupDialog(groupId)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
 
               {/* Carousel */}
@@ -593,7 +674,12 @@ export default function Exercises() {
                                 <span>Punteggio max: {ex.maxScore}</span>
                               </div>
                             )}
-                            {ex.evaluationRanges && (
+                            {ex.evaluationType === 'criteria' && ex.evaluationCriteria && ex.evaluationCriteria.length > 0 ? (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Star className="h-4 w-4" />
+                                <span>{ex.evaluationCriteria.length} criteri configurati</span>
+                              </div>
+                            ) : ex.evaluationRanges && (
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                 <Ruler className="h-4 w-4" />
                                 <span>Fasce di valutazione configurate</span>
@@ -710,39 +796,153 @@ export default function Exercises() {
               </div>
             </div>
 
-            {/* Evaluation Ranges Toggle */}
-            <div className="space-y-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-between"
-                onClick={() => setShowRanges(!showRanges)}
-              >
-                <span className="flex items-center gap-2">
-                  <Ruler className="h-4 w-4" />
-                  Fasce di Valutazione (opzionale)
-                </span>
-                {showRanges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
+            {/* Evaluation Type Selection */}
+            <div className="space-y-4">
+              <Label>Tipo di Valutazione</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={evaluationType === 'range' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationType('range')}
+                  className="flex-1"
+                >
+                  <Ruler className="h-4 w-4 mr-2" />
+                  Fasce
+                </Button>
+                <Button
+                  type="button"
+                  variant={evaluationType === 'criteria' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationType('criteria')}
+                  className="flex-1"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Criteri
+                </Button>
+              </div>
 
-              {showRanges && (
+              {/* Range-based evaluation */}
+              {evaluationType === 'range' && (
+                <div className="space-y-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-between"
+                    onClick={() => setShowRanges(!showRanges)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Ruler className="h-4 w-4" />
+                      Configura Fasce di Valutazione
+                    </span>
+                    {showRanges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+
+                  {showRanges && (
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="use-gender-ranges"
+                          checked={useGenderRanges}
+                          onChange={(e) => setUseGenderRanges(e.target.checked)}
+                          className="rounded"
+                        />
+                        <Label htmlFor="use-gender-ranges" className="text-sm cursor-pointer">
+                          Usa fasce diverse per M e F
+                        </Label>
+                      </div>
+
+                      {renderRangeEditor(rangesMale, 'M', useGenderRanges ? 'Fasce Maschi' : 'Fasce (tutti)')}
+                      
+                      {useGenderRanges && renderRangeEditor(rangesFemale, 'F', 'Fasce Femmine')}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Criteria-based evaluation */}
+              {evaluationType === 'criteria' && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="use-gender-ranges"
-                      checked={useGenderRanges}
-                      onChange={(e) => setUseGenderRanges(e.target.checked)}
-                      className="rounded"
-                    />
-                    <Label htmlFor="use-gender-ranges" className="text-sm cursor-pointer">
-                      Usa fasce diverse per M e F
-                    </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Definisci i criteri di valutazione. Il voto finale sarà calcolato dalla somma dei punteggi.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    {criteria.map((criterion, index) => (
+                      <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
+                        <div className="flex-1 grid grid-cols-3 gap-2">
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nome Criterio</Label>
+                            <Input
+                              placeholder="es. Ricezione, Battuta..."
+                              value={criterion.name}
+                              onChange={(e) => {
+                                const updated = [...criteria];
+                                updated[index] = { ...updated[index], name: e.target.value };
+                                setCriteria(updated);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              value={criterion.maxScore === 0 ? '' : criterion.maxScore.toString()}
+                              onChange={(e) => {
+                                const updated = [...criteria];
+                                const val = e.target.value;
+                                // Allow empty or numeric input
+                                if (val === '' || /^\d+$/.test(val)) {
+                                  updated[index] = { ...updated[index], maxScore: val === '' ? 0 : parseInt(val) };
+                                  setCriteria(updated);
+                                }
+                              }}
+                              onBlur={(e) => {
+                                // Ensure minimum value of 1 on blur
+                                const updated = [...criteria];
+                                const val = parseInt(e.target.value) || 1;
+                                updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
+                                setCriteria(updated);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+                        {criteria.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCriteria(criteria.filter((_, i) => i !== index))}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
-                  {renderRangeEditor(rangesMale, 'M', useGenderRanges ? 'Fasce Maschi' : 'Fasce (tutti)')}
-                  
-                  {useGenderRanges && renderRangeEditor(rangesFemale, 'F', 'Fasce Femmine')}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCriteria([...criteria, { name: '', maxScore: 10 }])}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Aggiungi Criterio
+                  </Button>
+
+                  <div className="p-3 rounded-lg bg-primary/10 text-center">
+                    <p className="text-sm font-medium">
+                      Punteggio Totale Massimo: {criteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -800,6 +1000,30 @@ export default function Exercises() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Group Confirmation Dialog */}
+      <AlertDialog open={deleteGroupDialogOpen} onOpenChange={setDeleteGroupDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare il gruppo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Stai per eliminare il gruppo "{groupToDelete ? getGroupName(groupToDelete) : ''}". 
+              Gli esercizi associati non verranno eliminati ma rimarranno senza gruppo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteGroup}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeletingGroup}
+            >
+              {isDeletingGroup && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Elimina Gruppo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -921,11 +1145,58 @@ export default function Exercises() {
                 </div>
               </div>
 
-              {/* Evaluation Ranges Section */}
+              {/* Evaluation Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Fasce di Valutazione</Label>
-                  {isEditing && (
+                  <Label className="text-base font-semibold">Tipo di Valutazione</Label>
+                </div>
+                
+                {/* Evaluation Type Toggle (Edit Mode) */}
+                {isEditing && (
+                  <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+                    <Button
+                      type="button"
+                      variant={editEvaluationType === 'range' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setEditEvaluationType('range')}
+                      className="h-8"
+                    >
+                      <Ruler className="h-4 w-4 mr-2" />
+                      Fasce
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={editEvaluationType === 'criteria' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setEditEvaluationType('criteria')}
+                      className="h-8"
+                    >
+                      <Star className="h-4 w-4 mr-2" />
+                      Criteri
+                    </Button>
+                  </div>
+                )}
+                
+                {/* View Mode - Show current type */}
+                {!isEditing && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {(selectedExercise.evaluationType || 'range') === 'criteria' ? (
+                      <>
+                        <Star className="h-4 w-4" />
+                        <span>Valutazione per Criteri</span>
+                      </>
+                    ) : (
+                      <>
+                        <Ruler className="h-4 w-4" />
+                        <span>Valutazione per Fasce</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Range-based evaluation (Edit Mode) */}
+                {isEditing && editEvaluationType === 'range' && (
+                  <>
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
@@ -938,10 +1209,7 @@ export default function Exercises() {
                         Fasce diverse per M/F
                       </Label>
                     </div>
-                  )}
-                </div>
 
-                {isEditing ? (
                   <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                     {/* Male Ranges */}
                     <div className="space-y-3">
@@ -1083,42 +1351,150 @@ export default function Exercises() {
                       </div>
                     )}
                   </div>
-                ) : (
-                  /* View Mode - Show ranges */
+                  </>
+                )}
+
+                {/* Criteria-based evaluation (Edit Mode) */}
+                {isEditing && editEvaluationType === 'criteria' && (
                   <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-                    {selectedExercise.evaluationRanges?.M ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium flex items-center gap-2">
-                            <IconGenderMale className="h-4 w-4 text-blue-500" />
-                            Fasce Maschi
-                          </Label>
-                          <div className="grid grid-cols-3 gap-2 text-sm">
-                            {selectedExercise.evaluationRanges.M.map((range, i) => (
-                              <div key={i} className="p-2 bg-background rounded border text-center">
-                                {range.min}-{range.max} → <strong>{range.score}</strong>
-                              </div>
-                            ))}
+                    <p className="text-sm text-muted-foreground">
+                      Definisci i criteri di valutazione. Il voto finale sarà calcolato dalla somma dei punteggi.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {editCriteria.map((criterion, index) => (
+                        <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
+                          <div className="flex-1 grid grid-cols-3 gap-2">
+                            <div className="col-span-2 space-y-1">
+                              <Label className="text-xs text-muted-foreground">Nome Criterio</Label>
+                              <Input
+                                placeholder="es. Ricezione, Battuta..."
+                                value={criterion.name}
+                                onChange={(e) => {
+                                  const updated = [...editCriteria];
+                                  updated[index] = { ...updated[index], name: e.target.value };
+                                  setEditCriteria(updated);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                              <Input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={criterion.maxScore === 0 ? '' : criterion.maxScore.toString()}
+                                onChange={(e) => {
+                                  const updated = [...editCriteria];
+                                  const val = e.target.value;
+                                  if (val === '' || /^\d+$/.test(val)) {
+                                    updated[index] = { ...updated[index], maxScore: val === '' ? 0 : parseInt(val) };
+                                    setEditCriteria(updated);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const updated = [...editCriteria];
+                                  const val = parseInt(e.target.value) || 1;
+                                  updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
+                                  setEditCriteria(updated);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                          {editCriteria.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditCriteria(editCriteria.filter((_, i) => i !== index))}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditCriteria([...editCriteria, { name: '', maxScore: 10 }])}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Aggiungi Criterio
+                    </Button>
+
+                    <div className="p-3 rounded-lg bg-primary/10 text-center">
+                      <p className="text-sm font-medium">
+                        Punteggio Totale Massimo: {editCriteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* View Mode - Show ranges or criteria */}
+                {!isEditing && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    {(selectedExercise.evaluationType || 'range') === 'criteria' ? (
+                      /* Criteria view */
+                      selectedExercise.evaluationCriteria && selectedExercise.evaluationCriteria.length > 0 ? (
+                        <div className="space-y-3">
+                          {selectedExercise.evaluationCriteria.map((criterion, i) => (
+                            <div key={i} className="flex justify-between items-center p-2 bg-background rounded border">
+                              <span className="font-medium">{criterion.name}</span>
+                              <span className="text-muted-foreground">max {criterion.maxScore} punti</span>
+                            </div>
+                          ))}
+                          <div className="p-3 rounded-lg bg-primary/10 text-center">
+                            <p className="text-sm font-medium">
+                              Punteggio Totale Massimo: {selectedExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                            </p>
                           </div>
                         </div>
-                        {selectedExercise.evaluationRanges?.F && (
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nessun criterio di valutazione configurato</p>
+                      )
+                    ) : (
+                      /* Ranges view */
+                      selectedExercise.evaluationRanges?.M ? (
+                        <>
                           <div className="space-y-2">
                             <Label className="text-sm font-medium flex items-center gap-2">
-                              <IconGenderFemale className="h-4 w-4 text-pink-500" />
-                              Fasce Femmine
+                              <IconGenderMale className="h-4 w-4 text-blue-500" />
+                              Fasce Maschi
                             </Label>
                             <div className="grid grid-cols-3 gap-2 text-sm">
-                              {selectedExercise.evaluationRanges.F.map((range, i) => (
+                              {selectedExercise.evaluationRanges.M.map((range, i) => (
                                 <div key={i} className="p-2 bg-background rounded border text-center">
                                   {range.min}-{range.max} → <strong>{range.score}</strong>
                                 </div>
                               ))}
                             </div>
                           </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Nessuna fascia di valutazione configurata</p>
+                          {selectedExercise.evaluationRanges?.F && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium flex items-center gap-2">
+                                <IconGenderFemale className="h-4 w-4 text-pink-500" />
+                                Fasce Femmine
+                              </Label>
+                              <div className="grid grid-cols-3 gap-2 text-sm">
+                                {selectedExercise.evaluationRanges.F.map((range, i) => (
+                                  <div key={i} className="p-2 bg-background rounded border text-center">
+                                    {range.min}-{range.max} → <strong>{range.score}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nessuna fascia di valutazione configurata</p>
+                      )
                     )}
                   </div>
                 )}

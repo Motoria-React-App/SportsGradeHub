@@ -458,7 +458,11 @@ export default function Classes() {
                                                         <p className="font-medium">{exercise.name}</p>
                                                         <p className="text-xs text-muted-foreground">
                                                             Unità: {exercise.unit} 
-                                                            {exercise.evaluationRanges ? " • Fasce configurate" : " • Senza fasce"}
+                                                            {(exercise.evaluationType === 'criteria' && exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0)
+                                                                ? ` • ${exercise.evaluationCriteria.length} Criteri` 
+                                                                : exercise.evaluationRanges 
+                                                                    ? " • Fasce configurate" 
+                                                                    : " • Senza fasce"}
                                                         </p>
                                                     </div>
                                                 </div>

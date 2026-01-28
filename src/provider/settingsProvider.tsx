@@ -14,6 +14,7 @@ export interface AppSettings {
     showDecimals: boolean;          // default: true
     roundingMode: 'up' | 'down' | 'nearest';  // default: 'nearest'
     highlightFailing: boolean;      // default: true
+    enableBasePoint: boolean;       // default: false (se true, voto = 1 + performance su 9)
 
     // Display
     studentsPerPage: number;        // default: 25
@@ -38,6 +39,7 @@ const defaultSettings: AppSettings = {
     showDecimals: true,
     roundingMode: 'nearest',
     highlightFailing: true,
+    enableBasePoint: false,
     studentsPerPage: 25,
     defaultView: 'dashboard',
     studentSortBy: 'lastName',

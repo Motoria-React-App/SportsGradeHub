@@ -50,11 +50,13 @@ import { useExport } from "@/hooks/useExport";
 import { useDateFormatter } from "@/hooks/useDateFormatter";
 import type { DayOfWeek } from "@/types/scheduleTypes";
 import { useState } from "react";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
     const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule } = useSchedule();
-    const { classes } = useSchoolData();
+    const { classes, evaluations, exercises, students, refreshEvaluations } = useSchoolData();
     const { theme, setTheme } = useTheme();
     const client = useClient();
     const user = client.UserModel;
@@ -68,6 +70,7 @@ export default function Settings() {
     const [newSlotEnd, setNewSlotEnd] = useState('09:00');
     const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
     const [isExporting, setIsExporting] = useState(false);
+    const [isRecalculating, setIsRecalculating] = useState(false);
 
     // State for adding new period
     const [newPeriodName, setNewPeriodName] = useState('');
@@ -131,6 +134,112 @@ export default function Settings() {
             schoolPeriods: settings.schoolPeriods.filter(p => p.id !== periodId),
             currentPeriodId: settings.currentPeriodId === periodId ? null : settings.currentPeriodId,
         });
+    };
+
+    const handleRecalculateGrades = async () => {
+        if (!confirm("ATTENZIONE: Questa operazione ricalcolerà tutti i voti degli esercizi basati su criteri usando l'impostazione attuale (Punto Base). Vuoi procedere?")) return;
+        
+        setIsRecalculating(true);
+        try {
+            // 1. Deduplicate to find latest evaluations
+            const latestEvaluations = new Map<string, any>();
+            evaluations.forEach((ev) => {
+                const key = `${ev.studentId}-${ev.exerciseId}`;
+                const existing = latestEvaluations.get(key);
+                if (!existing || new Date(ev.createdAt) > new Date(existing.createdAt)) {
+                    latestEvaluations.set(key, ev);
+                }
+            });
+
+            // 2. Filter for criteria-based exercises
+            let updatedCount = 0;
+            const evalsToProcess = Array.from(latestEvaluations.values());
+
+            for (const ev of evalsToProcess) {
+                const ex = exercises.find(e => e.id === ev.exerciseId);
+                if (!ex) continue;
+
+                const maxScore = ex.maxScore || 10;
+                let newScore = 0;
+                let shouldUpdate = false;
+
+                if (ex.evaluationType === 'criteria' && ex.evaluationCriteria) {
+                    // Criteria-based calculation
+                    let criteriaScores: Record<string, number> = {};
+                    try {
+                         criteriaScores = JSON.parse(ev.performanceValue || '{}');
+                    } catch (e) { continue; }
+
+                    const totalMax = ex.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
+                    const totalScored = ex.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+                    
+                    if (settings.enableBasePoint) {
+                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                        newScore = 1 + (percentage * (maxScore - 1));
+                    } else {
+                        newScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                    }
+                    shouldUpdate = true;
+                } else if (ex.evaluationType === 'range' && ex.evaluationRanges) {
+                    // Range-based calculation
+                    // Need student gender
+                    const student = students.find(s => s.id === ev.studentId);
+                    if (!student) continue;
+
+                    const performanceNum = parseFloat(ev.performanceValue);
+                    if (isNaN(performanceNum)) continue;
+
+                    const ranges = ex.evaluationRanges[student.gender] || ex.evaluationRanges['M'];
+                    if (!ranges) continue;
+
+                    let rawScore: number | null = null;
+                    for (const range of ranges) {
+                        if (performanceNum >= range.min && performanceNum <= range.max) {
+                            rawScore = range.score;
+                            break;
+                        }
+                    }
+
+                    if (rawScore !== null) {
+                        if (settings.enableBasePoint) {
+                            const percentage = maxScore > 0 ? rawScore / maxScore : 0;
+                            newScore = 1 + (percentage * (maxScore - 1));
+                        } else {
+                            newScore = rawScore;
+                        }
+                        shouldUpdate = true;
+                    }
+                }
+
+                if (shouldUpdate) {
+                    newScore = Math.round(newScore * 10) / 10;
+                    
+                    if (Math.abs(newScore - ev.score) > 0.01) {
+                         await client.createEvaluation({
+                             studentId: ev.studentId,
+                             exerciseId: ev.exerciseId,
+                             performanceValue: ev.performanceValue,
+                             score: newScore,
+                             comments: ev.comments,
+                             criteriaScores: (ev as any).criteriaScores
+                         });
+                         updatedCount++;
+                    }
+                }
+            }
+
+            if (updatedCount > 0) {
+                await refreshEvaluations();
+                toast.success(`Aggiornati ${updatedCount} voti con successo.`);
+            } else {
+                toast.info("Nessun voto necessitava di aggiornamento.");
+            }
+        } catch (error) {
+            console.error("Error recalculating grades:", error);
+            toast.error("Errore durante il ricalcolo dei voti.");
+        } finally {
+            setIsRecalculating(false);
+        }
     };
 
 
@@ -263,9 +372,33 @@ export default function Settings() {
                                         <SelectContent>
                                             <SelectItem value="nearest">Matematico (0.5)</SelectItem>
                                             <SelectItem value="up">Per eccesso</SelectItem>
-                                            <SelectItem value="down">Per difetto</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <Separator />
+
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Punto Base (1-10)</Label>
+                                        <p className="text-sm text-muted-foreground">Abilita il sistema di voto con base 1 (1 punto base + max 9 punti).</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={handleRecalculateGrades}
+                                            disabled={isRecalculating}
+                                            title="Ricalcola tutti i voti degli esercizi a criteri in base all'impostazione attuale"
+                                        >
+                                            {isRecalculating ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <RefreshCw className="h-3 w-3 mr-2" />}
+                                            Ricalcola Voti
+                                        </Button>
+                                        <Switch
+                                            checked={settings.enableBasePoint}
+                                            onCheckedChange={(checked) => updateSettings({ enableBasePoint: checked })}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

@@ -16,6 +16,7 @@ import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
 import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
+import { useSettings } from "@/provider/settingsProvider";
 import { useParams } from "react-router-dom";
 import {
     AlertDialog,
@@ -71,6 +72,7 @@ export default function Valutazioni() {
     } = useSchoolData();
     const client = useClient();
     const { formatGrade, getGradeColor } = useGradeFormatter();
+    const { settings } = useSettings();
 
     // Filters
     const [selectedClassId, setSelectedClassId] = useState<string>("all");
@@ -111,6 +113,8 @@ export default function Valutazioni() {
     // Grading panel state
     const [performanceInputValue, setPerformanceInputValue] = useState<string>("");
     const [notesValue, setNotesValue] = useState<string>("");
+    // Criteria scores state for criteria-based evaluation
+    const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({});
 
     // Get students for a class
     const getStudentsForClass = useCallback((classId: string) => {
@@ -233,6 +237,12 @@ export default function Valutazioni() {
         setSelectedEvaluationForGrading(evaluation);
         setPerformanceInputValue(evaluation.performanceValue?.toString() || "");
         setNotesValue(evaluation.comments || "");
+        // Load criteria scores if they exist
+        if (evaluation.criteriaScores) {
+            setCriteriaScores(evaluation.criteriaScores);
+        } else {
+            setCriteriaScores({});
+        }
     };
 
     // Save evaluation changes - this creates a new record (backend will have duplicates, but we deduplicate on frontend)
@@ -245,14 +255,42 @@ export default function Valutazioni() {
 
         setIsSaving(true);
         try {
-            const performanceNum = parseFloat(performanceInputValue);
             let calculatedScore = 0;
+            const isCriteriaBased = exercise.evaluationType === 'criteria' && exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0;
 
-            // Only calculate score if confirmed, otherwise leave as 0 (Draft)
-            if (confirmed && !isNaN(performanceNum)) {
-                const score = calculateScore(performanceNum, exercise, student.gender);
-                if (score !== null) {
-                    calculatedScore = score;
+            if (confirmed) {
+                if (isCriteriaBased) {
+                    // Calculate score from criteria: (sum / max) * maxScore
+                    const totalMax = exercise.evaluationCriteria!.reduce((sum, c) => sum + c.maxScore, 0);
+                    const totalScored = exercise.evaluationCriteria!.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+                    const maxScore = exercise.maxScore || 10;
+                    
+                    if (settings.enableBasePoint) {
+                        // Formula with base 1: 1 + (percentage * (maxScore - 1))
+                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                        calculatedScore = 1 + (percentage * (maxScore - 1));
+                    } else {
+                        // Standard formula: (percentage * maxScore)
+                        calculatedScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                    }
+                    calculatedScore = Math.round(calculatedScore * 10) / 10; // Round to 1 decimal
+                } else {
+                    // Calculate score from performance value using ranges
+                    const performanceNum = parseFloat(performanceInputValue);
+                    if (!isNaN(performanceNum)) {
+                        let score = calculateScore(performanceNum, exercise, student.gender);
+                        
+                        if (score !== null) {
+                            if (settings.enableBasePoint) {
+                                // Apply Base Point logic to range score
+                                // Assuming range score is 0-10 or 0-maxScore
+                                const maxScore = exercise.maxScore || 10;
+                                const percentage = maxScore > 0 ? score / maxScore : 0;
+                                score = 1 + (percentage * (maxScore - 1));
+                            }
+                            calculatedScore = score;
+                        }
+                    }
                 }
             }
 
@@ -261,34 +299,25 @@ export default function Valutazioni() {
             await client.createEvaluation({
                 studentId: selectedEvaluationForGrading.studentId,
                 exerciseId: selectedEvaluationForGrading.exerciseId,
-                performanceValue: performanceInputValue,
+                performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : performanceInputValue,
                 score: calculatedScore,
                 comments: notesValue,
+                criteriaScores: isCriteriaBased ? criteriaScores : undefined,
             });
 
             await refreshEvaluations();
 
-            // Only close if confirmed, otherwise keep open to show "Saved Draft" status or similar? 
-            // Actually, usually user might want to move to next. 
-            // If draft, maybe keep open. If confirmed, close.
             if (confirmed) {
                 setSelectedEvaluationForGrading(null);
+                setCriteriaScores({});
             } else {
-                // If draft, we might want to update the local selected state to reflect the new ID if we were using it, 
-                // but here we use studentId+exerciseId so it should remain valid.
-                // We just need to trigger a refresh of the "selectedEvaluationForGrading" object 
-                // because it might need to reflect the new "Saved" status (even if draft).
-                // However, since we rely on `evaluations` which is refreshed, and we select by ID...
-                // Actually `selectedEvaluationForGrading` is a separate state object. 
-                // We should probably update it or re-fetch it.
-                // For simplicity, we can close or just update the object.
-                // Let's update the object manually so UI reflects change without closing.
+                // Update the object manually so UI reflects change without closing.
                 setSelectedEvaluationForGrading({
                     ...selectedEvaluationForGrading,
-                    performanceValue: performanceInputValue,
+                    performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : performanceInputValue,
                     score: calculatedScore,
                     comments: notesValue,
-                    // We don't have the new ID, but that's okay for display
+                    criteriaScores: isCriteriaBased ? criteriaScores : undefined,
                 } as Evaluation);
             }
         } catch (error) {
@@ -441,9 +470,23 @@ export default function Valutazioni() {
     const gradingExercise = selectedEvaluationForGrading ? getExercise(selectedEvaluationForGrading.exerciseId) : null;
     const gradingStatus = selectedEvaluationForGrading ? getEvaluationStatus(selectedEvaluationForGrading) : null;
     const gradingPerformanceNum = parseFloat(performanceInputValue);
-    const gradingPreviewScore = (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent)
-        ? calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender)
-        : null;
+    const gradingPreviewScore = useMemo(() => {
+        if (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent) {
+            let score = calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender);
+            
+            if (score !== null && settings.enableBasePoint) {
+                 const maxScore = gradingExercise.maxScore || 10;
+                 const percentage = maxScore > 0 ? score / maxScore : 0;
+                 score = 1 + (percentage * (maxScore - 1));
+                 
+                 // Apply rounding
+                 score = Math.round(score * 10) / 10;
+            }
+            
+            return score;
+        }
+        return null;
+    }, [gradingPerformanceNum, gradingExercise, gradingStudent, settings.enableBasePoint]);
 
     // Stats
     const totalEvaluations = filteredEvaluations.length;
@@ -611,41 +654,103 @@ export default function Valutazioni() {
                                     </Badge>
                                 </div>
 
-                                {/* Performance input */}
-                                <div className="space-y-2">
-                                    <Label>Prestazione ({gradingExercise.unit})</Label>
-                                    <Input
-                                        type="text"
-                                        placeholder={`Inserisci ${gradingExercise.unit}`}
-                                        value={performanceInputValue}
-                                        onChange={(e) => setPerformanceInputValue(e.target.value)}
-                                    />
-                                </div>
-
-                                {/* Score preview */}
-                                {gradingPreviewScore !== null ? (
-                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                        <p
-                                            className={cn(
-                                                "text-3xl font-bold",
-                                                getGradeColor(gradingPreviewScore)
-                                            )}
-                                        >
-                                            {formatGrade(gradingPreviewScore)}
-                                        </p>
+                                {/* Performance input - conditional based on evaluation type */}
+                                {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
+                                    /* Criteria-based evaluation */
+                                    <div className="space-y-3">
+                                        <Label>Punteggi per Criterio</Label>
+                                        <div className="space-y-2">
+                                            {gradingExercise.evaluationCriteria.map((criterion) => (
+                                                <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium">{criterion.name}</p>
+                                                        <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                    </div>
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        max={criterion.maxScore}
+                                                        value={criteriaScores[criterion.name] || ''}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value) || 0;
+                                                            const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
+                                                            setCriteriaScores({
+                                                                ...criteriaScores,
+                                                                [criterion.name]: clampedVal
+                                                            });
+                                                        }}
+                                                        className="w-20 h-8 text-center"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {/* Criteria score preview */}
+                                        {(() => {
+                                            const totalMax = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
+                                            const totalScored = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+                                            const maxScore = gradingExercise.maxScore || 10;
+                                            let calculatedGrade = 0;
+                                            if (settings.enableBasePoint) {
+                                                const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                                                calculatedGrade = 1 + (percentage * (maxScore - 1));
+                                            } else {
+                                                calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                                            }
+                                            
+                                            const roundedGrade = Math.round(calculatedGrade * 10) / 10;
+                                            
+                                            return (
+                                                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                    <p className="text-sm text-muted-foreground mb-1">
+                                                        Punteggio: {totalScored} / {totalMax}
+                                                    </p>
+                                                    <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
+                                                        {formatGrade(roundedGrade)}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ) : (
-                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                    </div>
-                                )}
+                                    /* Range-based evaluation */
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label>Prestazione ({gradingExercise.unit})</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder={`Inserisci ${gradingExercise.unit}`}
+                                                value={performanceInputValue}
+                                                onChange={(e) => setPerformanceInputValue(e.target.value)}
+                                            />
+                                        </div>
 
-                                {!gradingExercise.evaluationRanges && (
-                                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                                        Vai alla pagina Esercizi per configurarle.
-                                    </div>
+                                        {/* Score preview */}
+                                        {gradingPreviewScore !== null ? (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                <p
+                                                    className={cn(
+                                                        "text-3xl font-bold",
+                                                        getGradeColor(gradingPreviewScore)
+                                                    )}
+                                                >
+                                                    {formatGrade(gradingPreviewScore)}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                            </div>
+                                        )}
+
+                                        {!gradingExercise.evaluationRanges && (
+                                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                                                ⚠️ Questo esercizio non ha fasce di valutazione configurate.
+                                                Vai alla pagina Esercizi per configurarle.
+                                            </div>
+                                        )}
+                                    </>
                                 )}
 
                                 {/* Notes */}
@@ -660,31 +765,41 @@ export default function Valutazioni() {
                                 </div>
 
                                 {/* Action buttons */}
-                                <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleSaveEvaluation(false)}
-                                        disabled={isSaving || !performanceInputValue}
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Save className="mr-2 h-4 w-4" />
-                                        )}
-                                        Salva Bozza
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleSaveEvaluation(true)}
-                                        disabled={isSaving || !performanceInputValue || gradingPreviewScore === null}
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Check className="mr-2 h-4 w-4" />
-                                        )}
-                                        Conferma Voto
-                                    </Button>
-                                </div>
+                                {(() => {
+                                    const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
+                                    const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
+                                    const hasRangeInput = !isCriteriaBased && performanceInputValue;
+                                    const hasAnyInput = hasCriteriaInput || hasRangeInput;
+                                    const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
+                                    
+                                    return (
+                                        <div className="grid grid-cols-2 gap-3 pt-2">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => handleSaveEvaluation(false)}
+                                                disabled={isSaving || !hasAnyInput}
+                                            >
+                                                {isSaving ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                )}
+                                                Salva Bozza
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleSaveEvaluation(true)}
+                                                disabled={isSaving || !canConfirm}
+                                            >
+                                                {isSaving ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Check className="mr-2 h-4 w-4" />
+                                                )}
+                                                Conferma Voto
+                                            </Button>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Delete button */}
                                 <Button
