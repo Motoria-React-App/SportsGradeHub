@@ -432,7 +432,7 @@ export default function Valutazioni() {
         };
 
         return (
-            <div className={cn("flex-1 rounded-xl border flex flex-col max-h-full", sizeClasses[size], bgClass)}>
+            <div className={cn("flex-1 rounded-xl border flex flex-col h-full", sizeClasses[size], bgClass)}>
                 <div className={cn("p-4 border-b flex items-center gap-2 shrink-0", colorClass)}>
                     <Icon className="h-5 w-5" />
                     <h3 className="font-semibold">{title}</h3>
@@ -440,7 +440,7 @@ export default function Valutazioni() {
                         {items.length}
                     </Badge>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 h-0 min-h-0">
                     <div className="p-3 space-y-3">
                         {items.length === 0 ? (
                             <div className="text-center text-muted-foreground py-8 text-sm">
@@ -464,12 +464,12 @@ export default function Valutazioni() {
                                         )}
                                         onClick={() => selectEvaluationForGrading(ev)}
                                     >
-                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                        <div className="flex items-start justify-between gap-2 p-3">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
                                                     <User className="h-4 w-4 text-primary" />
                                                 </div>
-                                                <p className="font-medium text-sm truncate">
+                                                <p className="font-medium text-md truncate">
                                                     {student.firstName} {student.lastName}
                                                 </p>
                                             </div>
@@ -484,12 +484,7 @@ export default function Valutazioni() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                                {getClassName(student.currentClassId)}
-                                            </Badge>
-                                            <span className="truncate">{exercise.name}</span>
-                                        </div>
+
                                     </div>
                                 );
                             })
@@ -529,7 +524,7 @@ export default function Valutazioni() {
 
     return (
         <>
-            <div className="flex flex-col h-full p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
+            <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-1rem)] p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -605,7 +600,7 @@ export default function Valutazioni() {
                 </div>
 
                 {/* Kanban columns and grading panel */}
-                <div className="flex gap-6 items-start relative flex-1 min-h-0">
+                <div className="flex gap-6 items-stretch relative flex-1 min-h-0">
                     {/* Columns */}
                     <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
                         <Column
@@ -708,7 +703,7 @@ export default function Valutazioni() {
                                                                 <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
                                                             </div>
                                                             <Input
-                                                                type="number"
+                                                                type="text"
                                                                 min="0"
                                                                 max={criterion.maxScore}
                                                                 value={criteriaScores[criterion.name] || ''}
