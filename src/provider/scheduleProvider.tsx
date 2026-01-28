@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { ScheduleSlot, DayOfWeek } from "@/types/scheduleTypes";
 import { isTimeInSlot } from "@/types/scheduleTypes";
-import { useSchoolData } from "@/provider/clientProvider";
+
+import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { SchoolClass } from "@/types/types";
+
 
 const STORAGE_KEY = "sportsgrade-schedule";
 
@@ -23,47 +25,72 @@ interface ScheduleProviderState {
     getCurrentClass: () => CurrentClassInfo | null;
     getSlotsByDay: (day: DayOfWeek) => ScheduleSlot[];
     resetSchedule: () => void;
+    importSchedule: (newSchedule: ScheduleSlot[]) => void;
 }
 
 const ScheduleContext = createContext<ScheduleProviderState | undefined>(undefined);
 
 export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     const { classes } = useSchoolData();
+    const client = useClient();
     
+    // Initialize with empty or local storage as fallback/cache
     const [schedule, setSchedule] = useState<ScheduleSlot[]>(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {
-                return defaultSchedule;
-            }
+        try {
+            return stored ? JSON.parse(stored) : defaultSchedule;
+        } catch {
+            return defaultSchedule;
         }
-        return defaultSchedule;
     });
 
-    // Persist to localStorage whenever schedule changes
+    // Load from API on mount
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule));
-    }, [schedule]);
+        const loadSchedule = async () => {
+             // Basic check if user might be logged in, or just try fetching
+            const res = await client.getSettings();
+            if (res.success && res.data?.schedule) {
+                setSchedule(res.data.schedule);
+            }
+        };
+        loadSchedule();
+    }, [client]);
+
+    // Persist to API and localStorage
+    const saveSchedule = useCallback(async (newSchedule: ScheduleSlot[]) => {
+        setSchedule(newSchedule);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newSchedule)); // Keep local text backup
+        
+        try {
+            await client.updateSettings({ schedule: newSchedule });
+        } catch (e) {
+            console.error("Failed to sync schedule:", e);
+        }
+    }, [client]);
+
+
 
     const addSlot = useCallback((slot: Omit<ScheduleSlot, 'id'>) => {
         const newSlot: ScheduleSlot = {
             ...slot,
             id: `sch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         };
-        setSchedule(prev => [...prev, newSlot]);
-    }, []);
+        const newSchedule = [...schedule, newSlot];
+        saveSchedule(newSchedule);
+    }, [schedule, saveSchedule]);
 
     const updateSlot = useCallback((id: string, updates: Partial<ScheduleSlot>) => {
-        setSchedule(prev => prev.map(slot => 
+        const newSchedule = schedule.map(slot => 
             slot.id === id ? { ...slot, ...updates } : slot
-        ));
-    }, []);
+        );
+        saveSchedule(newSchedule);
+    }, [schedule, saveSchedule]);
 
     const removeSlot = useCallback((id: string) => {
-        setSchedule(prev => prev.filter(slot => slot.id !== id));
-    }, []);
+        const newSchedule = schedule.filter(slot => slot.id !== id);
+        saveSchedule(newSchedule);
+    }, [schedule, saveSchedule]);
+
 
     const getCurrentClass = useCallback((): CurrentClassInfo | null => {
         const now = new Date();
@@ -92,8 +119,8 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     }, [schedule]);
 
     const resetSchedule = useCallback(() => {
-        setSchedule(defaultSchedule);
-    }, []);
+        saveSchedule(defaultSchedule);
+    }, [saveSchedule]);
 
     return (
         <ScheduleContext.Provider value={{
@@ -104,7 +131,10 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
             getCurrentClass,
             getSlotsByDay,
             resetSchedule,
+            importSchedule: (newSchedule: ScheduleSlot[]) => saveSchedule(newSchedule),
+
         }}>
+
             {children}
         </ScheduleContext.Provider>
     );

@@ -346,6 +346,15 @@ class Client {
         return await this.sendRequest<void>(`/api/evaluations/${id}`, "DELETE");
     }
 
+    // ============ SETTINGS API ============
+    public async getSettings() {
+        return await this.sendRequest<{ schedule?: any[], general?: any }>("/api/settings", "GET");
+    }
+
+    public async updateSettings(data: { schedule?: any[], general?: any }) {
+        return await this.sendRequest<void>("/api/settings", "PUT", data);
+    }
+
     public async register(email: string, password: string, firstName: string, lastName: string) {
         const res = await this.sendRequest<UserModel>("/auth/register", "POST", { email, password, firstName, lastName });
 
