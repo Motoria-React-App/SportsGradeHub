@@ -24,7 +24,8 @@ export function CommandDialogDemo() {
     const navigate = useNavigate();
 
     const [students, setStudents] = React.useState<Student[] | null>(null)
-    const [classes, setClasses] = React.useState<SchoolClass[] | null>(null)
+    const [archivedClasses, setArchivedClasses] = React.useState<SchoolClass[] | null>(null)
+    const [nonArchivedClasses, setNonArchivedClasses] = React.useState<SchoolClass[] | null>(null)
     const [error, setError] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
 
@@ -35,14 +36,16 @@ export function CommandDialogDemo() {
             setIsLoading(true);
 
             let res = await client.getStudents();
-            let classes = await client.getClasses();
+            let archivedClasses = await client.getArchivedClasses();
+            let nonArchivedClasses = await client.getNonArchivedClasses();
 
             setStudents(res.data);
-            setClasses(classes.data);
+            setArchivedClasses(archivedClasses.data);
+            setNonArchivedClasses(nonArchivedClasses.data);
 
             setIsLoading(false);
 
-            return { res, classes }
+            return { res, archivedClasses, nonArchivedClasses }
 
         } catch (error) {
             setIsLoading(false);
@@ -86,13 +89,25 @@ export function CommandDialogDemo() {
                 <CommandList>
                     {isLoading && <CommandEmpty><Spinner /></CommandEmpty>}
                     {error && <CommandEmpty>Errore caricamento dati</CommandEmpty>}
-                    {classes && students && (
+                    {nonArchivedClasses && students && archivedClasses && (
                         <>
                             <CommandGroup heading="Classi">
-                                {classes.map((cls) => (
+                                {nonArchivedClasses.map((cls) => (
                                     <CommandItem
                                         key={cls.id}
-                                        value={cls.className}
+                                        value={`${cls.className} ${cls.createdAt}`}
+                                        onSelect={() => handleSelectClass(cls.id)}
+                                    >
+                                        <User />
+                                        <span>{cls.className}</span>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                            <CommandGroup heading="Classi Archiviate">
+                                {archivedClasses.map((cls) => (
+                                    <CommandItem
+                                        key={cls.id}
+                                        value={`${cls.className} ${cls.createdAt}`}
                                         onSelect={() => handleSelectClass(cls.id)}
                                     >
                                         <User />

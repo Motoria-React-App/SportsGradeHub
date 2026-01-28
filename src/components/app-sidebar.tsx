@@ -69,11 +69,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/exercises",
         icon: Activity,
       },
-      {
-        title: "Analytics",
-        url: "/analytics",
-        icon: BarChart3,
-      },
+      // {
+      //   title: "Analytics",
+      //   url: "/analytics",
+      //   icon: BarChart3,
+      // },
       {
         title: "Valutazioni",
         url: "/valutazioni/all/all",

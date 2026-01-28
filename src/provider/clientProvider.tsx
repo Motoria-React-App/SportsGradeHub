@@ -789,7 +789,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const refreshClasses = useCallback(async () => {
         if (!user) return;
         try {
-            const response = await client.getClasses();
+            const response = await client.getNonArchivedClasses();
             if (response.success && response.data) {
                 setClasses(response.data);
             }
