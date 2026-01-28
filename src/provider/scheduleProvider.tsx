@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, useCallback } from "rea
 import type { ScheduleSlot, DayOfWeek } from "@/types/scheduleTypes";
 import { isTimeInSlot } from "@/types/scheduleTypes";
 
-import { useSchoolData, useClient } from "@/provider/clientProvider";
+import { useSchoolData, useClient, useAuth } from "@/provider/clientProvider";
 import type { SchoolClass } from "@/types/types";
 
 
@@ -33,6 +33,7 @@ const ScheduleContext = createContext<ScheduleProviderState | undefined>(undefin
 export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     const { classes } = useSchoolData();
     const client = useClient();
+    const { user } = useAuth();
     
     // Initialize with empty or local storage as fallback/cache
     const [schedule, setSchedule] = useState<ScheduleSlot[]>(() => {
@@ -44,17 +45,33 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
         }
     });
 
-    // Load from API on mount
+    // Load from API on mount or user change
     useEffect(() => {
         const loadSchedule = async () => {
-             // Basic check if user might be logged in, or just try fetching
-            const res = await client.getSettings();
-            if (res.success && res.data?.schedule) {
-                setSchedule(res.data.schedule);
+             if (user) {
+                // User logged in, fetch from DB
+                try {
+                    const res = await client.getSettings();
+                    if (res.success && res.data?.schedule) {
+                        setSchedule(res.data.schedule);
+                    } else {
+                        // If no schedule in DB, keep what we have (or valid defaults)
+                         // Maybe initializing empty is safer if we want to avoid leaking previous user data
+                         // But if we trust localStorage was cleared on logout, this is fine.
+                         // However, to be safe:
+                         if (schedule.length === 0) setSchedule(defaultSchedule); // Just a fallback
+                    }
+                } catch (e) {
+                    console.error("Failed to load schedule", e);
+                }
+            } else {
+                // User logged out, clear schedule
+                setSchedule(defaultSchedule);
+                localStorage.removeItem(STORAGE_KEY);
             }
         };
         loadSchedule();
-    }, [client]);
+    }, [client, user]); // Depend on user to re-trigger on login/logout
 
     // Persist to API and localStorage
     const saveSchedule = useCallback(async (newSchedule: ScheduleSlot[]) => {

@@ -549,7 +549,7 @@ export default function Valutazioni() {
                                 Nuova Sessione
                             </Button>
                         )}
-                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)}>
+                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
                             <Plus className="h-4 w-4" />
                             Assegna Esercizio
                         </Button>
@@ -890,7 +890,7 @@ export default function Valutazioni() {
                         <p className="text-muted-foreground mb-4">
                             Inizia assegnando un esercizio a una classe o a degli studenti
                         </p>
-                        <Button onClick={() => setIsAssignModalOpen(true)}>
+                        <Button onClick={() => setIsAssignModalOpen(true)} disabled>
                             <Plus className="h-4 w-4 mr-2" />
                             Assegna Esercizio
                         </Button>

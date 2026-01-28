@@ -55,6 +55,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                         variant="secondary"
                         className="h-14 flex-col gap-1"
                         onClick={handleAssignExercise}
+                        disabled
                     >
                         <ClipboardPlus className="h-5 w-5" />
                         <span className="text-xs">Assegna Esercizio</span>
