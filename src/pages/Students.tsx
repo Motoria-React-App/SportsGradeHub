@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -164,44 +164,36 @@ export default function Students() {
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-xs">Totale Studenti</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">{filteredStudents.length}</div>
+            <div className="grid gap-3 md:grid-cols-4">
+                <Card className="overflow-hidden">
+                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Totale Studenti</p>
+                        <p className="text-2xl font-bold leading-none mt-1.5">{filteredStudents.length}</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-xs text-orange-600 dark:text-orange-400">Media Insufficiente</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{studentsWithFailingAverage}</div>
+                <Card className="overflow-hidden">
+                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                        <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Media Insufficiente</p>
+                        <p className="text-2xl font-bold leading-none mt-1.5 text-orange-600 dark:text-orange-400">{studentsWithFailingAverage}</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-xs text-green-600 dark:text-green-400">Media Sufficiente</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                <Card className="overflow-hidden">
+                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                        <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Media Sufficiente</p>
+                        <p className="text-2xl font-bold leading-none mt-1.5 text-green-600 dark:text-green-400">
                             {filteredStudents.filter(s => {
                                 const avg = getStudentYearAverage(s.id);
                                 return avg !== null && avg >= 6;
                             }).length}
-                        </div>
+                        </p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription className="text-xs text-red-600 dark:text-red-400">Giustifiche Eccessive</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                <Card className="overflow-hidden">
+                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                        <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Giustifiche Eccessive</p>
+                        <p className="text-2xl font-bold leading-none mt-1.5 text-red-600 dark:text-red-400">
                             {filteredStudents.filter(isOverLimit).length}
-                        </div>
+                        </p>
                     </CardContent>
                 </Card>
             </div>
