@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { useClient, useAuth } from "./clientProvider";
 
 // Periodo scolastico personalizzabile
 export interface SchoolPeriod {
@@ -73,6 +74,9 @@ const initialState: SettingsProviderState = {
 const SettingsProviderContext = createContext<SettingsProviderState>(initialState);
 
 export function SettingsProvider({ children, storageKey = "sportsgrade-settings" }: { children: React.ReactNode, storageKey?: string }) {
+    const client = useClient();
+    const { user } = useAuth();
+
     const [settings, setSettings] = useState<AppSettings>(() => {
         const stored = localStorage.getItem(storageKey);
         if (stored) {
@@ -87,18 +91,53 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
 
     const [lastSync, setLastSync] = useState<Date | null>(null);
 
+    // Save to local storage whenever settings change (local cache)
     useEffect(() => {
         localStorage.setItem(storageKey, JSON.stringify(settings));
     }, [settings, storageKey]);
 
+    // Load from DB when user logs in
     useEffect(() => {
-        // Simulate getting last sync time
-        setLastSync(new Date());
-    }, []);
+        const loadSettingsFromDb = async () => {
+            if (!user) return;
 
-    const updateSettings = (newSettings: Partial<AppSettings>) => {
-        setSettings((prev) => ({ ...prev, ...newSettings }));
-    };
+            try {
+                const res = await client.getSettings();
+                if (res.success && res.data?.general && Object.keys(res.data.general).length > 0) {
+                    // DB has settings, sync to local state
+                    // Merge with defaults to ensure all fields exist
+                    const dbSettings = { ...defaultSettings, ...res.data.general };
+                    setSettings(dbSettings);
+                    setLastSync(new Date());
+                } else if (res.success) {
+                    // DB is empty (or new user), push current local settings to DB
+                    // This preserves any customization the user made before syncing was added
+                    await client.updateSettings({ general: settings });
+                    setLastSync(new Date());
+                }
+            } catch (e) {
+                console.error("Failed to sync settings from DB", e);
+            }
+        };
+
+        loadSettingsFromDb();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [client, user]); // Run when user authentication changes
+
+    const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
+        setSettings((prev) => {
+            const updated = { ...prev, ...newSettings };
+            
+            // Sync to DB (fire and forget)
+            if (user) {
+                client.updateSettings({ general: updated }).catch(e => {
+                    console.error("Failed to save settings to DB", e);
+                });
+            }
+            
+            return updated;
+        });
+    }, [client, user]);
 
     // Automatic period activation
     useEffect(() => {
@@ -110,15 +149,19 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
         const activePeriodId = activePeriod ? activePeriod.id : null;
 
         if (settings.currentPeriodId !== activePeriodId) {
+            // We use updateSettings here which will now also sync to DB
             updateSettings({ currentPeriodId: activePeriodId });
         }
-    }, [settings.schoolPeriods, settings.currentPeriodId]);
+    }, [settings.schoolPeriods, settings.currentPeriodId, updateSettings]);
 
-    const resetSettings = () => {
+    const resetSettings = useCallback(() => {
         setSettings(defaultSettings);
-    };
+        if (user) {
+            client.updateSettings({ general: defaultSettings }).catch(console.error);
+        }
+    }, [client, user]);
 
-    const clearCache = () => {
+    const clearCache = useCallback(() => {
         // Clear everything except settings and auth (if stored separately)
         // For now we just keep settings
         const currentSettings = localStorage.getItem(storageKey);
@@ -131,7 +174,7 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
 
         // Force reload to apply clearing
         window.location.reload();
-    };
+    }, [storageKey]);
 
     const value = {
         settings,
