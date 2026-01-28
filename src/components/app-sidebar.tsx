@@ -15,7 +15,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarGroupAction,
 } from "@/components/ui/sidebar"
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 import { NavUser } from "./nav-user"
 import { useClient, useSchoolData } from "@/provider/clientProvider"
@@ -28,6 +35,7 @@ import {
   Activity,
   Users,
   ClipboardCheck,
+  ChevronRight,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
@@ -156,55 +164,59 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
           <SidebarGroup className="py-2">
-            <SidebarGroupLabel className="h-8 px-2 text-xs font-medium text-muted-foreground flex items-center justify-between group/label">
-              <span>Classi</span>
-              <div className="flex gap-1 opacity-0 group-hover/label:opacity-100 transition-opacity">
-                {/* <button className="p-1 hover:bg-sidebar-accent rounded">
-                <MoreHorizontal className="size-3.5 text-muted-foreground" />
-              </button> */}
-                <button
-                  className="p-1 hover:bg-sidebar-accent rounded"
-                  onClick={() => setAddClassDialogOpen(true)}
-                >
-                  <Plus className="size-3.5 text-muted-foreground" />
-                </button>
-              </div>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                {data.classes.length === 0 ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      className="h-8 px-2 text-muted-foreground hover:bg-sidebar-accent/50 rounded-md"
-                      onClick={() => setAddClassDialogOpen(true)}
-                    >
-                      <Plus className="size-4" />
-                      <span className="text-sm">Aggiungi classe</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : (
-                  data.classes.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        className={cn(
-                          "h-8 px-2 hover:bg-sidebar-accent/50 rounded-md group/item",
-                          item.isActive && "bg-sidebar-accent"
-                        )}
-                      >
-                        <Link to={item.url} className="flex items-center gap-2">
-                          {item.icon && (
-                            <item.icon className="size-4 text-muted-foreground" />
-                          )}
-                          <span className="text-sm flex-1 truncate">{item.title}</span>
-                          {/* <MoreHorizontal className="size-3.5 text-muted-foreground opacity-0 group-hover/item:opacity-100 transition-opacity" /> */}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
+            <Collapsible
+              defaultOpen
+              className="group/collapsible"
+            >
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md py-0 px-2 flex items-center w-full transition-colors group/trigger">
+                  <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 mr-1.5" />
+                  <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <SidebarGroupAction
+                className="opacity-0 group-hover/collapsible:opacity-100 transition-opacity"
+                onClick={() => setAddClassDialogOpen(true)}
+              >
+                <Plus className="size-3.5" />
+              </SidebarGroupAction>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="gap-0.5 pt-1">
+                    {data.classes.length === 0 ? (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton
+                          className="h-8 px-2 text-muted-foreground hover:bg-sidebar-accent/50 rounded-md"
+                          onClick={() => setAddClassDialogOpen(true)}
+                        >
+                          <Plus className="size-4" />
+                          <span className="text-sm">Aggiungi classe</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ) : (
+                      data.classes.map((item) => (
+                        <SidebarMenuItem key={item.title}>
+                          <SidebarMenuButton
+                            asChild
+                            className={cn(
+                              "h-8 px-2 hover:bg-sidebar-accent/50 rounded-md group/item ml-2 border-l border-sidebar-border/50",
+                              item.isActive && "bg-sidebar-accent border-sidebar-primary/50"
+                            )}
+                          >
+                            <Link to={item.url} className="flex items-center gap-2">
+                              {/* {item.icon && (
+                                <item.icon className="size-3.5 text-muted-foreground" />
+                              )} */}
+                              <span className="text-sm flex-1 truncate">{item.title}</span>
+                            </Link>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))
+                    )}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarGroup>
 
 

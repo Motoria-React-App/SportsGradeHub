@@ -15,10 +15,13 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
     // Get selected class info
     const selectedClass = classes.find(c => c.id === selectedClassId);
 
-    // Navigate to Valutazioni and trigger "Assegna Esercizio" modal
-    const handleAssignExercise = () => {
-        // Navigate to valutazioni page with the class pre-selected and a query param to open the modal
-        navigate(`/valutazioni/${selectedClassId || 'all'}/all?openAssign=true`);
+    // Navigate to Classes page and trigger "Collega Esercizi" modal
+    const handleLinkExercise = () => {
+        if (selectedClassId) {
+            navigate(`/classes/${selectedClassId}?openLinkExercises=true`);
+        } else {
+            navigate("/students");
+        }
     };
 
     return (
@@ -54,11 +57,10 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                     <Button
                         variant="secondary"
                         className="h-14 flex-col gap-1"
-                        onClick={handleAssignExercise}
-                        disabled
+                        onClick={handleLinkExercise}
                     >
                         <ClipboardPlus className="h-5 w-5" />
-                        <span className="text-xs">Assegna Esercizio</span>
+                        <span className="text-xs">Collega Esercizio</span>
                     </Button>
                 </div>
 
