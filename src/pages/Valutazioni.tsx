@@ -69,6 +69,7 @@ export default function Valutazioni() {
         exercises,
         evaluations,
         refreshEvaluations,
+        exerciseGroups,
     } = useSchoolData();
     const client = useClient();
     const { formatGrade, getGradeColor } = useGradeFormatter();
@@ -127,6 +128,29 @@ export default function Valutazioni() {
     const [notesValue, setNotesValue] = useState<string>("");
     // Criteria scores state for criteria-based evaluation
     const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({});
+
+    // Filter exercises based on selected class
+    const filteredExercises = useMemo(() => {
+        if (selectedClassId === "all") return exercises;
+
+        const selectedClass = classes.find((c) => c.id === selectedClassId);
+        if (!selectedClass) return exercises;
+
+        // Get IDs of exercises directly assigned
+        const assignedIds = new Set(selectedClass.assignedExercises || []);
+
+        // Get IDs of exercises from assigned groups
+        const groupIds = selectedClass.exerciseGroups || [];
+        
+        groupIds.forEach(groupId => {
+             const group = exerciseGroups.find(g => g.id === groupId);
+             if (group && group.exercises) {
+                 group.exercises.forEach(exId => assignedIds.add(exId));
+             }
+        });
+
+        return exercises.filter(ex => assignedIds.has(ex.id));
+    }, [selectedClassId, classes, exercises, exerciseGroups]);
 
     // Get students for a class
     const getStudentsForClass = useCallback((classId: string) => {
@@ -562,7 +586,7 @@ export default function Valutazioni() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Tutti gli esercizi</SelectItem>
-                                {exercises.map((ex) => (
+                                {filteredExercises.map((ex) => (
                                     <SelectItem key={ex.id} value={ex.id}>
                                         {ex.name}
                                     </SelectItem>
