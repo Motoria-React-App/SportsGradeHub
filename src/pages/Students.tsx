@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,10 +25,21 @@ import { toast } from "sonner";
 export default function Students() {
     const client = useClient();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { students, classes, refreshStudents } = useSchoolData();
     const { settings } = useSettings();
-    const [selectedClass, setSelectedClass] = useState<string>("all");
+
+    // Read classId from URL params for initial filter
+    const classIdFromUrl = searchParams.get("classId");
+    const [selectedClass, setSelectedClass] = useState<string>(classIdFromUrl || "all");
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Update filter if URL changes
+    useEffect(() => {
+        if (classIdFromUrl && classIdFromUrl !== selectedClass) {
+            setSelectedClass(classIdFromUrl);
+        }
+    }, [classIdFromUrl]);
 
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -73,7 +84,7 @@ export default function Students() {
     const currentPeriod = settings.schoolPeriods.find(
         (p: any) => p.id === settings.currentPeriodId
     );
-    
+
     const getJustificationsInPeriod = (justifications: Justification[]) => {
         if (!currentPeriod) return justifications.length;
         return justifications.filter((j) => {
@@ -150,8 +161,8 @@ export default function Students() {
                         <TableBody>
                             {filteredStudents.length > 0 ? (
                                 filteredStudents.map((student) => (
-                                    <TableRow 
-                                        key={student.id} 
+                                    <TableRow
+                                        key={student.id}
                                         className="cursor-pointer hover:bg-muted/50"
                                         onClick={() => navigate(`/students/${student.id}`)}
                                     >

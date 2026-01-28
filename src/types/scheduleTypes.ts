@@ -8,6 +8,7 @@ export interface ScheduleSlot {
     startTime: string; // Format: "HH:MM" (24h)
     endTime: string;   // Format: "HH:MM" (24h)
     classId: string;
+    note?: string;
 }
 
 // Helper to check if current time falls within a schedule slot
@@ -27,10 +28,10 @@ export function isTimeInSlot(slot: ScheduleSlot, currentTime: Date): boolean {
     }
 
     const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
-    
+
     const [startH, startM] = slot.startTime.split(':').map(Number);
     const [endH, endM] = slot.endTime.split(':').map(Number);
-    
+
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
 

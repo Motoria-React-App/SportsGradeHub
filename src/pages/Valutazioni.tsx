@@ -16,7 +16,7 @@ import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
 import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -77,6 +77,7 @@ export default function Valutazioni() {
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
 
     const { classId, exerciseId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
         if (classId && exerciseId) {
@@ -87,7 +88,20 @@ export default function Valutazioni() {
                 localStorage.setItem("sportsgrade_last_class", classId);
             }
         }
-    }, [classId, exerciseId]);
+
+        // Check if we should auto-open the assign modal
+        const openAssign = searchParams.get("openAssign");
+        if (openAssign === "true") {
+            setIsAssignModalOpen(true);
+            // Pre-select the class if provided
+            if (classId && classId !== "all") {
+                setAssignClassId(classId);
+            }
+            // Clear the query param to avoid re-opening on refresh
+            searchParams.delete("openAssign");
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [classId, exerciseId, searchParams, setSearchParams]);
 
     // Modal states
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -565,139 +579,139 @@ export default function Valutazioni() {
                                 className="fixed right-6 top-24 z-50"
                             >
                                 <Card className="w-[400px] shadow-xl border-2">
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg">Valutazione</CardTitle>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setSelectedEvaluationForGrading(null)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex items-center gap-3 mt-2">
-                                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                        <User className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Status badge */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">Stato:</span>
-                                    <Badge
-                                        variant={
-                                            gradingStatus === "valutato"
-                                                ? "default"
-                                                : gradingStatus === "valutando"
-                                                    ? "secondary"
-                                                    : "outline"
-                                        }
-                                        className={cn(
-                                            gradingStatus === "valutato" && "bg-green-600",
-                                            gradingStatus === "valutando" && "bg-yellow-500 text-black"
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-lg">Valutazione</CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setSelectedEvaluationForGrading(null)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                                <User className="h-6 w-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Status badge */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground">Stato:</span>
+                                            <Badge
+                                                variant={
+                                                    gradingStatus === "valutato"
+                                                        ? "default"
+                                                        : gradingStatus === "valutando"
+                                                            ? "secondary"
+                                                            : "outline"
+                                                }
+                                                className={cn(
+                                                    gradingStatus === "valutato" && "bg-green-600",
+                                                    gradingStatus === "valutando" && "bg-yellow-500 text-black"
+                                                )}
+                                            >
+                                                {gradingStatus === "non-valutato" && "Non Valutato"}
+                                                {gradingStatus === "valutando" && "Valutando"}
+                                                {gradingStatus === "valutato" && "Valutato"}
+                                            </Badge>
+                                        </div>
+
+                                        {/* Performance input */}
+                                        <div className="space-y-2">
+                                            <Label>Prestazione ({gradingExercise.unit})</Label>
+                                            <Input
+                                                type="text"
+                                                placeholder={`Inserisci ${gradingExercise.unit}`}
+                                                value={performanceInputValue}
+                                                onChange={(e) => setPerformanceInputValue(e.target.value)}
+                                            />
+                                        </div>
+
+                                        {/* Score preview */}
+                                        {gradingPreviewScore !== null ? (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                <p
+                                                    className={cn(
+                                                        "text-3xl font-bold",
+                                                        getGradeColor(gradingPreviewScore)
+                                                    )}
+                                                >
+                                                    {formatGrade(gradingPreviewScore)}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                            </div>
                                         )}
-                                    >
-                                        {gradingStatus === "non-valutato" && "Non Valutato"}
-                                        {gradingStatus === "valutando" && "Valutando"}
-                                        {gradingStatus === "valutato" && "Valutato"}
-                                    </Badge>
-                                </div>
 
-                                {/* Performance input */}
-                                <div className="space-y-2">
-                                    <Label>Prestazione ({gradingExercise.unit})</Label>
-                                    <Input
-                                        type="text"
-                                        placeholder={`Inserisci ${gradingExercise.unit}`}
-                                        value={performanceInputValue}
-                                        onChange={(e) => setPerformanceInputValue(e.target.value)}
-                                    />
-                                </div>
+                                        {!gradingExercise.evaluationRanges && (
+                                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                                                ⚠️ Questo esercizio non ha fasce di valutazione configurate.
+                                                Vai alla pagina Esercizi per configurarle.
+                                            </div>
+                                        )}
 
-                                {/* Score preview */}
-                                {gradingPreviewScore !== null ? (
-                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                        <p
-                                            className={cn(
-                                                "text-3xl font-bold",
-                                                getGradeColor(gradingPreviewScore)
-                                            )}
+                                        {/* Notes */}
+                                        <div className="space-y-2">
+                                            <Label>Note</Label>
+                                            <Textarea
+                                                value={notesValue}
+                                                onChange={(e) => setNotesValue(e.target.value)}
+                                                placeholder="Aggiungi note sulla prestazione..."
+                                                rows={3}
+                                            />
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="grid grid-cols-2 gap-3 pt-2">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => handleSaveEvaluation(false)}
+                                                disabled={isSaving || !performanceInputValue}
+                                            >
+                                                {isSaving ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Save className="mr-2 h-4 w-4" />
+                                                )}
+                                                Salva Bozza
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleSaveEvaluation(true)}
+                                                disabled={isSaving || !performanceInputValue || gradingPreviewScore === null}
+                                            >
+                                                {isSaving ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Check className="mr-2 h-4 w-4" />
+                                                )}
+                                                Conferma Voto
+                                            </Button>
+                                        </div>
+
+                                        {/* Delete button */}
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
+                                            onClick={() => setIsDeleteDialogOpen(true)}
+                                            disabled={isDeleting}
                                         >
-                                            {formatGrade(gradingPreviewScore)}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                    </div>
-                                )}
-
-                                {!gradingExercise.evaluationRanges && (
-                                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                                        Vai alla pagina Esercizi per configurarle.
-                                    </div>
-                                )}
-
-                                {/* Notes */}
-                                <div className="space-y-2">
-                                    <Label>Note</Label>
-                                    <Textarea
-                                        value={notesValue}
-                                        onChange={(e) => setNotesValue(e.target.value)}
-                                        placeholder="Aggiungi note sulla prestazione..."
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Action buttons */}
-                                <div className="grid grid-cols-2 gap-3 pt-2">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => handleSaveEvaluation(false)}
-                                        disabled={isSaving || !performanceInputValue}
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Save className="mr-2 h-4 w-4" />
-                                        )}
-                                        Salva Bozza
-                                    </Button>
-                                    <Button
-                                        onClick={() => handleSaveEvaluation(true)}
-                                        disabled={isSaving || !performanceInputValue || gradingPreviewScore === null}
-                                    >
-                                        {isSaving ? (
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Check className="mr-2 h-4 w-4" />
-                                        )}
-                                        Conferma Voto
-                                    </Button>
-                                </div>
-
-                                {/* Delete button */}
-                                <Button
-                                    variant="ghost"
-                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
-                                    onClick={() => setIsDeleteDialogOpen(true)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Elimina Valutazione
-                                </Button>
-                            </CardContent>
-                        </Card>
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Elimina Valutazione
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </motion.div>
                         )}
                     </AnimatePresence>
