@@ -26,7 +26,6 @@ import {
   FileText,
   Plus,
   Activity,
-  BarChart3,
   Users,
   ClipboardCheck,
 } from "lucide-react"
@@ -72,7 +71,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       // {
       //   title: "Analytics",
       //   url: "/analytics",
-      //   icon: BarChart3,
       // },
       {
         title: "Valutazioni",
