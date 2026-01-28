@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
-import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
@@ -398,25 +398,33 @@ export default function Valutazioni() {
         icon: Icon,
         colorClass,
         bgClass,
+        size = "default",
     }: {
         title: string;
         status: EvaluationStatus;
         icon: React.ElementType;
         colorClass: string;
         bgClass: string;
+        size?: "small" | "default" | "large";
     }) => {
         const items = groupedEvaluations[status];
 
+        const sizeClasses = {
+            small: "min-w-[240px] max-w-[280px]",
+            default: "min-w-[260px] max-w-[300px]",
+            large: "min-w-[300px] max-w-[360px]",
+        };
+
         return (
-            <div className={cn("flex-1 min-w-[300px] rounded-xl border", bgClass)}>
-                <div className={cn("p-4 border-b flex items-center gap-2", colorClass)}>
+            <div className={cn("flex-1 rounded-xl border flex flex-col max-h-full", sizeClasses[size], bgClass)}>
+                <div className={cn("p-4 border-b flex items-center gap-2 shrink-0", colorClass)}>
                     <Icon className="h-5 w-5" />
                     <h3 className="font-semibold">{title}</h3>
                     <Badge variant="secondary" className="ml-auto">
                         {items.length}
                     </Badge>
                 </div>
-                <ScrollArea className="h-[calc(100vh-320px)]">
+                <ScrollArea className="flex-1">
                     <div className="p-3 space-y-3">
                         {items.length === 0 ? (
                             <div className="text-center text-muted-foreground py-8 text-sm">
@@ -432,42 +440,41 @@ export default function Valutazioni() {
                                     selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
 
                                 return (
-                                    <Card
+                                    <div
                                         key={`${ev.studentId}-${ev.exerciseId}`}
                                         className={cn(
-                                            "cursor-pointer transition-all hover:shadow-md",
-                                            isSelected && "ring-2 ring-primary"
+                                            "p-3 rounded-lg border bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
+                                            isSelected && "ring-2 ring-primary border-primary"
                                         )}
                                         onClick={() => selectEvaluationForGrading(ev)}
                                     >
-                                        <CardContent className="p-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                                    <User className="h-5 w-5 text-primary" />
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
+                                                    <User className="h-4 w-4 text-primary" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {getClassName(student.currentClassId)}
-                                                        </Badge>
-                                                        <span className="truncate">{exercise.name}</span>
-                                                    </div>
-                                                </div>
-                                                {ev.score > 0 && (
-                                                    <div
-                                                        className={cn(
-                                                            "text-lg font-bold",
-                                                            getGradeColor(ev.score)
-                                                        )}
-                                                    >
-                                                        {formatGrade(ev.score)}
-                                                    </div>
-                                                )}
-                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                                <p className="font-medium text-sm truncate">
+                                                    {student.firstName} {student.lastName}
+                                                </p>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                            {ev.score > 0 && (
+                                                <div
+                                                    className={cn(
+                                                        "text-base font-bold shrink-0",
+                                                        getGradeColor(ev.score)
+                                                    )}
+                                                >
+                                                    {formatGrade(ev.score)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                {getClassName(student.currentClassId)}
+                                            </Badge>
+                                            <span className="truncate">{exercise.name}</span>
+                                        </div>
+                                    </div>
                                 );
                             })
                         )}
@@ -506,7 +513,7 @@ export default function Valutazioni() {
 
     return (
         <>
-            <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+            <div className="flex flex-col h-full p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -582,15 +589,16 @@ export default function Valutazioni() {
                 </div>
 
                 {/* Kanban columns and grading panel */}
-                <div className="flex gap-6 items-start relative">
+                <div className="flex gap-6 items-start relative flex-1 min-h-0">
                     {/* Columns */}
-                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
+                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
                         <Column
                             title="Non Valutato"
                             status="non-valutato"
                             icon={AlertCircle}
                             colorClass="text-slate-600 dark:text-slate-400"
                             bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
+                            size="small"
                         />
                         <Column
                             title="Valutando"
@@ -598,6 +606,7 @@ export default function Valutazioni() {
                             icon={Clock}
                             colorClass="text-yellow-600 dark:text-yellow-400"
                             bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                            size="small"
                         />
                         <Column
                             title="Valutato"
@@ -605,6 +614,7 @@ export default function Valutazioni() {
                             icon={Check}
                             colorClass="text-green-600 dark:text-green-400"
                             bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                            size="large"
                         />
                     </div>
 
@@ -619,8 +629,8 @@ export default function Valutazioni() {
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="fixed right-6 top-24 z-50"
                             >
-                                <Card className="w-[400px] shadow-xl border-2">
-                                    <CardHeader className="pb-3">
+                                <Card className="w-[400px] shadow-xl border-2 flex flex-col max-h-[calc(100vh-120px)] p-0 gap-0 overflow-hidden">
+                                    <CardHeader className="pb-2 p-6 shrink-0 bg-background z-10">
                                         <div className="flex items-center justify-between">
                                             <CardTitle className="text-lg">Valutazione</CardTitle>
                                             <Button
@@ -643,8 +653,8 @@ export default function Valutazioni() {
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        {/* Status badge */}
+                                    <div className="px-6 pb-2 shrink-0">
+                                        {/* Status badge - moved out of scroll area for visibility */}
                                         <div className="flex items-center gap-2">
                                             <span className="text-sm text-muted-foreground">Stato:</span>
                                             <Badge
@@ -665,6 +675,9 @@ export default function Valutazioni() {
                                                 {gradingStatus === "valutato" && "Valutato"}
                                             </Badge>
                                         </div>
+                                    </div>
+
+                                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6 pt-2 overscroll-contain">
 
                                         {/* Performance input - conditional based on evaluation type */}
                                         {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
@@ -794,6 +807,9 @@ export default function Valutazioni() {
                                             />
                                         </div>
 
+                                    </CardContent>
+
+                                    <CardFooter className="flex-col gap-2 p-6 pt-4 border-t bg-muted/5 shrink-0">
                                         {/* Action buttons */}
                                         {(() => {
                                             const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
@@ -803,7 +819,7 @@ export default function Valutazioni() {
                                             const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
 
                                             return (
-                                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                                <div className="grid grid-cols-2 gap-3 w-full">
                                                     <Button
                                                         variant="outline"
                                                         onClick={() => handleSaveEvaluation(false)}
@@ -825,7 +841,7 @@ export default function Valutazioni() {
                                                         ) : (
                                                             <Check className="mr-2 h-4 w-4" />
                                                         )}
-                                                        Conferma Voto
+                                                        Conferma
                                                     </Button>
                                                 </div>
                                             );
@@ -834,14 +850,14 @@ export default function Valutazioni() {
                                         {/* Delete button */}
                                         <Button
                                             variant="ghost"
-                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
+                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                                             onClick={() => setIsDeleteDialogOpen(true)}
                                             disabled={isDeleting}
                                         >
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Elimina Valutazione
                                         </Button>
-                                    </CardContent>
+                                    </CardFooter>
                                 </Card>
                             </motion.div>
                         )}
