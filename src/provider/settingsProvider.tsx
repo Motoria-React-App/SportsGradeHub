@@ -96,27 +96,36 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
         localStorage.setItem(storageKey, JSON.stringify(settings));
     }, [settings, storageKey]);
 
-    // Load from DB when user logs in
+    // Load from DB when user logs in, or reset when logs out
     useEffect(() => {
         const loadSettingsFromDb = async () => {
-            if (!user) return;
-
-            try {
-                const res = await client.getSettings();
-                if (res.success && res.data?.general && Object.keys(res.data.general).length > 0) {
-                    // DB has settings, sync to local state
-                    // Merge with defaults to ensure all fields exist
-                    const dbSettings = { ...defaultSettings, ...res.data.general };
-                    setSettings(dbSettings);
-                    setLastSync(new Date());
-                } else if (res.success) {
-                    // DB is empty (or new user), push current local settings to DB
-                    // This preserves any customization the user made before syncing was added
-                    await client.updateSettings({ general: settings });
-                    setLastSync(new Date());
+            if (user) {
+                // Login case
+                try {
+                    const res = await client.getSettings();
+                    if (res.success && res.data?.general && Object.keys(res.data.general).length > 0) {
+                        // DB has settings, sync to local state
+                        // Merge with defaults to ensure all fields exist
+                        const dbSettings = { ...defaultSettings, ...res.data.general };
+                        setSettings(dbSettings);
+                        setLastSync(new Date());
+                    } else if (res.success) {
+                        // DB is empty (or new user), push current local settings to DB
+                        // This preserves any customization the user made before syncing was added
+                        await client.updateSettings({ general: settings });
+                        setLastSync(new Date());
+                    }
+                } catch (e) {
+                    console.error("Failed to sync settings from DB", e);
                 }
-            } catch (e) {
-                console.error("Failed to sync settings from DB", e);
+            } else {
+                // Logout case: reset to defaults AND clear specific local storage
+                setSettings(defaultSettings);
+                // We don't want to clear the entire localStorage here as it might contain other things,
+                // but we should clear the settings key specific to this user session context if we wanted.
+                // However, since we write to LS in the other useEffect, setting defaultSettings here 
+                // will automatically overwrite LS with defaults in the next render cycle via the other useEffect.
+                // So we just reset state.
             }
         };
 
