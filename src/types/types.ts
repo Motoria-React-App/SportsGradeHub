@@ -38,6 +38,7 @@ export interface SchoolClass {
     isArchived: boolean;
     students: string[];          // Array di ID Studenti
     exerciseGroups: string[];    // Array di ID Gruppi di esercizi
+    assignedExercises: string[]; // Array di ID Esercizi assegnati direttamente
     createdAt: string;
     updatedAt: string;
 }
@@ -92,5 +93,6 @@ export interface SchoolClassExpanded extends Omit<SchoolClass, 'students' | 'exe
     students: Student[];
     studentsCount: number;
     exerciseGroups: ExerciseGroupExpanded[];
+    assignedExercisesList?: Exercise[];  // Esercizi assegnati direttamente (espansi)
 }
 
