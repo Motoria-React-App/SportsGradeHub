@@ -743,6 +743,24 @@ export default function Valutazioni() {
                                                 <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
                                             </div>
                                         )}
+                                        {/* Score preview */}
+                                        {gradingPreviewScore !== null ? (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                <p
+                                                    className={cn(
+                                                        "text-3xl font-bold",
+                                                        getGradeColor(gradingPreviewScore)
+                                                    )}
+                                                >
+                                                    {formatGrade(gradingPreviewScore)}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                            </div>
+                                        )}
 
                                         {!gradingExercise.evaluationRanges && (
                                             <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
