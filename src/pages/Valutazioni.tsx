@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
-import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -69,6 +69,7 @@ export default function Valutazioni() {
         exercises,
         evaluations,
         refreshEvaluations,
+        exerciseGroups,
     } = useSchoolData();
     const client = useClient();
     const { formatGrade, getGradeColor } = useGradeFormatter();
@@ -79,6 +80,15 @@ export default function Valutazioni() {
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
 
     const { classId, exerciseId } = useParams();
+    const location = useLocation();
+
+    // Check for openAssign query param
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('openAssign') === 'true') {
+            setIsAssignModalOpen(true);
+        }
+    }, [location.search, classId]);
 
     useEffect(() => {
         if (classId && exerciseId) {
@@ -106,9 +116,7 @@ export default function Valutazioni() {
 
     // Assignment modal state
     const [assignExerciseId, setAssignExerciseId] = useState<string>("");
-    const [assignClassId, setAssignClassId] = useState<string>("");
     const [assignStudentIds, setAssignStudentIds] = useState<string[]>([]);
-    const [assignMode, setAssignMode] = useState<"class" | "students">("class");
 
     // Grading panel state
     const [performanceInputValue, setPerformanceInputValue] = useState<string>("");
@@ -116,10 +124,30 @@ export default function Valutazioni() {
     // Criteria scores state for criteria-based evaluation
     const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({});
 
-    // Get students for a class
-    const getStudentsForClass = useCallback((classId: string) => {
-        return students.filter(s => s.currentClassId === classId);
-    }, [students]);
+    // Filter exercises based on selected class
+    const filteredExercises = useMemo(() => {
+        if (selectedClassId === "all") return exercises;
+
+        const selectedClass = classes.find((c) => c.id === selectedClassId);
+        if (!selectedClass) return exercises;
+
+        // Get IDs of exercises directly assigned
+        const assignedIds = new Set(selectedClass.assignedExercises || []);
+
+        // Get IDs of exercises from assigned groups
+        const groupIds = selectedClass.exerciseGroups || [];
+        
+        groupIds.forEach(groupId => {
+             const group = exerciseGroups.find(g => g.id === groupId);
+             if (group && group.exercises) {
+                 group.exercises.forEach(exId => assignedIds.add(exId));
+             }
+        });
+
+        return exercises.filter(ex => assignedIds.has(ex.id));
+    }, [selectedClassId, classes, exercises, exerciseGroups]);
+
+
 
     // Filter and deduplicate evaluations based on selected filters
     // Keep only the LATEST evaluation for each studentId+exerciseId pair
@@ -188,24 +216,21 @@ export default function Valutazioni() {
     const handleAssignExercise = async () => {
         if (!assignExerciseId) return;
 
-        let studentIds: string[] = [];
-        if (assignMode === "class" && assignClassId) {
-            studentIds = students.filter((s) => s.currentClassId === assignClassId).map((s) => s.id);
-        } else {
-            studentIds = assignStudentIds;
-        }
+        const studentIds = assignStudentIds;
 
         if (studentIds.length === 0) return;
 
         setIsSubmitting(true);
         try {
-            // Create evaluations for each student (avoid duplicates)
+            // Using batch creation here too for consistency and performance
+            const evaluationsToCreate: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[] = [];
+
             for (const studentId of studentIds) {
                 const exists = evaluations.some(
                     (ev) => ev.studentId === studentId && ev.exerciseId === assignExerciseId
                 );
                 if (!exists) {
-                    await client.createEvaluation({
+                    evaluationsToCreate.push({
                         studentId,
                         exerciseId: assignExerciseId,
                         performanceValue: "",
@@ -215,10 +240,13 @@ export default function Valutazioni() {
                 }
             }
 
+            if (evaluationsToCreate.length > 0) {
+                 await client.createEvaluationsBatch(evaluationsToCreate);
+            }
+
             await refreshEvaluations();
             setIsAssignModalOpen(false);
             setAssignExerciseId("");
-            setAssignClassId("");
             setAssignStudentIds([]);
 
             // Auto-select the exercise filter
@@ -264,7 +292,7 @@ export default function Valutazioni() {
                     const totalMax = exercise.evaluationCriteria!.reduce((sum, c) => sum + c.maxScore, 0);
                     const totalScored = exercise.evaluationCriteria!.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
                     const maxScore = exercise.maxScore || 10;
-                    
+
                     if (settings.enableBasePoint) {
                         // Formula with base 1: 1 + (percentage * (maxScore - 1))
                         const percentage = totalMax > 0 ? totalScored / totalMax : 0;
@@ -279,7 +307,7 @@ export default function Valutazioni() {
                     const performanceNum = parseFloat(performanceInputValue);
                     if (!isNaN(performanceNum)) {
                         let score = calculateScore(performanceNum, exercise, student.gender);
-                        
+
                         if (score !== null) {
                             if (settings.enableBasePoint) {
                                 // Apply Base Point logic to range score
@@ -386,25 +414,33 @@ export default function Valutazioni() {
         icon: Icon,
         colorClass,
         bgClass,
+        size = "default",
     }: {
         title: string;
         status: EvaluationStatus;
         icon: React.ElementType;
         colorClass: string;
         bgClass: string;
+        size?: "small" | "default" | "large";
     }) => {
         const items = groupedEvaluations[status];
 
+        const sizeClasses = {
+            small: "min-w-[240px] max-w-[280px]",
+            default: "min-w-[260px] max-w-[300px]",
+            large: "min-w-[300px] max-w-[360px]",
+        };
+
         return (
-            <div className={cn("flex-1 min-w-[300px] rounded-xl border", bgClass)}>
-                <div className={cn("p-4 border-b flex items-center gap-2", colorClass)}>
+            <div className={cn("flex-1 rounded-xl border flex flex-col max-h-full", sizeClasses[size], bgClass)}>
+                <div className={cn("p-4 border-b flex items-center gap-2 shrink-0", colorClass)}>
                     <Icon className="h-5 w-5" />
                     <h3 className="font-semibold">{title}</h3>
                     <Badge variant="secondary" className="ml-auto">
                         {items.length}
                     </Badge>
                 </div>
-                <ScrollArea className="h-[calc(100vh-320px)]">
+                <ScrollArea className="flex-1">
                     <div className="p-3 space-y-3">
                         {items.length === 0 ? (
                             <div className="text-center text-muted-foreground py-8 text-sm">
@@ -420,42 +456,41 @@ export default function Valutazioni() {
                                     selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
 
                                 return (
-                                    <Card
+                                    <div
                                         key={`${ev.studentId}-${ev.exerciseId}`}
                                         className={cn(
-                                            "cursor-pointer transition-all hover:shadow-md",
-                                            isSelected && "ring-2 ring-primary"
+                                            "p-3 rounded-lg border bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
+                                            isSelected && "ring-2 ring-primary border-primary"
                                         )}
                                         onClick={() => selectEvaluationForGrading(ev)}
                                     >
-                                        <CardContent className="p-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                                    <User className="h-5 w-5 text-primary" />
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
+                                                    <User className="h-4 w-4 text-primary" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {getClassName(student.currentClassId)}
-                                                        </Badge>
-                                                        <span className="truncate">{exercise.name}</span>
-                                                    </div>
-                                                </div>
-                                                {ev.score > 0 && (
-                                                    <div
-                                                        className={cn(
-                                                            "text-lg font-bold",
-                                                            getGradeColor(ev.score)
-                                                        )}
-                                                    >
-                                                        {formatGrade(ev.score)}
-                                                    </div>
-                                                )}
-                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                                <p className="font-medium text-sm truncate">
+                                                    {student.firstName} {student.lastName}
+                                                </p>
                                             </div>
-                                        </CardContent>
-                                    </Card>
+                                            {ev.score > 0 && (
+                                                <div
+                                                    className={cn(
+                                                        "text-base font-bold shrink-0",
+                                                        getGradeColor(ev.score)
+                                                    )}
+                                                >
+                                                    {formatGrade(ev.score)}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                                {getClassName(student.currentClassId)}
+                                            </Badge>
+                                            <span className="truncate">{exercise.name}</span>
+                                        </div>
+                                    </div>
                                 );
                             })
                         )}
@@ -473,16 +508,16 @@ export default function Valutazioni() {
     const gradingPreviewScore = useMemo(() => {
         if (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent) {
             let score = calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender);
-            
+
             if (score !== null && settings.enableBasePoint) {
-                 const maxScore = gradingExercise.maxScore || 10;
-                 const percentage = maxScore > 0 ? score / maxScore : 0;
-                 score = 1 + (percentage * (maxScore - 1));
-                 
-                 // Apply rounding
-                 score = Math.round(score * 10) / 10;
+                const maxScore = gradingExercise.maxScore || 10;
+                const percentage = maxScore > 0 ? score / maxScore : 0;
+                score = 1 + (percentage * (maxScore - 1));
+
+                // Apply rounding
+                score = Math.round(score * 10) / 10;
             }
-            
+
             return score;
         }
         return null;
@@ -494,7 +529,7 @@ export default function Valutazioni() {
 
     return (
         <>
-            <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+            <div className="flex flex-col h-full p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
@@ -543,7 +578,7 @@ export default function Valutazioni() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Tutti gli esercizi</SelectItem>
-                                {exercises.map((ex) => (
+                                {filteredExercises.map((ex) => (
                                     <SelectItem key={ex.id} value={ex.id}>
                                         {ex.name}
                                     </SelectItem>
@@ -570,15 +605,16 @@ export default function Valutazioni() {
                 </div>
 
                 {/* Kanban columns and grading panel */}
-                <div className="flex gap-6 items-start relative">
+                <div className="flex gap-6 items-start relative flex-1 min-h-0">
                     {/* Columns */}
-                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4">
+                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
                         <Column
                             title="Non Valutato"
                             status="non-valutato"
                             icon={AlertCircle}
                             colorClass="text-slate-600 dark:text-slate-400"
                             bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
+                            size="small"
                         />
                         <Column
                             title="Valutando"
@@ -586,6 +622,7 @@ export default function Valutazioni() {
                             icon={Clock}
                             colorClass="text-yellow-600 dark:text-yellow-400"
                             bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                            size="small"
                         />
                         <Column
                             title="Valutato"
@@ -593,6 +630,7 @@ export default function Valutazioni() {
                             icon={Check}
                             colorClass="text-green-600 dark:text-green-400"
                             bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                            size="large"
                         />
                     </div>
 
@@ -607,230 +645,236 @@ export default function Valutazioni() {
                                 transition={{ duration: 0.3, ease: "easeOut" }}
                                 className="fixed right-6 top-24 z-50"
                             >
-                                <Card className="w-[400px] shadow-xl border-2">
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg">Valutazione</CardTitle>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setSelectedEvaluationForGrading(null)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex items-center gap-3 mt-2">
-                                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                        <User className="h-6 w-6 text-primary" />
+                                <Card className="w-[400px] shadow-xl border-2 flex flex-col max-h-[calc(100vh-120px)] p-0 gap-0 overflow-hidden">
+                                    <CardHeader className="pb-2 p-6 shrink-0 bg-background z-10">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-lg">Valutazione</CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setSelectedEvaluationForGrading(null)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                                <User className="h-6 w-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <div className="px-6 pb-2 shrink-0">
+                                        {/* Status badge - moved out of scroll area for visibility */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground">Stato:</span>
+                                            <Badge
+                                                variant={
+                                                    gradingStatus === "valutato"
+                                                        ? "default"
+                                                        : gradingStatus === "valutando"
+                                                            ? "secondary"
+                                                            : "outline"
+                                                }
+                                                className={cn(
+                                                    gradingStatus === "valutato" && "bg-green-600",
+                                                    gradingStatus === "valutando" && "bg-yellow-500 text-black"
+                                                )}
+                                            >
+                                                {gradingStatus === "non-valutato" && "Non Valutato"}
+                                                {gradingStatus === "valutando" && "Valutando"}
+                                                {gradingStatus === "valutato" && "Valutato"}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Status badge */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">Stato:</span>
-                                    <Badge
-                                        variant={
-                                            gradingStatus === "valutato"
-                                                ? "default"
-                                                : gradingStatus === "valutando"
-                                                    ? "secondary"
-                                                    : "outline"
-                                        }
-                                        className={cn(
-                                            gradingStatus === "valutato" && "bg-green-600",
-                                            gradingStatus === "valutando" && "bg-yellow-500 text-black"
-                                        )}
-                                    >
-                                        {gradingStatus === "non-valutato" && "Non Valutato"}
-                                        {gradingStatus === "valutando" && "Valutando"}
-                                        {gradingStatus === "valutato" && "Valutato"}
-                                    </Badge>
-                                </div>
 
-                                {/* Performance input - conditional based on evaluation type */}
-                                {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
-                                    /* Criteria-based evaluation */
-                                    <div className="space-y-3">
-                                        <Label>Punteggi per Criterio</Label>
-                                        <div className="space-y-2">
-                                            {gradingExercise.evaluationCriteria.map((criterion) => (
-                                                <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">{criterion.name}</p>
-                                                        <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
-                                                    </div>
+                                    <CardContent className="space-y-4 overflow-y-auto flex-1 p-6 pt-2 overscroll-contain">
+
+                                        {/* Performance input - conditional based on evaluation type */}
+                                        {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
+                                            /* Criteria-based evaluation */
+                                            <div className="space-y-3">
+                                                <Label>Punteggi per Criterio</Label>
+                                                <div className="space-y-2">
+                                                    {gradingExercise.evaluationCriteria.map((criterion) => (
+                                                        <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{criterion.name}</p>
+                                                                <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                            </div>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                max={criterion.maxScore}
+                                                                value={criteriaScores[criterion.name] || ''}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value) || 0;
+                                                                    const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
+                                                                    setCriteriaScores({
+                                                                        ...criteriaScores,
+                                                                        [criterion.name]: clampedVal
+                                                                    });
+                                                                }}
+                                                                className="w-20 h-8 text-center"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Criteria score preview */}
+                                                {(() => {
+                                                    const totalMax = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
+                                                    const totalScored = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+                                                    const maxScore = gradingExercise.maxScore || 10;
+                                                    let calculatedGrade = 0;
+                                                    if (settings.enableBasePoint) {
+                                                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                                                        calculatedGrade = 1 + (percentage * (maxScore - 1));
+                                                    } else {
+                                                        calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                                                    }
+
+                                                    const roundedGrade = Math.round(calculatedGrade * 10) / 10;
+
+                                                    return (
+                                                        <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                            <p className="text-sm text-muted-foreground mb-1">
+                                                                Punteggio: {totalScored} / {totalMax}
+                                                            </p>
+                                                            <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
+                                                                {formatGrade(roundedGrade)}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : (
+                                            /* Range-based evaluation */
+                                            <>
+                                                <div className="space-y-2">
+                                                    <Label>Prestazione ({gradingExercise.unit})</Label>
                                                     <Input
-                                                        type="number"
-                                                        min="0"
-                                                        max={criterion.maxScore}
-                                                        value={criteriaScores[criterion.name] || ''}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 0;
-                                                            const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
-                                                            setCriteriaScores({
-                                                                ...criteriaScores,
-                                                                [criterion.name]: clampedVal
-                                                            });
-                                                        }}
-                                                        className="w-20 h-8 text-center"
+                                                        type="text"
+                                                        placeholder={`Inserisci ${gradingExercise.unit}`}
+                                                        value={performanceInputValue}
+                                                        onChange={(e) => setPerformanceInputValue(e.target.value)}
                                                     />
                                                 </div>
-                                            ))}
-                                        </div>
-                                        
-                                        {/* Criteria score preview */}
-                                        {(() => {
-                                            const totalMax = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
-                                            const totalScored = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
-                                            const maxScore = gradingExercise.maxScore || 10;
-                                            let calculatedGrade = 0;
-                                            if (settings.enableBasePoint) {
-                                                const percentage = totalMax > 0 ? totalScored / totalMax : 0;
-                                                calculatedGrade = 1 + (percentage * (maxScore - 1));
-                                            } else {
-                                                calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
-                                            }
-                                            
-                                            const roundedGrade = Math.round(calculatedGrade * 10) / 10;
-                                            
-                                            return (
-                                                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                    <p className="text-sm text-muted-foreground mb-1">
-                                                        Punteggio: {totalScored} / {totalMax}
-                                                    </p>
-                                                    <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
-                                                        {formatGrade(roundedGrade)}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                ) : (
-                                    /* Range-based evaluation */
-                                    <>
+
+                                                {/* Score preview */}
+                                                {gradingPreviewScore !== null ? (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                        <p
+                                                            className={cn(
+                                                                "text-3xl font-bold",
+                                                                getGradeColor(gradingPreviewScore)
+                                                            )}
+                                                        >
+                                                            {formatGrade(gradingPreviewScore)}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                                    </div>
+                                                )}
+                                                {/* Score preview */}
+                                                {gradingPreviewScore !== null ? (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                        <p
+                                                            className={cn(
+                                                                "text-3xl font-bold",
+                                                                getGradeColor(gradingPreviewScore)
+                                                            )}
+                                                        >
+                                                            {formatGrade(gradingPreviewScore)}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                                    </div>
+                                                )}
+
+                                                {!gradingExercise.evaluationRanges && (
+                                                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
+                                                        Vai alla pagina Esercizi per configurarle.
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {/* Notes */}
                                         <div className="space-y-2">
-                                            <Label>Prestazione ({gradingExercise.unit})</Label>
-                                            <Input
-                                                type="text"
-                                                placeholder={`Inserisci ${gradingExercise.unit}`}
-                                                value={performanceInputValue}
-                                                onChange={(e) => setPerformanceInputValue(e.target.value)}
+                                            <Label>Note</Label>
+                                            <Textarea
+                                                value={notesValue}
+                                                onChange={(e) => setNotesValue(e.target.value)}
+                                                placeholder="Aggiungi note sulla prestazione..."
+                                                rows={3}
                                             />
                                         </div>
 
-                                        {/* Score preview */}
-                                        {gradingPreviewScore !== null ? (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                                <p
-                                                    className={cn(
-                                                        "text-3xl font-bold",
-                                                        getGradeColor(gradingPreviewScore)
-                                                    )}
-                                                >
-                                                    {formatGrade(gradingPreviewScore)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                            </div>
-                                        )}
-                                        {/* Score preview */}
-                                        {gradingPreviewScore !== null ? (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                                <p
-                                                    className={cn(
-                                                        "text-3xl font-bold",
-                                                        getGradeColor(gradingPreviewScore)
-                                                    )}
-                                                >
-                                                    {formatGrade(gradingPreviewScore)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                            </div>
-                                        )}
+                                    </CardContent>
 
-                                        {!gradingExercise.evaluationRanges && (
-                                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                                                ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                                                Vai alla pagina Esercizi per configurarle.
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                    <CardFooter className="flex-col gap-2 p-6 pt-4 border-t bg-muted/5 shrink-0">
+                                        {/* Action buttons */}
+                                        {(() => {
+                                            const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
+                                            const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
+                                            const hasRangeInput = !isCriteriaBased && performanceInputValue;
+                                            const hasAnyInput = hasCriteriaInput || hasRangeInput;
+                                            const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
 
-                                {/* Notes */}
-                                <div className="space-y-2">
-                                    <Label>Note</Label>
-                                    <Textarea
-                                        value={notesValue}
-                                        onChange={(e) => setNotesValue(e.target.value)}
-                                        placeholder="Aggiungi note sulla prestazione..."
-                                        rows={3}
-                                    />
-                                </div>
+                                            return (
+                                                <div className="grid grid-cols-2 gap-3 w-full">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleSaveEvaluation(false)}
+                                                        disabled={isSaving || !hasAnyInput}
+                                                    >
+                                                        {isSaving ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Save className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Salva Bozza
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleSaveEvaluation(true)}
+                                                        disabled={isSaving || !canConfirm}
+                                                    >
+                                                        {isSaving ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Check className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Conferma
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })()}
 
-                                {/* Action buttons */}
-                                {(() => {
-                                    const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
-                                    const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
-                                    const hasRangeInput = !isCriteriaBased && performanceInputValue;
-                                    const hasAnyInput = hasCriteriaInput || hasRangeInput;
-                                    const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
-                                    
-                                    return (
-                                        <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => handleSaveEvaluation(false)}
-                                                disabled={isSaving || !hasAnyInput}
-                                            >
-                                                {isSaving ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                )}
-                                                Salva Bozza
-                                            </Button>
-                                            <Button
-                                                onClick={() => handleSaveEvaluation(true)}
-                                                disabled={isSaving || !canConfirm}
-                                            >
-                                                {isSaving ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Check className="mr-2 h-4 w-4" />
-                                                )}
-                                                Conferma Voto
-                                            </Button>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Delete button */}
-                                <Button
-                                    variant="ghost"
-                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
-                                    onClick={() => setIsDeleteDialogOpen(true)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Elimina Valutazione
-                                </Button>
-                            </CardContent>
-                        </Card>
+                                        {/* Delete button */}
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() => setIsDeleteDialogOpen(true)}
+                                            disabled={isDeleting}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Elimina Valutazione
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -878,86 +922,46 @@ export default function Valutazioni() {
                             </Select>
                         </div>
 
-                        {/* Assignment mode toggle */}
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                variant={assignMode === "class" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setAssignMode("class")}
-                            >
-                                Intera Classe
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={assignMode === "students" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setAssignMode("students")}
-                            >
-                                Singoli Studenti
-                            </Button>
+                        {/* Student multi-select */}
+                        <div className="space-y-2">
+                            <Label>Studenti</Label>
+                            <ScrollArea className="h-[200px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                    {students.map((student) => (
+                                        <div key={student.id} className="flex items-center gap-2">
+                                            <Checkbox
+                                                id={student.id}
+                                                checked={assignStudentIds.includes(student.id)}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setAssignStudentIds([...assignStudentIds, student.id]);
+                                                    } else {
+                                                        setAssignStudentIds(
+                                                            assignStudentIds.filter((id) => id !== student.id)
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                            <label
+                                                htmlFor={student.id}
+                                                className="text-sm flex-1 cursor-pointer"
+                                            >
+                                                {student.firstName} {student.lastName}
+                                                <span className="text-muted-foreground ml-2">
+                                                    ({getClassName(student.currentClassId)})
+                                                </span>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                            {assignStudentIds.length > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    {assignStudentIds.length} studenti selezionati
+                                </p>
+                            )}
                         </div>
 
-                        {/* Class selection */}
-                        {assignMode === "class" && (
-                            <div className="space-y-2">
-                                <Label>Classe</Label>
-                                <Select value={assignClassId} onValueChange={setAssignClassId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleziona classe" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {classes.map((cls) => (
-                                            <SelectItem key={cls.id} value={cls.id}>
-                                                {cls.className} ({getStudentsForClass(cls.id).length} studenti)
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-
-                        {/* Student multi-select */}
-                        {assignMode === "students" && (
-                            <div className="space-y-2">
-                                <Label>Studenti</Label>
-                                <ScrollArea className="h-[200px] border rounded-md p-3">
-                                    <div className="space-y-2">
-                                        {students.map((student) => (
-                                            <div key={student.id} className="flex items-center gap-2">
-                                                <Checkbox
-                                                    id={student.id}
-                                                    checked={assignStudentIds.includes(student.id)}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked) {
-                                                            setAssignStudentIds([...assignStudentIds, student.id]);
-                                                        } else {
-                                                            setAssignStudentIds(
-                                                                assignStudentIds.filter((id) => id !== student.id)
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <label
-                                                    htmlFor={student.id}
-                                                    className="text-sm flex-1 cursor-pointer"
-                                                >
-                                                    {student.firstName} {student.lastName}
-                                                    <span className="text-muted-foreground ml-2">
-                                                        ({getClassName(student.currentClassId)})
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                                {assignStudentIds.length > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        {assignStudentIds.length} studenti selezionati
-                                    </p>
-                                )}
-                            </div>
-                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
@@ -968,8 +972,7 @@ export default function Valutazioni() {
                             disabled={
                                 isSubmitting ||
                                 !assignExerciseId ||
-                                (assignMode === "class" && !assignClassId) ||
-                                (assignMode === "students" && assignStudentIds.length === 0)
+                                assignStudentIds.length === 0
                             }
                         >
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

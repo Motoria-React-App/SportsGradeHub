@@ -49,13 +49,15 @@ import { useSchoolData } from "@/provider/clientProvider";
 import { useExport } from "@/hooks/useExport";
 import { useDateFormatter } from "@/hooks/useDateFormatter";
 import type { DayOfWeek } from "@/types/scheduleTypes";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import * as XLSX from 'xlsx';
+
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
-    const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule } = useSchedule();
+    const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule, importSchedule } = useSchedule();
     const { classes, evaluations, exercises, students, refreshEvaluations } = useSchoolData();
     const { theme, setTheme } = useTheme();
     const client = useClient();
@@ -71,6 +73,133 @@ export default function Settings() {
     const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
     const [isExporting, setIsExporting] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const bstr = evt.target?.result;
+                const wb = XLSX.read(bstr, { type: 'binary' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws);
+                processImportedSchedule(data);
+            } catch (error) {
+                console.error("Error parsing file", error);
+                toast.error("Errore durante la lettura del file. Verifica il formato.");
+            }
+            // Reset input so same file can be selected again if needed
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const processImportedSchedule = (data: any[]) => {
+        if (!data || data.length === 0) {
+            toast.warning("Il file sembra vuoto.");
+            return;
+        }
+
+        const newSlots: any[] = [];
+        let errors = 0;
+
+        // Helper to normalize day
+        const normalizeDay = (d: string): DayOfWeek | null => {
+            if (!d) return null;
+            const str = d.toString().toLowerCase().trim();
+            if (str.includes('lun')) return 'lunedi';
+            if (str.includes('mar')) return 'martedi';
+            if (str.includes('mer')) return 'mercoledi';
+            if (str.includes('gio')) return 'giovedi';
+            if (str.includes('ven')) return 'venerdi';
+            if (str.includes('sab')) return 'sabato';
+            return null;
+        };
+
+        // Helper to format time HH:MM
+        const formatTime = (t: any): string | null => {
+            if (!t) return null;
+            
+            // Excel decimal time handle (e.g. 0.3333 for 8:00)
+            if (typeof t === 'number') {
+                const totalSeconds = Math.round(t * 86400);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            }
+
+            const str = t.toString().trim();
+            // Check if matches HH:MM
+            if (/^\d{1,2}:\d{2}$/.test(str)) {
+                return str.padStart(5, '0');
+            }
+            return null;
+        };
+
+        data.forEach((row, index) => {
+            // Flexible keys: Giorno, Day, Start, Inizio, End, Fine, Class, Classe
+            const dayRaw = row['Giorno'] || row['Day'] || row['giorno'] || row['day'];
+            const startRaw = row['Inizio'] || row['Start'] || row['inizio'] || row['start'] || row['Ora Inizio'];
+            const endRaw = row['Fine'] || row['End'] || row['fine'] || row['end'] || row['Ora Fine'];
+            const classRaw = row['Classe'] || row['Class'] || row['classe'] || row['class'];
+
+            const day = normalizeDay(dayRaw);
+            const start = formatTime(startRaw);
+            const end = formatTime(endRaw);
+            
+            let classId = null;
+            if (classRaw) {
+                const classStr = classRaw.toString().trim();
+                const foundClass = classes.find(c => c.className.toLowerCase() === classStr.toLowerCase());
+                if (foundClass) {
+                    classId = foundClass.id;
+                }
+            }
+
+            if (day && start && end && classId) {
+                newSlots.push({
+                    id: `import_${Date.now()}_${index}`,
+                    dayOfWeek: day,
+                    startTime: start,
+                    endTime: end,
+                    classId: classId
+                });
+            } else {
+                console.warn(`Row ${index + 1} skipped/invalid:`, row);
+                errors++;
+            }
+        });
+
+        if (newSlots.length > 0) {
+            if (confirm(`Trovati ${newSlots.length} slot validi. ${errors > 0 ? `(${errors} righe ignorate)` : ''} Vuoi sovrascrivere l'orario attuale?`)) {
+                importSchedule(newSlots);
+                toast.success("Orario importato con successo!");
+            }
+        } else {
+            toast.error("Nessuno slot valido trovato nel file. Controlla le intestazioni (Giorno, Inizio, Fine, Classe).");
+        }
+    };
+
+    const downloadTemplate = () => {
+        const wb = XLSX.utils.book_new();
+        const wsData = [
+            ["Giorno", "Ora Inizio", "Ora Fine", "Classe"],
+            ["Lunedi", "08:00", "09:00", classes[0]?.className || "1A"],
+            ["Martedi", "10:00", "11:00", classes[1]?.className || "2B"],
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Modello Orario");
+        XLSX.writeFile(wb, "modello_orario.xlsx");
+    };
+
 
     // State for adding new period
     const [newPeriodName, setNewPeriodName] = useState('');
@@ -538,6 +667,42 @@ export default function Settings() {
                             <p className="text-sm text-muted-foreground">Gestisci l'orario delle lezioni per la pagina di benvenuto.</p>
                         </div>
                         <Separator />
+
+
+                        {/* Import/Export Schedule */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Importa/Esporta Orario</CardTitle>
+                                <CardDescription>Gestisci l'orario massivamente tramite file Excel o CSV.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                        accept=".csv,.xlsx,.xls"
+                                    />
+                                    <Button variant="outline" onClick={handleImportClick}>
+                                        <Download className="h-4 w-4 mr-2 rotate-180" /> {/* Rotate for upload icon effect or use Upload icon if available */}
+                                        Importa da File
+                                    </Button>
+                                    <Button variant="secondary" onClick={downloadTemplate}>
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Scarica Modello
+                                    </Button>
+                                </div>
+                                <div className="text-sm text-muted-foreground p-3 bg-secondary/30 rounded-md border border-secondary">
+                                    <p className="font-medium mb-1">Istruzioni:</p>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>Usa il modello per assicurarti che il formato sia corretto.</li>
+                                        <li>Le colonne richieste sono: <strong>Giorno, Ora Inizio, Ora Fine, Classe</strong>.</li>
+                                        <li>I nomi delle classi devono corrispondere esattamente a quelli nel sistema.</li>
+                                    </ul>
+                                </div>
+                            </CardContent>
+                        </Card>
 
                         {/* Add new slot */}
                         <Card>

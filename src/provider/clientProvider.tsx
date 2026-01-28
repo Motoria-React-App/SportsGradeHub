@@ -342,8 +342,21 @@ class Client {
         return await this.sendRequest<Evaluation>("/api/evaluations", "POST", data);
     }
 
+    public async createEvaluationsBatch(evaluations: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[]) {
+        return await this.sendRequest<{ message: string; count: number }>("/api/evaluations/batch", "POST", { evaluations });
+    }
+
     public async deleteEvaluation(id: string) {
         return await this.sendRequest<void>(`/api/evaluations/${id}`, "DELETE");
+    }
+
+    // ============ SETTINGS API ============
+    public async getSettings() {
+        return await this.sendRequest<{ schedule?: any[], general?: any }>("/api/settings", "GET");
+    }
+
+    public async updateSettings(data: { schedule?: any[], general?: any }) {
+        return await this.sendRequest<void>("/api/settings", "PUT", data);
     }
 
     public async register(email: string, password: string, firstName: string, lastName: string) {
