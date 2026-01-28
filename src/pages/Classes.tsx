@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useClient, useSchoolData } from "@/provider/clientProvider";
 import { useSettings } from "@/provider/settingsProvider";
@@ -20,6 +20,7 @@ export default function Classes() {
 
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const client = useClient();
     const { evaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses, refreshEvaluations } = useSchoolData();
     const { settings } = useSettings();
@@ -120,7 +121,15 @@ export default function Classes() {
 
     useEffect(() => {
         fetchData();
-    }, [id, client]);
+
+        // Handle openLinkExercises query param
+        const params = new URLSearchParams(location.search);
+        if (params.get('openLinkExercises') === 'true') {
+            setExerciseDialogOpen(true);
+            // Clean up the URL
+            navigate(location.pathname, { replace: true });
+        }
+    }, [id, client, location.search]);
 
     // Get evaluations for a specific exercise in this class
     const getExerciseEvaluations = (exerciseId: string): Evaluation[] => {
@@ -153,7 +162,7 @@ export default function Classes() {
             const response = await client.updateClass(schoolClass.id, {
                 assignedExercises: selectedExerciseIds
             });
-            
+
             if (response.success) {
                 // Determine which exercises were newly added
                 // We compare selectedExerciseIds with what was already assigned
@@ -506,11 +515,11 @@ export default function Classes() {
                                                     <div className="flex-1">
                                                         <p className="font-medium">{exercise.name}</p>
                                                         <p className="text-xs text-muted-foreground">
-                                                            Unità: {exercise.unit} 
+                                                            Unità: {exercise.unit}
                                                             {(exercise.evaluationType === 'criteria' && exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0)
-                                                                ? ` • ${exercise.evaluationCriteria.length} Criteri` 
-                                                                : exercise.evaluationRanges 
-                                                                    ? " • Fasce configurate" 
+                                                                ? ` • ${exercise.evaluationCriteria.length} Criteri`
+                                                                : exercise.evaluationRanges
+                                                                    ? " • Fasce configurate"
                                                                     : " • Senza fasce"}
                                                         </p>
                                                     </div>

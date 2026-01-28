@@ -24,6 +24,7 @@ export interface AppSettings {
     showGender: boolean;            // default: true
     dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';  // default: 'DD/MM/YYYY'
     enableAnimations: boolean;      // default: true
+    collapsibleClasses: boolean;    // default: true
 
     // Export
     exportFormat: 'csv' | 'excel' | 'pdf';  // default: 'csv'
@@ -47,6 +48,7 @@ const defaultSettings: AppSettings = {
     showGender: true,
     dateFormat: 'DD/MM/YYYY',
     enableAnimations: true,
+    collapsibleClasses: true,
     exportFormat: 'csv',
     includeNotesInExport: true,
     // Justifications defaults
@@ -136,14 +138,14 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
     const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
         setSettings((prev) => {
             const updated = { ...prev, ...newSettings };
-            
+
             // Sync to DB (fire and forget)
             if (user) {
                 client.updateSettings({ general: updated }).catch(e => {
                     console.error("Failed to save settings to DB", e);
                 });
             }
-            
+
             return updated;
         });
     }, [client, user]);
@@ -151,7 +153,7 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
     // Automatic period activation
     useEffect(() => {
         const today = new Date().toISOString().split('T')[0];
-        const activePeriod = settings.schoolPeriods.find(p => 
+        const activePeriod = settings.schoolPeriods.find(p =>
             today >= p.startDate && today <= p.endDate
         );
 
