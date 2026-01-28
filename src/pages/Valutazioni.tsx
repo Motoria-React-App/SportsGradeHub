@@ -136,12 +136,12 @@ export default function Valutazioni() {
 
         // Get IDs of exercises from assigned groups
         const groupIds = selectedClass.exerciseGroups || [];
-        
+
         groupIds.forEach(groupId => {
-             const group = exerciseGroups.find(g => g.id === groupId);
-             if (group && group.exercises) {
-                 group.exercises.forEach(exId => assignedIds.add(exId));
-             }
+            const group = exerciseGroups.find(g => g.id === groupId);
+            if (group && group.exercises) {
+                group.exercises.forEach(exId => assignedIds.add(exId));
+            }
         });
 
         return exercises.filter(ex => assignedIds.has(ex.id));
@@ -241,7 +241,7 @@ export default function Valutazioni() {
             }
 
             if (evaluationsToCreate.length > 0) {
-                 await client.createEvaluationsBatch(evaluationsToCreate);
+                await client.createEvaluationsBatch(evaluationsToCreate);
             }
 
             await refreshEvaluations();
@@ -426,9 +426,9 @@ export default function Valutazioni() {
         const items = groupedEvaluations[status];
 
         const sizeClasses = {
-            small: "min-w-[240px] max-w-[280px]",
-            default: "min-w-[260px] max-w-[300px]",
-            large: "min-w-[300px] max-w-[360px]",
+            small: "min-w-[240px]",
+            default: "min-w-[260px]",
+            large: "min-w-[300px]",
         };
 
         return (
