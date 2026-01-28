@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -87,9 +87,6 @@ export default function Valutazioni() {
         const params = new URLSearchParams(location.search);
         if (params.get('openAssign') === 'true') {
             setIsAssignModalOpen(true);
-            if (classId && classId !== 'all') {
-                setAssignClassId(classId);
-            }
         }
     }, [location.search, classId]);
 
@@ -119,9 +116,7 @@ export default function Valutazioni() {
 
     // Assignment modal state
     const [assignExerciseId, setAssignExerciseId] = useState<string>("");
-    const [assignClassId, setAssignClassId] = useState<string>("");
     const [assignStudentIds, setAssignStudentIds] = useState<string[]>([]);
-    const [assignMode, setAssignMode] = useState<"class" | "students">("class");
 
     // Grading panel state
     const [performanceInputValue, setPerformanceInputValue] = useState<string>("");
@@ -152,10 +147,7 @@ export default function Valutazioni() {
         return exercises.filter(ex => assignedIds.has(ex.id));
     }, [selectedClassId, classes, exercises, exerciseGroups]);
 
-    // Get students for a class
-    const getStudentsForClass = useCallback((classId: string) => {
-        return students.filter(s => s.currentClassId === classId);
-    }, [students]);
+
 
     // Filter and deduplicate evaluations based on selected filters
     // Keep only the LATEST evaluation for each studentId+exerciseId pair
@@ -224,24 +216,21 @@ export default function Valutazioni() {
     const handleAssignExercise = async () => {
         if (!assignExerciseId) return;
 
-        let studentIds: string[] = [];
-        if (assignMode === "class" && assignClassId) {
-            studentIds = students.filter((s) => s.currentClassId === assignClassId).map((s) => s.id);
-        } else {
-            studentIds = assignStudentIds;
-        }
+        const studentIds = assignStudentIds;
 
         if (studentIds.length === 0) return;
 
         setIsSubmitting(true);
         try {
-            // Create evaluations for each student (avoid duplicates)
+            // Using batch creation here too for consistency and performance
+            const evaluationsToCreate: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[] = [];
+
             for (const studentId of studentIds) {
                 const exists = evaluations.some(
                     (ev) => ev.studentId === studentId && ev.exerciseId === assignExerciseId
                 );
                 if (!exists) {
-                    await client.createEvaluation({
+                    evaluationsToCreate.push({
                         studentId,
                         exerciseId: assignExerciseId,
                         performanceValue: "",
@@ -251,10 +240,13 @@ export default function Valutazioni() {
                 }
             }
 
+            if (evaluationsToCreate.length > 0) {
+                 await client.createEvaluationsBatch(evaluationsToCreate);
+            }
+
             await refreshEvaluations();
             setIsAssignModalOpen(false);
             setAssignExerciseId("");
-            setAssignClassId("");
             setAssignStudentIds([]);
 
             // Auto-select the exercise filter
@@ -930,86 +922,46 @@ export default function Valutazioni() {
                             </Select>
                         </div>
 
-                        {/* Assignment mode toggle */}
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                variant={assignMode === "class" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setAssignMode("class")}
-                            >
-                                Intera Classe
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={assignMode === "students" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setAssignMode("students")}
-                            >
-                                Singoli Studenti
-                            </Button>
+                        {/* Student multi-select */}
+                        <div className="space-y-2">
+                            <Label>Studenti</Label>
+                            <ScrollArea className="h-[200px] border rounded-md p-3">
+                                <div className="space-y-2">
+                                    {students.map((student) => (
+                                        <div key={student.id} className="flex items-center gap-2">
+                                            <Checkbox
+                                                id={student.id}
+                                                checked={assignStudentIds.includes(student.id)}
+                                                onCheckedChange={(checked) => {
+                                                    if (checked) {
+                                                        setAssignStudentIds([...assignStudentIds, student.id]);
+                                                    } else {
+                                                        setAssignStudentIds(
+                                                            assignStudentIds.filter((id) => id !== student.id)
+                                                        );
+                                                    }
+                                                }}
+                                            />
+                                            <label
+                                                htmlFor={student.id}
+                                                className="text-sm flex-1 cursor-pointer"
+                                            >
+                                                {student.firstName} {student.lastName}
+                                                <span className="text-muted-foreground ml-2">
+                                                    ({getClassName(student.currentClassId)})
+                                                </span>
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                            {assignStudentIds.length > 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    {assignStudentIds.length} studenti selezionati
+                                </p>
+                            )}
                         </div>
 
-                        {/* Class selection */}
-                        {assignMode === "class" && (
-                            <div className="space-y-2">
-                                <Label>Classe</Label>
-                                <Select value={assignClassId} onValueChange={setAssignClassId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleziona classe" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {classes.map((cls) => (
-                                            <SelectItem key={cls.id} value={cls.id}>
-                                                {cls.className} ({getStudentsForClass(cls.id).length} studenti)
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-
-                        {/* Student multi-select */}
-                        {assignMode === "students" && (
-                            <div className="space-y-2">
-                                <Label>Studenti</Label>
-                                <ScrollArea className="h-[200px] border rounded-md p-3">
-                                    <div className="space-y-2">
-                                        {students.map((student) => (
-                                            <div key={student.id} className="flex items-center gap-2">
-                                                <Checkbox
-                                                    id={student.id}
-                                                    checked={assignStudentIds.includes(student.id)}
-                                                    onCheckedChange={(checked) => {
-                                                        if (checked) {
-                                                            setAssignStudentIds([...assignStudentIds, student.id]);
-                                                        } else {
-                                                            setAssignStudentIds(
-                                                                assignStudentIds.filter((id) => id !== student.id)
-                                                            );
-                                                        }
-                                                    }}
-                                                />
-                                                <label
-                                                    htmlFor={student.id}
-                                                    className="text-sm flex-1 cursor-pointer"
-                                                >
-                                                    {student.firstName} {student.lastName}
-                                                    <span className="text-muted-foreground ml-2">
-                                                        ({getClassName(student.currentClassId)})
-                                                    </span>
-                                                </label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                                {assignStudentIds.length > 0 && (
-                                    <p className="text-sm text-muted-foreground">
-                                        {assignStudentIds.length} studenti selezionati
-                                    </p>
-                                )}
-                            </div>
-                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
@@ -1020,8 +972,7 @@ export default function Valutazioni() {
                             disabled={
                                 isSubmitting ||
                                 !assignExerciseId ||
-                                (assignMode === "class" && !assignClassId) ||
-                                (assignMode === "students" && assignStudentIds.length === 0)
+                                assignStudentIds.length === 0
                             }
                         >
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

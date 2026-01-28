@@ -342,6 +342,10 @@ class Client {
         return await this.sendRequest<Evaluation>("/api/evaluations", "POST", data);
     }
 
+    public async createEvaluationsBatch(evaluations: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[]) {
+        return await this.sendRequest<{ message: string; count: number }>("/api/evaluations/batch", "POST", { evaluations });
+    }
+
     public async deleteEvaluation(id: string) {
         return await this.sendRequest<void>(`/api/evaluations/${id}`, "DELETE");
     }

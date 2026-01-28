@@ -21,7 +21,7 @@ export default function Classes() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const client = useClient();
-    const { evaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses } = useSchoolData();
+    const { evaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses, refreshEvaluations } = useSchoolData();
     const { settings } = useSettings();
     const { formatGrade, getGradeColor } = useGradeFormatter();
 
@@ -153,7 +153,43 @@ export default function Classes() {
             const response = await client.updateClass(schoolClass.id, {
                 assignedExercises: selectedExerciseIds
             });
+            
             if (response.success) {
+                // Determine which exercises were newly added
+                // We compare selectedExerciseIds with what was already assigned
+                const previouslyAssigned = new Set(schoolClass.assignedExercises || []);
+                const newlyAssigned = selectedExerciseIds.filter(id => !previouslyAssigned.has(id));
+
+                if (newlyAssigned.length > 0) {
+                    const evaluationsToCreate: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[] = [];
+
+                    // For each new exercise, create evaluations for all students
+                    for (const exerciseId of newlyAssigned) {
+                        for (const student of schoolClass.students) {
+                            // Double check to ensure we don't duplicate if something is out of sync
+                            const alreadyExists = evaluations.some(
+                                ev => ev.studentId === student.id && ev.exerciseId === exerciseId
+                            );
+
+                            if (!alreadyExists) {
+                                evaluationsToCreate.push({
+                                    studentId: student.id,
+                                    exerciseId: exerciseId,
+                                    performanceValue: "",
+                                    score: 0,
+                                    comments: "",
+                                });
+                            }
+                        }
+                    }
+
+                    // Send batch request if there are evaluations to create
+                    if (evaluationsToCreate.length > 0) {
+                        await client.createEvaluationsBatch(evaluationsToCreate);
+                        await refreshEvaluations(); // Refresh evaluations to show them immediately
+                    }
+                }
+
                 // Close dialog FIRST to prevent flash during refresh
                 setExerciseDialogOpen(false);
                 setIsSavingExercises(false);
