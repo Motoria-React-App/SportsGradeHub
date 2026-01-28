@@ -17,7 +17,7 @@ import { Plus, User, Check, Clock, AlertCircle, X, ChevronRight, Loader2, Save, 
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -79,6 +79,18 @@ export default function Valutazioni() {
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
 
     const { classId, exerciseId } = useParams();
+    const location = useLocation();
+
+    // Check for openAssign query param
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('openAssign') === 'true') {
+            setIsAssignModalOpen(true);
+            if (classId && classId !== 'all') {
+                setAssignClassId(classId);
+            }
+        }
+    }, [location.search, classId]);
 
     useEffect(() => {
         if (classId && exerciseId) {
@@ -264,7 +276,7 @@ export default function Valutazioni() {
                     const totalMax = exercise.evaluationCriteria!.reduce((sum, c) => sum + c.maxScore, 0);
                     const totalScored = exercise.evaluationCriteria!.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
                     const maxScore = exercise.maxScore || 10;
-                    
+
                     if (settings.enableBasePoint) {
                         // Formula with base 1: 1 + (percentage * (maxScore - 1))
                         const percentage = totalMax > 0 ? totalScored / totalMax : 0;
@@ -279,7 +291,7 @@ export default function Valutazioni() {
                     const performanceNum = parseFloat(performanceInputValue);
                     if (!isNaN(performanceNum)) {
                         let score = calculateScore(performanceNum, exercise, student.gender);
-                        
+
                         if (score !== null) {
                             if (settings.enableBasePoint) {
                                 // Apply Base Point logic to range score
@@ -473,16 +485,16 @@ export default function Valutazioni() {
     const gradingPreviewScore = useMemo(() => {
         if (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent) {
             let score = calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender);
-            
+
             if (score !== null && settings.enableBasePoint) {
-                 const maxScore = gradingExercise.maxScore || 10;
-                 const percentage = maxScore > 0 ? score / maxScore : 0;
-                 score = 1 + (percentage * (maxScore - 1));
-                 
-                 // Apply rounding
-                 score = Math.round(score * 10) / 10;
+                const maxScore = gradingExercise.maxScore || 10;
+                const percentage = maxScore > 0 ? score / maxScore : 0;
+                score = 1 + (percentage * (maxScore - 1));
+
+                // Apply rounding
+                score = Math.round(score * 10) / 10;
             }
-            
+
             return score;
         }
         return null;
@@ -608,229 +620,229 @@ export default function Valutazioni() {
                                 className="fixed right-6 top-24 z-50"
                             >
                                 <Card className="w-[400px] shadow-xl border-2">
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <CardTitle className="text-lg">Valutazione</CardTitle>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setSelectedEvaluationForGrading(null)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex items-center gap-3 mt-2">
-                                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                                        <User className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Status badge */}
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">Stato:</span>
-                                    <Badge
-                                        variant={
-                                            gradingStatus === "valutato"
-                                                ? "default"
-                                                : gradingStatus === "valutando"
-                                                    ? "secondary"
-                                                    : "outline"
-                                        }
-                                        className={cn(
-                                            gradingStatus === "valutato" && "bg-green-600",
-                                            gradingStatus === "valutando" && "bg-yellow-500 text-black"
-                                        )}
-                                    >
-                                        {gradingStatus === "non-valutato" && "Non Valutato"}
-                                        {gradingStatus === "valutando" && "Valutando"}
-                                        {gradingStatus === "valutato" && "Valutato"}
-                                    </Badge>
-                                </div>
+                                    <CardHeader className="pb-3">
+                                        <div className="flex items-center justify-between">
+                                            <CardTitle className="text-lg">Valutazione</CardTitle>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => setSelectedEvaluationForGrading(null)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                                <User className="h-6 w-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {getClassName(gradingStudent.currentClassId)} • {gradingExercise.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Status badge */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground">Stato:</span>
+                                            <Badge
+                                                variant={
+                                                    gradingStatus === "valutato"
+                                                        ? "default"
+                                                        : gradingStatus === "valutando"
+                                                            ? "secondary"
+                                                            : "outline"
+                                                }
+                                                className={cn(
+                                                    gradingStatus === "valutato" && "bg-green-600",
+                                                    gradingStatus === "valutando" && "bg-yellow-500 text-black"
+                                                )}
+                                            >
+                                                {gradingStatus === "non-valutato" && "Non Valutato"}
+                                                {gradingStatus === "valutando" && "Valutando"}
+                                                {gradingStatus === "valutato" && "Valutato"}
+                                            </Badge>
+                                        </div>
 
-                                {/* Performance input - conditional based on evaluation type */}
-                                {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
-                                    /* Criteria-based evaluation */
-                                    <div className="space-y-3">
-                                        <Label>Punteggi per Criterio</Label>
-                                        <div className="space-y-2">
-                                            {gradingExercise.evaluationCriteria.map((criterion) => (
-                                                <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium">{criterion.name}</p>
-                                                        <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
-                                                    </div>
+                                        {/* Performance input - conditional based on evaluation type */}
+                                        {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
+                                            /* Criteria-based evaluation */
+                                            <div className="space-y-3">
+                                                <Label>Punteggi per Criterio</Label>
+                                                <div className="space-y-2">
+                                                    {gradingExercise.evaluationCriteria.map((criterion) => (
+                                                        <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{criterion.name}</p>
+                                                                <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                            </div>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                max={criterion.maxScore}
+                                                                value={criteriaScores[criterion.name] || ''}
+                                                                onChange={(e) => {
+                                                                    const val = parseInt(e.target.value) || 0;
+                                                                    const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
+                                                                    setCriteriaScores({
+                                                                        ...criteriaScores,
+                                                                        [criterion.name]: clampedVal
+                                                                    });
+                                                                }}
+                                                                className="w-20 h-8 text-center"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                {/* Criteria score preview */}
+                                                {(() => {
+                                                    const totalMax = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
+                                                    const totalScored = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+                                                    const maxScore = gradingExercise.maxScore || 10;
+                                                    let calculatedGrade = 0;
+                                                    if (settings.enableBasePoint) {
+                                                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                                                        calculatedGrade = 1 + (percentage * (maxScore - 1));
+                                                    } else {
+                                                        calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                                                    }
+
+                                                    const roundedGrade = Math.round(calculatedGrade * 10) / 10;
+
+                                                    return (
+                                                        <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                            <p className="text-sm text-muted-foreground mb-1">
+                                                                Punteggio: {totalScored} / {totalMax}
+                                                            </p>
+                                                            <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
+                                                                {formatGrade(roundedGrade)}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : (
+                                            /* Range-based evaluation */
+                                            <>
+                                                <div className="space-y-2">
+                                                    <Label>Prestazione ({gradingExercise.unit})</Label>
                                                     <Input
-                                                        type="number"
-                                                        min="0"
-                                                        max={criterion.maxScore}
-                                                        value={criteriaScores[criterion.name] || ''}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value) || 0;
-                                                            const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
-                                                            setCriteriaScores({
-                                                                ...criteriaScores,
-                                                                [criterion.name]: clampedVal
-                                                            });
-                                                        }}
-                                                        className="w-20 h-8 text-center"
+                                                        type="text"
+                                                        placeholder={`Inserisci ${gradingExercise.unit}`}
+                                                        value={performanceInputValue}
+                                                        onChange={(e) => setPerformanceInputValue(e.target.value)}
                                                     />
                                                 </div>
-                                            ))}
-                                        </div>
-                                        
-                                        {/* Criteria score preview */}
-                                        {(() => {
-                                            const totalMax = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
-                                            const totalScored = gradingExercise.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
-                                            const maxScore = gradingExercise.maxScore || 10;
-                                            let calculatedGrade = 0;
-                                            if (settings.enableBasePoint) {
-                                                const percentage = totalMax > 0 ? totalScored / totalMax : 0;
-                                                calculatedGrade = 1 + (percentage * (maxScore - 1));
-                                            } else {
-                                                calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
-                                            }
-                                            
-                                            const roundedGrade = Math.round(calculatedGrade * 10) / 10;
-                                            
-                                            return (
-                                                <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                    <p className="text-sm text-muted-foreground mb-1">
-                                                        Punteggio: {totalScored} / {totalMax}
-                                                    </p>
-                                                    <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
-                                                        {formatGrade(roundedGrade)}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })()}
-                                    </div>
-                                ) : (
-                                    /* Range-based evaluation */
-                                    <>
+
+                                                {/* Score preview */}
+                                                {gradingPreviewScore !== null ? (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                        <p
+                                                            className={cn(
+                                                                "text-3xl font-bold",
+                                                                getGradeColor(gradingPreviewScore)
+                                                            )}
+                                                        >
+                                                            {formatGrade(gradingPreviewScore)}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                                    </div>
+                                                )}
+                                                {/* Score preview */}
+                                                {gradingPreviewScore !== null ? (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                        <p
+                                                            className={cn(
+                                                                "text-3xl font-bold",
+                                                                getGradeColor(gradingPreviewScore)
+                                                            )}
+                                                        >
+                                                            {formatGrade(gradingPreviewScore)}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                                    </div>
+                                                )}
+
+                                                {!gradingExercise.evaluationRanges && (
+                                                    <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
+                                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
+                                                        Vai alla pagina Esercizi per configurarle.
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {/* Notes */}
                                         <div className="space-y-2">
-                                            <Label>Prestazione ({gradingExercise.unit})</Label>
-                                            <Input
-                                                type="text"
-                                                placeholder={`Inserisci ${gradingExercise.unit}`}
-                                                value={performanceInputValue}
-                                                onChange={(e) => setPerformanceInputValue(e.target.value)}
+                                            <Label>Note</Label>
+                                            <Textarea
+                                                value={notesValue}
+                                                onChange={(e) => setNotesValue(e.target.value)}
+                                                placeholder="Aggiungi note sulla prestazione..."
+                                                rows={3}
                                             />
                                         </div>
 
-                                        {/* Score preview */}
-                                        {gradingPreviewScore !== null ? (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                                <p
-                                                    className={cn(
-                                                        "text-3xl font-bold",
-                                                        getGradeColor(gradingPreviewScore)
-                                                    )}
-                                                >
-                                                    {formatGrade(gradingPreviewScore)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                            </div>
-                                        )}
-                                        {/* Score preview */}
-                                        {gradingPreviewScore !== null ? (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                                <p
-                                                    className={cn(
-                                                        "text-3xl font-bold",
-                                                        getGradeColor(gradingPreviewScore)
-                                                    )}
-                                                >
-                                                    {formatGrade(gradingPreviewScore)}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                            </div>
-                                        )}
+                                        {/* Action buttons */}
+                                        {(() => {
+                                            const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
+                                            const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
+                                            const hasRangeInput = !isCriteriaBased && performanceInputValue;
+                                            const hasAnyInput = hasCriteriaInput || hasRangeInput;
+                                            const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
 
-                                        {!gradingExercise.evaluationRanges && (
-                                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                                                ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                                                Vai alla pagina Esercizi per configurarle.
-                                            </div>
-                                        )}
-                                    </>
-                                )}
+                                            return (
+                                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => handleSaveEvaluation(false)}
+                                                        disabled={isSaving || !hasAnyInput}
+                                                    >
+                                                        {isSaving ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Save className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Salva Bozza
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleSaveEvaluation(true)}
+                                                        disabled={isSaving || !canConfirm}
+                                                    >
+                                                        {isSaving ? (
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Check className="mr-2 h-4 w-4" />
+                                                        )}
+                                                        Conferma Voto
+                                                    </Button>
+                                                </div>
+                                            );
+                                        })()}
 
-                                {/* Notes */}
-                                <div className="space-y-2">
-                                    <Label>Note</Label>
-                                    <Textarea
-                                        value={notesValue}
-                                        onChange={(e) => setNotesValue(e.target.value)}
-                                        placeholder="Aggiungi note sulla prestazione..."
-                                        rows={3}
-                                    />
-                                </div>
-
-                                {/* Action buttons */}
-                                {(() => {
-                                    const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
-                                    const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
-                                    const hasRangeInput = !isCriteriaBased && performanceInputValue;
-                                    const hasAnyInput = hasCriteriaInput || hasRangeInput;
-                                    const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
-                                    
-                                    return (
-                                        <div className="grid grid-cols-2 gap-3 pt-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => handleSaveEvaluation(false)}
-                                                disabled={isSaving || !hasAnyInput}
-                                            >
-                                                {isSaving ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Save className="mr-2 h-4 w-4" />
-                                                )}
-                                                Salva Bozza
-                                            </Button>
-                                            <Button
-                                                onClick={() => handleSaveEvaluation(true)}
-                                                disabled={isSaving || !canConfirm}
-                                            >
-                                                {isSaving ? (
-                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Check className="mr-2 h-4 w-4" />
-                                                )}
-                                                Conferma Voto
-                                            </Button>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Delete button */}
-                                <Button
-                                    variant="ghost"
-                                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
-                                    onClick={() => setIsDeleteDialogOpen(true)}
-                                    disabled={isDeleting}
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Elimina Valutazione
-                                </Button>
-                            </CardContent>
-                        </Card>
+                                        {/* Delete button */}
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-2"
+                                            onClick={() => setIsDeleteDialogOpen(true)}
+                                            disabled={isDeleting}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Elimina Valutazione
+                                        </Button>
+                                    </CardContent>
+                                </Card>
                             </motion.div>
                         )}
                     </AnimatePresence>
