@@ -29,21 +29,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    LineChart,
-    Line,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend,
 } from 'recharts';
 import { useSchoolData, useClient } from '@/provider/clientProvider';
 import { useSettings } from '@/provider/settingsProvider';
-import { ArrowLeft, TrendingUp, Calendar, Users, AlertTriangle, Plus, Trash2, Settings } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, AlertTriangle, Plus, Trash2, Settings } from 'lucide-react';
 import { useGradeFormatter } from '@/hooks/useGradeFormatter';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
-import type { Student, ClassHistoryEntry, Evaluation, Exercise, SchoolClass, Justification } from '@/types/types';
+import type { Student, Evaluation, Exercise, SchoolClass, Justification } from '@/types/types';
 import { toast } from 'sonner';
 
 export default function StudentDetail() {
@@ -55,7 +54,7 @@ export default function StudentDetail() {
     const { formatDate } = useDateFormatter();
 
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
-    
+
     // Justification dialog state
     const [justificationDialogOpen, setJustificationDialogOpen] = useState(false);
     const [newJustificationDate, setNewJustificationDate] = useState(() => {
@@ -75,7 +74,7 @@ export default function StudentDetail() {
         return classes.find((c: SchoolClass) => c.id === student.currentClassId);
     }, [student, classes]);
 
-    const classHistory = student?.classHistory || [];
+    // const classHistory = student?.classHistory || [];
 
     // Get all unique exercises for this student (from their evaluations)
     const studentExercises = useMemo(() => {
@@ -96,6 +95,9 @@ export default function StudentDetail() {
             .filter((e: Evaluation) => e.studentId === student?.id && e.exerciseId === selectedExerciseId && e.score > 0)
             .sort((a: Evaluation, b: Evaluation) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [evaluations, student?.id, selectedExerciseId]);
+
+    console.log(exerciseEvals);
+    console.log(studentExercises);
 
     // Line chart data: year -> average score per school year
     const chartData = useMemo(() => {
@@ -189,7 +191,7 @@ export default function StudentDetail() {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription className="flex items-center gap-2">
@@ -201,10 +203,10 @@ export default function StudentDetail() {
                         <div className="text-3xl font-bold">{classHistory.length}</div>
                     </CardContent>
                 </Card>
-            </div>
+            </div> */}
 
             {/* Giustifiche Section */}
-            <JustificationsCard 
+            <JustificationsCard
                 student={student}
                 settings={settings}
                 formatDate={formatDate}
@@ -221,7 +223,7 @@ export default function StudentDetail() {
             />
 
             {/* Cronologia Classi */}
-            <Card>
+            {/* <Card>
                 <CardHeader>
                     <CardTitle>Cronologia delle Classi</CardTitle>
                     <CardDescription>Classe e anno scolastico</CardDescription>
@@ -257,7 +259,7 @@ export default function StudentDetail() {
                         </Table>
                     )}
                 </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Grafico e Selezione Esercizio */}
             <Card>
@@ -293,16 +295,47 @@ export default function StudentDetail() {
                                 <p className="text-sm text-muted-foreground mt-1">{formatDate(exerciseEvals[0].createdAt)}</p>
                             </div>
                         ) : (
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={chartData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="anno" />
-                                    <YAxis domain={['dataMin', 'dataMax']} />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="media" stroke="#8884d8" />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            <div className="p-6">
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <AreaChart data={chartData}>
+                                        <defs>
+                                            <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#a0a0a0" stopOpacity={0.8} />
+                                                <stop offset="50%" stopColor="#707070" stopOpacity={0.5} />
+                                                <stop offset="100%" stopColor="#404040" stopOpacity={0.2} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.05)" />
+                                        <XAxis
+                                            dataKey="anno"
+                                            stroke="#888"
+                                            tick={{ fill: '#888', fontSize: 12 }}
+                                            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                        />
+                                        <YAxis
+                                            domain={['dataMin', 'dataMax']}
+                                            stroke="#888"
+                                            tick={{ fill: '#888', fontSize: 12 }}
+                                            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: 'rgba(0,0,0,0.9)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                borderRadius: '8px',
+                                                color: '#fff'
+                                            }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="media"
+                                            stroke="#d0d0d0"
+                                            strokeWidth={2}
+                                            fill="url(#colorMedia)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         )
                     ) : (
                         <p className="text-muted-foreground text-center py-12">Seleziona un esercizio per visualizzare il grafico</p>
@@ -377,14 +410,14 @@ function JustificationsCard({
     isAddingJustification,
     setIsAddingJustification,
 }: JustificationsCardProps) {
-    
+
     const justifications = student.justifications || [];
-    
+
     // Get current period
     const currentPeriod = settings.schoolPeriods.find(
         (p: any) => p.id === settings.currentPeriodId
     );
-    
+
     // Filter justifications for current period
     // Filter justifications for current period
     const justificationsInPeriod = currentPeriod
@@ -395,24 +428,24 @@ function JustificationsCard({
             return jDate >= startDate && jDate <= endDate;
         })
         : justifications;
-    
+
     const justificationCount = justificationsInPeriod.length;
     const isOverLimit = justificationCount >= settings.maxJustifications;
-    
+
     const handleDateChange = (value: string, setter: (val: string) => void) => {
         // Remove non-digit characters
         let val = value.replace(/\D/g, '');
-        
+
         // Limit length
         if (val.length > 8) val = val.slice(0, 8);
-        
+
         // Add slashes
         if (val.length > 4) {
             val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
         } else if (val.length > 2) {
             val = val.slice(0, 2) + '/' + val.slice(2);
         }
-        
+
         setter(val);
     };
 
@@ -426,7 +459,7 @@ function JustificationsCard({
         setIsAddingJustification(true);
         try {
             const newId = Date.now().toString(36) + Math.random().toString(36).substring(2);
-            
+
             // Convert DD/MM/YYYY to YYYY-MM-DD
             const [day, month, year] = newJustificationDate.split('/');
             const isoDate = `${year}-${month}-${day}`;
@@ -437,24 +470,24 @@ function JustificationsCard({
                 note: newJustificationNote,
                 createdAt: new Date().toISOString()
             };
-            
+
             // Create new array with existing justifications + new one
             const updatedJustifications = [...(student.justifications || []), newJustification];
-            
+
             await client.updateStudent(student.id, {
                 justifications: updatedJustifications
             } as any);
-            
+
             await refreshStudents();
             setJustificationDialogOpen(false);
-            
+
             // Reset to today formatted as DD/MM/YYYY
             const today = new Date();
             const dd = String(today.getDate()).padStart(2, '0');
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const yyyy = today.getFullYear();
             setNewJustificationDate(`${dd}/${mm}/${yyyy}`);
-            
+
             setNewJustificationNote('');
             toast.success('Giustifica aggiunta con successo');
         } catch (error) {
@@ -464,15 +497,15 @@ function JustificationsCard({
             setIsAddingJustification(false);
         }
     };
-    
+
     const handleRemoveJustification = async (justificationId: string) => {
         try {
             const updatedJustifications = (student.justifications || []).filter((j: Justification) => j.id !== justificationId);
-            
+
             await client.updateStudent(student.id, {
                 justifications: updatedJustifications
             } as any);
-            
+
             await refreshStudents();
             toast.success('Giustifica rimossa');
         } catch (error) {
@@ -480,7 +513,7 @@ function JustificationsCard({
             console.error(error);
         }
     };
-    
+
     return (
         <>
             <Card className={isOverLimit ? 'border-destructive' : ''}>
@@ -495,7 +528,7 @@ function JustificationsCard({
                                 )}
                             </CardTitle>
                             <CardDescription>
-                                {currentPeriod 
+                                {currentPeriod
                                     ? `Periodo: ${formatDate(currentPeriod.startDate)} - ${formatDate(currentPeriod.endDate)}`
                                     : (
                                         <span className="flex items-center gap-2">
@@ -509,7 +542,7 @@ function JustificationsCard({
                                 }
                             </CardDescription>
                         </div>
-                        <Button 
+                        <Button
                             onClick={() => setJustificationDialogOpen(true)}
                             disabled={!currentPeriod}
                             title={!currentPeriod ? 'Prima devi impostare un periodo nelle impostazioni' : undefined}
@@ -537,7 +570,7 @@ function JustificationsCard({
                             )}
                         </div>
                     </div>
-                    
+
                     {/* Justifications List */}
                     {justificationsInPeriod.length === 0 ? (
                         <p className="text-muted-foreground text-center py-4">
@@ -546,8 +579,8 @@ function JustificationsCard({
                     ) : (
                         <div className="space-y-2">
                             {justificationsInPeriod.map((j: any) => (
-                                <div 
-                                    key={j.id} 
+                                <div
+                                    key={j.id}
                                     className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 border"
                                 >
                                     <div>
@@ -570,7 +603,7 @@ function JustificationsCard({
                     )}
                 </CardContent>
             </Card>
-            
+
             {/* Add Justification Dialog */}
             <Dialog open={justificationDialogOpen} onOpenChange={setJustificationDialogOpen}>
                 <DialogContent>
