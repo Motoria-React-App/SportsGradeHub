@@ -72,7 +72,7 @@ export default function Valutazioni() {
         exerciseGroups,
     } = useSchoolData();
     const client = useClient();
-    const { formatGrade, getGradeColor } = useGradeFormatter();
+    const { formatGrade, getGradeColor, getGradeBgColor } = useGradeFormatter();
     const { settings } = useSettings();
 
     // Filters
@@ -459,32 +459,49 @@ export default function Valutazioni() {
                                     <div
                                         key={`${ev.studentId}-${ev.exerciseId}`}
                                         className={cn(
-                                            "p-3 rounded-lg border bg-card cursor-pointer transition-all hover:shadow-md hover:border-primary/50",
-                                            isSelected && "ring-2 ring-primary border-primary"
+                                            "group p-3 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-all duration-300",
+                                            "hover:shadow-lg hover:bg-card",
+                                            isSelected
+                                                ? "ring-2 ring-primary border-primary bg-card"
+                                                : "border-border/50 hover:border-primary/20",
+                                            status === "valutato" && "hover:border-green-500/30",
+                                            status === "valutando" && "border-yellow-500/20 shadow-sm shadow-yellow-500/5"
                                         )}
                                         onClick={() => selectEvaluationForGrading(ev)}
                                     >
-                                        <div className="flex items-start justify-between gap-2 p-3">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
-                                                    <User className="h-4 w-4 text-primary" />
-                                                </div>
-                                                <p className="font-medium text-md truncate">
+                                        <div className="flex items-center gap-3">
+                                            {/* Status specific avatar/icon */}
+                                            <div className={cn(
+                                                "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
+                                                status === "non-valutato" && "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary",
+                                                status === "valutando" && "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60",
+                                                status === "valutato" && "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-900/60"
+                                            )}>
+                                                {status === "valutato" ? <Check className="h-5 w-5" /> :
+                                                    status === "valutando" ? <Clock className="h-5 w-5 animate-pulse" /> :
+                                                        <User className="h-5 w-5" />}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-semibold text-sm leading-tight transition-colors truncate">
                                                     {student.firstName} {student.lastName}
                                                 </p>
+                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
+                                                    Classe {getClassName(student.currentClassId)}
+                                                </p>
                                             </div>
+
                                             {ev.score > 0 && (
-                                                <div
-                                                    className={cn(
-                                                        "text-base font-bold shrink-0",
-                                                        getGradeColor(ev.score)
-                                                    )}
-                                                >
+                                                <div className={cn(
+                                                    "h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold shadow-xs shrink-0",
+                                                    getGradeBgColor(ev.score),
+                                                    getGradeColor(ev.score),
+                                                    "border border-current/20"
+                                                )}>
                                                     {formatGrade(ev.score)}
                                                 </div>
                                             )}
                                         </div>
-
                                     </div>
                                 );
                             })
@@ -779,24 +796,7 @@ export default function Valutazioni() {
                                                         <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
                                                     </div>
                                                 )}
-                                                {/* Score preview */}
-                                                {gradingPreviewScore !== null ? (
-                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
-                                                        <p
-                                                            className={cn(
-                                                                "text-3xl font-bold",
-                                                                getGradeColor(gradingPreviewScore)
-                                                            )}
-                                                        >
-                                                            {formatGrade(gradingPreviewScore)}
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
-                                                    </div>
-                                                )}
+
 
                                                 {!gradingExercise.evaluationRanges && (
                                                     <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
