@@ -1,49 +1,39 @@
-import { useState, useMemo, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useClient, useSchoolData } from "@/provider/clientProvider";
 import { useSettings } from "@/provider/settingsProvider";
-import { Search, Plus, Filter, MoreHorizontal, Pencil, Trash2, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Student, Justification } from "@/types/types";
+import { Search, Plus, Filter, Trash2, X, Copy, FileText } from "lucide-react";
+import { Student, Justification, Evaluation } from "@/types/types";
 import { StudentDialog } from "@/components/student-dialog";
+import { StudentsTable } from "@/components/students-table";
 import { toast } from "sonner";
 
 
 export default function Students() {
     const client = useClient();
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const { students, classes, refreshStudents } = useSchoolData();
+    const { students, classes, evaluations, refreshStudents } = useSchoolData();
     const { settings } = useSettings();
-
-    // Read classId from URL params for initial filter
-    const classIdFromUrl = searchParams.get("classId");
-    const [selectedClass, setSelectedClass] = useState<string>(classIdFromUrl || "all");
+    const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
-
-    // Update filter if URL changes
-    useEffect(() => {
-        if (classIdFromUrl && classIdFromUrl !== selectedClass) {
-            setSelectedClass(classIdFromUrl);
-        }
-    }, [classIdFromUrl]);
+    const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     // Delete student handler
     const handleDeleteStudent = async (student: Student) => {
@@ -63,6 +53,22 @@ export default function Students() {
         }
     };
 
+    // Calculate average score for a student in current year
+    const getStudentYearAverage = (studentId: string): number | null => {
+        const currentYear = new Date().getFullYear();
+        const studentEvals = evaluations.filter(
+            (e: Evaluation) =>
+                e.studentId === studentId &&
+                e.score > 0 &&
+                new Date(e.createdAt).getFullYear() === currentYear
+        );
+
+        if (studentEvals.length === 0) return null;
+
+        const sum = studentEvals.reduce((acc: number, e: Evaluation) => acc + e.score, 0);
+        return Math.round((sum / studentEvals.length) * 10) / 10;
+    };
+
     const filteredStudents = useMemo(() => {
         return students
             .filter(student => {
@@ -73,6 +79,14 @@ export default function Students() {
             })
             .sort((a, b) => a.lastName.localeCompare(b.lastName));
     }, [students, selectedClass, searchQuery]);
+
+    // Statistics
+    const studentsWithFailingAverage = useMemo(() => {
+        return filteredStudents.filter(student => {
+            const avg = getStudentYearAverage(student.id);
+            return avg !== null && avg < 6;
+        }).length;
+    }, [filteredStudents, evaluations]);
 
     // Get class name by id
     const getClassName = (classId: string) => {
@@ -98,12 +112,50 @@ export default function Students() {
         return count >= settings.maxJustifications;
     };
 
+    // Selection handlers
+    const toggleSelectAll = () => {
+        if (selectedStudents.size === filteredStudents.length) {
+            setSelectedStudents(new Set());
+        } else {
+            setSelectedStudents(new Set(filteredStudents.map(s => s.id)));
+        }
+    };
+
+    const toggleSelectStudent = (studentId: string) => {
+        const newSelected = new Set(selectedStudents);
+        if (newSelected.has(studentId)) {
+            newSelected.delete(studentId);
+        } else {
+            newSelected.add(studentId);
+        }
+        setSelectedStudents(newSelected);
+    };
+
+    const handleBulkDelete = () => {
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmBulkDelete = async () => {
+        try {
+            for (const studentId of selectedStudents) {
+                await client.deleteStudent(studentId);
+            }
+            toast.success(`${selectedStudents.size} studenti eliminati`);
+            setSelectedStudents(new Set());
+            setDeleteDialogOpen(false);
+            refreshStudents();
+        } catch {
+            toast.error("Errore durante l'eliminazione");
+        }
+    };
+
     return (
         <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Studenti</h1>
-                    <p className="text-muted-foreground">Gestione anagrafica studenti ({students.length} totali)</p>
+                    <p className="text-muted-foreground">Gestione anagrafica studenti</p>
                 </div>
                 <Button className="gap-2" onClick={() => { setSelectedStudent(null); setDialogOpen(true); }}>
                     <Plus className="h-4 w-4" />
@@ -111,6 +163,50 @@ export default function Students() {
                 </Button>
             </div>
 
+            {/* Statistics Cards */}
+            <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription className="text-xs">Totale Studenti</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold">{filteredStudents.length}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription className="text-xs text-orange-600 dark:text-orange-400">Media Insufficiente</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">{studentsWithFailingAverage}</div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription className="text-xs text-green-600 dark:text-green-400">Media Sufficiente</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                            {filteredStudents.filter(s => {
+                                const avg = getStudentYearAverage(s.id);
+                                return avg !== null && avg >= 6;
+                            }).length}
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription className="text-xs text-red-600 dark:text-red-400">Giustifiche Eccessive</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                            {filteredStudents.filter(isOverLimit).length}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     <div className="relative flex-1 md:w-[300px]">
@@ -123,7 +219,7 @@ export default function Students() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Select value={selectedClass} onValueChange={setSelectedClass}>
+                    <Select disabled value={selectedClass} onValueChange={setSelectedClass}>
                         <SelectTrigger className="w-[180px]">
                             <Filter className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Filtra per classe" />
@@ -140,116 +236,66 @@ export default function Students() {
                 </div>
             </div>
 
+            {/* Table */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Elenco Studenti</CardTitle>
-                    <CardDescription>
-                        Visualizzazione di {filteredStudents.length} studenti
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nome</TableHead>
-                                <TableHead>Classe</TableHead>
-                                <TableHead>Sesso</TableHead>
-                                <TableHead>Data di Nascita</TableHead>
-                                <TableHead className="text-right">Azioni</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredStudents.length > 0 ? (
-                                filteredStudents.map((student) => (
-                                    <TableRow
-                                        key={student.id}
-                                        className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => navigate(`/students/${student.id}`)}
-                                    >
-                                        <TableCell className="font-medium">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
-                                                    {student.firstName[0]}{student.lastName[0]}
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div>
-                                                        <div>{student.firstName} {student.lastName}</div>
-                                                        {student.notes && (
-                                                            <div className="text-xs text-muted-foreground truncate max-w-[200px]">{student.notes}</div>
-                                                        )}
-                                                    </div>
-                                                    {isOverLimit(student) && (
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <AlertTriangle className="h-4 w-4 text-destructive" />
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>Soglia giustifiche superata ({getJustificationsInPeriod(student.justifications || [])}/{settings.maxJustifications})</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
-                                                {getClassName(student.currentClassId)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={cn(
-                                                "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset",
-                                                student.gender === 'M' && "bg-blue-50 text-blue-700 ring-blue-600/20 dark:bg-blue-900/30 dark:text-blue-400 dark:ring-blue-400/20",
-                                                student.gender === 'F' && "bg-pink-50 text-pink-700 ring-pink-600/20 dark:bg-pink-900/30 dark:text-pink-400 dark:ring-pink-400/20",
-                                                !student.gender && "bg-gray-50 text-gray-700 ring-gray-600/20 dark:bg-gray-900/30 dark:text-gray-400 dark:ring-gray-400/20"
-                                            )}>
-                                                {student.gender === 'M' ? 'Maschio' : student.gender === 'F' ? 'Femmina' : 'N/D'}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            {student.birthdate ? new Date(student.birthdate).toLocaleDateString("it-IT") : "-"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                    <Button variant="ghost" size="icon">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onSelect={() => { setSelectedStudent(student); setDialogOpen(true); }}>
-                                                        <Pencil className="mr-2 h-4 w-4" />
-                                                        Modifica
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onSelect={(e) => {
-                                                            e.preventDefault();
-                                                            handleDeleteStudent(student);
-                                                        }}
-                                                        className="text-destructive focus:text-destructive"
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        Elimina
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                        {students.length === 0 ? "Nessuno studente disponibile" : "Nessuno studente trovato."}
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                <CardContent className="p-0">
+                    <StudentsTable
+                        students={filteredStudents}
+                        onEdit={(student) => { setSelectedStudent(student); setDialogOpen(true); }}
+                        onDelete={handleDeleteStudent}
+                        showCheckboxes={true}
+                        showNotes={true}
+                        showYearAverage={true}
+                        getYearAverage={getStudentYearAverage}
+                        getClassName={getClassName}
+                        isOverLimit={isOverLimit}
+                        getJustificationsCount={(student) => getJustificationsInPeriod(student.justifications || [])}
+                        maxJustifications={settings.maxJustifications}
+                        selectedStudents={selectedStudents}
+                        onToggleSelect={toggleSelectStudent}
+                        onToggleSelectAll={toggleSelectAll}
+                    />
                 </CardContent>
             </Card>
+
+            {/* Bulk Actions Bar */}
+            {selectedStudents.size > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 duration-300">
+                    <Card className="shadow-lg border-2">
+                        <CardContent className="px-4">
+                            <div className="flex items-center gap-4">
+                                <span className="text-sm font-medium">
+                                    {selectedStudents.size} Selezionat{selectedStudents.size === 1 ? 'o' : 'i'}
+                                </span>
+                                <div className="h-4 w-px bg-border" />
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Duplica
+                                    </Button>
+                                    <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                        <FileText className="h-4 w-4 mr-2" />
+                                        Esporta
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Elimina
+                                    </Button>
+                                </div>
+                                <div className="h-4 w-px bg-border" />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedStudents(new Set())}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             {/* Student Dialog */}
             <StudentDialog
                 open={dialogOpen}
@@ -257,6 +303,25 @@ export default function Students() {
                 student={selectedStudent}
                 onSuccess={refreshStudents}
             />
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Sei sicuro di voler eliminare gli studenti?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Stai per eliminare {selectedStudents.size} student{selectedStudents.size === 1 ? 'e' : 'i'}.
+                            Questa azione non può essere annullata.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
+                            Elimina
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
