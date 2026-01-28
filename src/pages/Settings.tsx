@@ -127,7 +127,7 @@ export default function Settings() {
         // Helper to format time HH:MM
         const formatTime = (t: any): string | null => {
             if (!t) return null;
-            
+
             // Excel decimal time handle (e.g. 0.3333 for 8:00)
             if (typeof t === 'number') {
                 const totalSeconds = Math.round(t * 86400);
@@ -154,7 +154,7 @@ export default function Settings() {
             const day = normalizeDay(dayRaw);
             const start = formatTime(startRaw);
             const end = formatTime(endRaw);
-            
+
             let classId = null;
             if (classRaw) {
                 const classStr = classRaw.toString().trim();
@@ -220,17 +220,17 @@ export default function Settings() {
     const handleDateChange = (value: string, setter: (val: string) => void) => {
         // Remove non-digit characters
         let val = value.replace(/\D/g, '');
-        
+
         // Limit length
         if (val.length > 8) val = val.slice(0, 8);
-        
+
         // Add slashes
         if (val.length > 4) {
             val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4);
         } else if (val.length > 2) {
             val = val.slice(0, 2) + '/' + val.slice(2);
         }
-        
+
         setter(val);
     };
 
@@ -239,7 +239,7 @@ export default function Settings() {
             // Convert DD/MM/YYYY to YYYY-MM-DD for storage
             const [startDay, startMonth, startYear] = newPeriodStart.split('/');
             const [endDay, endMonth, endYear] = newPeriodEnd.split('/');
-            
+
             const isoStartDate = `${startYear}-${startMonth}-${startDay}`;
             const isoEndDate = `${endYear}-${endMonth}-${endDay}`;
 
@@ -267,7 +267,7 @@ export default function Settings() {
 
     const handleRecalculateGrades = async () => {
         if (!confirm("ATTENZIONE: Questa operazione ricalcolerà tutti i voti degli esercizi basati su criteri usando l'impostazione attuale (Punto Base). Vuoi procedere?")) return;
-        
+
         setIsRecalculating(true);
         try {
             // 1. Deduplicate to find latest evaluations
@@ -296,12 +296,12 @@ export default function Settings() {
                     // Criteria-based calculation
                     let criteriaScores: Record<string, number> = {};
                     try {
-                         criteriaScores = JSON.parse(ev.performanceValue || '{}');
+                        criteriaScores = JSON.parse(ev.performanceValue || '{}');
                     } catch (e) { continue; }
 
                     const totalMax = ex.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
                     const totalScored = ex.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
-                    
+
                     if (settings.enableBasePoint) {
                         const percentage = totalMax > 0 ? totalScored / totalMax : 0;
                         newScore = 1 + (percentage * (maxScore - 1));
@@ -342,17 +342,17 @@ export default function Settings() {
 
                 if (shouldUpdate) {
                     newScore = Math.round(newScore * 10) / 10;
-                    
+
                     if (Math.abs(newScore - ev.score) > 0.01) {
-                         await client.createEvaluation({
-                             studentId: ev.studentId,
-                             exerciseId: ev.exerciseId,
-                             performanceValue: ev.performanceValue,
-                             score: newScore,
-                             comments: ev.comments,
-                             criteriaScores: (ev as any).criteriaScores
-                         });
-                         updatedCount++;
+                        await client.createEvaluation({
+                            studentId: ev.studentId,
+                            exerciseId: ev.exerciseId,
+                            performanceValue: ev.performanceValue,
+                            score: newScore,
+                            comments: ev.comments,
+                            criteriaScores: (ev as any).criteriaScores
+                        });
+                        updatedCount++;
                     }
                 }
             }
@@ -513,8 +513,8 @@ export default function Settings() {
                                         <p className="text-sm text-muted-foreground">Abilita il sistema di voto con base 1 (1 punto base + max 9 punti).</p>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             size="sm"
                                             onClick={handleRecalculateGrades}
                                             disabled={isRecalculating}
@@ -655,6 +655,22 @@ export default function Settings() {
                                             <SelectItem value="YYYY-MM-DD">2025-01-31</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+
+                                <Separator />
+
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="collapsible-classes" className="text-base">Raggruppa Classi nella Sidebar</Label>
+                                        <p className="text-sm text-muted-foreground">Mostra le classi in un menu a discesa comprimibile.</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Switch
+                                            id="collapsible-classes"
+                                            checked={settings.collapsibleClasses}
+                                            onCheckedChange={(checked) => updateSettings({ collapsibleClasses: checked })}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -924,7 +940,7 @@ export default function Settings() {
                             <CardHeader>
                                 <CardTitle>Periodi Configurati</CardTitle>
                                 <CardDescription>
-                                    {settings.schoolPeriods.length} periodi configurati. 
+                                    {settings.schoolPeriods.length} periodi configurati.
                                     {settings.currentPeriodId && ` Periodo attivo: ${settings.schoolPeriods.find(p => p.id === settings.currentPeriodId)?.name || 'Nessuno'}`}
                                 </CardDescription>
                             </CardHeader>
@@ -941,7 +957,7 @@ export default function Settings() {
                                             const isActive = settings.currentPeriodId === period.id;
                                             const startFormatted = formatDate(period.startDate);
                                             const endFormatted = formatDate(period.endDate);
-                                            
+
                                             return (
                                                 <div
                                                     key={period.id}
@@ -1037,8 +1053,8 @@ export default function Settings() {
                                 <CardDescription>Scarica i tuoi dati immediatamente nel formato selezionato ({settings.exportFormat.toUpperCase()}).</CardDescription>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4">
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     className="w-full justify-start"
                                     disabled={isExporting}
                                     onClick={async () => {
@@ -1053,8 +1069,8 @@ export default function Settings() {
                                     <Download className="mr-2 h-4 w-4" />
                                     {isExporting ? "Esportazione..." : `Esporta tutte le valutazioni`}
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     className="w-full justify-start"
                                     disabled={isExporting}
                                     onClick={async () => {
