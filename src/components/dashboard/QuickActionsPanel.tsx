@@ -46,7 +46,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                         variant="secondary"
                         className="h-14 flex-col gap-1"
                     >
-                        <Link to={selectedClassId ? `/students?classId=${selectedClassId}` : "/students"}>
+                        <Link to={selectedClassId ? `/classes/${selectedClassId}` : "/students"}>
                             <Users className="h-5 w-5" />
                             <span className="text-xs">Studenti</span>
                         </Link>

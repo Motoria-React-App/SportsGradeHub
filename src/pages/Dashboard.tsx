@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { ClassSelector } from "@/components/dashboard/ClassSelector";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
 import { QuickActionsPanel } from "@/components/dashboard/QuickActionsPanel";
+import { ClassPerformanceRadar } from "@/components/dashboard/ClassPerformanceRadar";
 import { ClassStatsSummary } from "@/components/dashboard/ClassStatsSummary";
 import { RecentActivityCompact } from "@/components/dashboard/RecentActivityCompact";
 import { useSchoolData } from "@/provider/clientProvider";
@@ -59,8 +60,9 @@ export default function Dashboard() {
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                     {/* Weekly Schedule - Main Content (2 columns on large screens) */}
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-2 space-y-6">
                         <WeeklySchedule />
+                        <ClassPerformanceRadar selectedClassId={selectedClassId} />
                     </div>
 
                     {/* Right Sidebar (1 column on large screens) */}
