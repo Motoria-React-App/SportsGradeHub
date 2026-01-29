@@ -534,34 +534,38 @@ export default function Settings() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Visualizzazione Voti</CardTitle>
+                                <CardTitle>Visualizzazione voti</CardTitle>
                                 <CardDescription>Come appaiono i voti nell'interfaccia.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between space-x-2">
-                                    <Label htmlFor="show-decimals" className="flex flex-col space-y-1">
-                                        <span>Mostra Decimali</span>
-                                        <span className="font-normal text-sm text-muted-foreground">Visualizza i voti con cifre decimali (es. 7.5).</span>
-                                    </Label>
-                                    <Switch
-                                        id="show-decimals"
-                                        checked={settings.showDecimals}
-                                        onCheckedChange={(checked) => updateSettings({ showDecimals: checked })}
-                                    />
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="show-decimals" className="text-base">Mostra decimali</Label>
+                                        <p className="text-sm text-muted-foreground">Visualizza i voti con cifre decimali (es. 7.5).</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Switch
+                                            id="show-decimals"
+                                            checked={settings.showDecimals}
+                                            onCheckedChange={(checked) => updateSettings({ showDecimals: checked })}
+                                        />
+                                    </div>
                                 </div>
 
                                 <Separator />
 
-                                <div className="flex items-center justify-between space-x-2">
-                                    <Label htmlFor="highlight-fail" className="flex flex-col space-y-1">
-                                        <span>Evidenzia Insufficienze</span>
-                                        <span className="font-normal text-sm text-muted-foreground">Mostra i voti insufficienti in rosso.</span>
-                                    </Label>
-                                    <Switch
-                                        id="highlight-fail"
-                                        checked={settings.highlightFailing}
-                                        onCheckedChange={(checked) => updateSettings({ highlightFailing: checked })}
-                                    />
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="highlight-fail" className="text-base">Evidenzia insufficienze</Label>
+                                        <p className="text-sm text-muted-foreground">Mostra i voti insufficienti in rosso.</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Switch
+                                            id="highlight-fail"
+                                            checked={settings.highlightFailing}
+                                            onCheckedChange={(checked) => updateSettings({ highlightFailing: checked })}
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -661,7 +665,7 @@ export default function Settings() {
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="collapsible-classes" className="text-base">Raggruppa Classi nella Sidebar</Label>
+                                        <Label htmlFor="collapsible-classes" className="text-base">Raggruppa Classi nella sidebar</Label>
                                         <p className="text-sm text-muted-foreground">Mostra le classi in un menu a discesa comprimibile.</p>
                                     </div>
                                     <div className="flex items-center gap-4">
