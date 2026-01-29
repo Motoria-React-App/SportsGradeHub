@@ -34,7 +34,6 @@ import {
     User,
     Database,
     FileText,
-    BarChart,
     Download,
     RefreshCw,
     Trash2,
@@ -54,6 +53,7 @@ import * as XLSX from 'xlsx';
 
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { IconInnerShadowTop } from "@tabler/icons-react";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
@@ -1225,7 +1225,7 @@ export default function Settings() {
                             <CardContent className="p-6 space-y-4">
                                 <div className="flex flex-col items-center text-center space-y-2 py-4">
                                     <div className="h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center mb-2">
-                                        <BarChart className="h-8 w-8 text-primary" />
+                                        <IconInnerShadowTop className="h-8 w-8 text-primary" />
                                     </div>
                                     <h3 className="text-2xl font-bold">SportsGradeHub</h3>
                                     <p className="text-muted-foreground">Versione 1.0.0</p>

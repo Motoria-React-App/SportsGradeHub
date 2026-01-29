@@ -88,38 +88,33 @@ export default function StudentDetail() {
             .filter(Boolean) as Exercise[];
     }, [evaluations, exercises, student?.id]);
 
-    // Evaluations for selected exercise
-    const exerciseEvals = useMemo(() => {
-        if (!selectedExerciseId) return [];
-        return evaluations
-            .filter((e: Evaluation) => e.studentId === student?.id && e.exerciseId === selectedExerciseId && e.score > 0)
-            .sort((a: Evaluation, b: Evaluation) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    }, [evaluations, student?.id, selectedExerciseId]);
+    // Filter evaluations based on selection or show all
+    const filteredEvaluations = useMemo(() => {
+        if (!student) return [];
+        let evals = evaluations.filter((e: Evaluation) => e.studentId === student.id && e.score > 0);
 
-    console.log(exerciseEvals);
-    console.log(studentExercises);
+        if (selectedExerciseId) {
+            evals = evals.filter((e: Evaluation) => e.exerciseId === selectedExerciseId);
+        }
 
-    // Line chart data: year -> average score per school year
+        return evals.sort((a: Evaluation, b: Evaluation) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }, [evaluations, student, selectedExerciseId]);
+
+    // Graph data - sequence of grades instead of yearly averages
     const chartData = useMemo(() => {
-        if (exerciseEvals.length <= 1) return [];
+        return filteredEvaluations.map((ev) => {
+            const date = new Date(ev.createdAt);
+            const exercise = exercises.find((e: Exercise) => e.id === ev.exerciseId);
 
-        const yearlyAvg: Record<string, { sum: number; count: number }> = {};
-        exerciseEvals.forEach((evaluation: Evaluation) => {
-            const year = new Date(evaluation.createdAt).getFullYear().toString();
-            if (!yearlyAvg[year]) {
-                yearlyAvg[year] = { sum: 0, count: 0 };
-            }
-            yearlyAvg[year].sum += evaluation.score;
-            yearlyAvg[year].count += 1;
+            return {
+                date: date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+                fullDate: date.toLocaleDateString('it-IT'),
+                score: ev.score,
+                formattedScore: formatGrade(ev.score),
+                exerciseName: exercise?.name || 'Valutazione',
+            };
         });
-
-        return Object.entries(yearlyAvg)
-            .map(([year, { sum, count }]) => ({
-                anno: year,
-                media: Math.round((sum / count) * 10) / 10,
-            }))
-            .sort((a, b) => parseInt(a.anno) - parseInt(b.anno));
-    }, [exerciseEvals]);
+    }, [filteredEvaluations, exercises, formatGrade]);
 
     // Yearly stats
     const yearlyStats = useMemo(() => {
@@ -266,10 +261,10 @@ export default function StudentDetail() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        Andamento per Esercizio
+                        Andamento Valutazioni
                     </CardTitle>
                     <CardDescription>
-                        Seleziona un esercizio per vedere l'andamento annuale (media voti)
+                        Visualizza l'andamento complessivo o filtra per esercizio
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -285,21 +280,19 @@ export default function StudentDetail() {
                             </Button>
                         ))}
                     </div>
-                    {selectedExerciseId ? (
-                        exerciseEvals.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-8">Nessuna valutazione per questo esercizio</p>
-                        ) : exerciseEvals.length === 1 ? (
+                    {filteredEvaluations.length > 0 ? (
+                        selectedExerciseId && filteredEvaluations.length === 1 ? (
                             <div className="text-center py-8">
                                 <p className="text-muted-foreground mb-2">Solo una valutazione disponibile:</p>
-                                <div className="text-2xl font-bold">{formatGrade(exerciseEvals[0].score)}</div>
-                                <p className="text-sm text-muted-foreground mt-1">{formatDate(exerciseEvals[0].createdAt)}</p>
+                                <div className="text-2xl font-bold">{formatGrade(filteredEvaluations[0].score)}</div>
+                                <p className="text-sm text-muted-foreground mt-1">{formatDate(filteredEvaluations[0].createdAt)}</p>
                             </div>
                         ) : (
                             <div className="p-6">
                                 <ResponsiveContainer width="100%" height={300}>
                                     <AreaChart data={chartData}>
                                         <defs>
-                                            <linearGradient id="colorMedia" x1="0" y1="0" x2="0" y2="1">
+                                            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="0%" stopColor="#a0a0a0" stopOpacity={0.8} />
                                                 <stop offset="50%" stopColor="#707070" stopOpacity={0.5} />
                                                 <stop offset="100%" stopColor="#404040" stopOpacity={0.2} />
@@ -307,10 +300,11 @@ export default function StudentDetail() {
                                         </defs>
                                         <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.05)" />
                                         <XAxis
-                                            dataKey="anno"
+                                            dataKey="date"
                                             stroke="#888"
                                             tick={{ fill: '#888', fontSize: 12 }}
                                             axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                            interval="preserveStartEnd"
                                         />
                                         <YAxis
                                             domain={['dataMin', 'dataMax']}
@@ -319,26 +313,40 @@ export default function StudentDetail() {
                                             axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
                                         />
                                         <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(0,0,0,0.9)',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                borderRadius: '8px',
-                                                color: '#fff'
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    const data = payload[0].payload;
+                                                    return (
+                                                        <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.1)' }} className="border rounded-lg p-3 text-white shadow-xl">
+                                                            <p className="font-medium mb-1 text-sm">{label}</p>
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-gray-400 text-xs">Voto:</span>
+                                                                    <span className="font-bold text-white">{data.formattedScore}</span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
+                                                                    {data.exerciseName}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
                                             }}
                                         />
                                         <Area
                                             type="monotone"
-                                            dataKey="media"
+                                            dataKey="score"
                                             stroke="#d0d0d0"
                                             strokeWidth={2}
-                                            fill="url(#colorMedia)"
+                                            fill="url(#colorScore)"
                                         />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
                         )
                     ) : (
-                        <p className="text-muted-foreground text-center py-12">Seleziona un esercizio per visualizzare il grafico</p>
+                        <p className="text-muted-foreground text-center py-12">Nessuna valutazione presente</p>
                     )}
                 </CardContent>
             </Card>

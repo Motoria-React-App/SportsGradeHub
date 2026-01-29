@@ -24,7 +24,7 @@ export interface AppSettings {
     showGender: boolean;            // default: true
     dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';  // default: 'DD/MM/YYYY'
     enableAnimations: boolean;      // default: true
-    collapsibleClasses: boolean;    // default: true
+    collapsibleClasses: boolean;    // default: false
 
     // Export
     exportFormat: 'csv' | 'excel' | 'pdf';  // default: 'csv'
@@ -48,7 +48,7 @@ const defaultSettings: AppSettings = {
     showGender: true,
     dateFormat: 'DD/MM/YYYY',
     enableAnimations: true,
-    collapsibleClasses: true,
+    collapsibleClasses: false,
     exportFormat: 'csv',
     includeNotesInExport: true,
     // Justifications defaults
