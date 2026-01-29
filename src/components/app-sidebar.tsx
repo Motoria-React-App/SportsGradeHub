@@ -16,6 +16,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarGroupAction,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 
 import {
@@ -232,38 +235,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarGroupAction>
                 <CollapsibleContent>
                   <SidebarGroupContent>
-                    <SidebarMenu className="gap-0.5 pt-1">
+                    <SidebarMenuSub className="gap-0.5 pt-1 pr-1">
                       {data.classes.length === 0 ? (
-                        <SidebarMenuItem>
-                          <SidebarMenuButton
-                            className="h-8 px-2 text-muted-foreground hover:bg-sidebar-accent/50 rounded-md"
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            className="text-muted-foreground"
                             onClick={() => setAddClassDialogOpen(true)}
                           >
-                            <Plus className="size-4" />
-                            <span className="text-sm">Aggiungi classe</span>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
+                            <Plus className="size-3.5" />
+                            <span>Aggiungi classe</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
                       ) : (
                         data.classes.map((item) => (
-                          <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton
+                          <SidebarMenuSubItem key={item.title}>
+                            <SidebarMenuSubButton
                               asChild
-                              className={cn(
-                                "h-8 px-2 hover:bg-sidebar-accent/50 rounded-md group/item ml-2 border-l border-sidebar-border/50",
-                                item.isActive && "bg-sidebar-accent border-sidebar-primary/50"
-                              )}
+                              isActive={item.isActive}
                             >
                               <Link to={item.url} className="flex items-center gap-2">
-                                {/* {item.icon && (
+                                {item.icon && (
                                   <item.icon className="size-3.5 text-muted-foreground" />
-                                )} */}
-                                <span className="text-sm flex-1 truncate">{item.title}</span>
+                                )}
+                                <span className="truncate">{item.title}</span>
                               </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
                         ))
                       )}
-                    </SidebarMenu>
+                    </SidebarMenuSub>
                   </SidebarGroupContent>
                 </CollapsibleContent>
               </Collapsible>
