@@ -7,6 +7,7 @@ export default function LoginPage() {
     const { isAuthenticated, isLoading } = useAuth();
 
     // Show loading while checking session
+    {/*Borroni Cacca*/ }
     if (isLoading) {
         return (
             <div className="flex min-h-svh flex-col items-center justify-center">
