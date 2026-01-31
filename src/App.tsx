@@ -20,6 +20,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useAuth, useClient } from "./provider/clientProvider";
 import { useEffect } from "react";
+import { EasterEgg } from "@/components/EasterEgg";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -73,6 +74,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <EasterEgg />
       <Routes>
         {/* Login page - standalone without sidebar */}
         <Route path="/" element={<LoginPage />} />
