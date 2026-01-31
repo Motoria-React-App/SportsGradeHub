@@ -27,6 +27,12 @@ const EASTER_EGGS: Record<string, EasterEggData> = {
         message: "Amritini Skibidini!",
         emoji: "💎",
     },
+    turrina: {
+        name: "Turrina",
+        title: "✨ Turrina [Placeholder]",
+        message: "Professorini Skibidini!",
+        emoji: "🎓",
+    },
 };
 
 export function EasterEgg() {
