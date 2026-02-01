@@ -19,6 +19,7 @@ interface CurrentClassInfo {
 
 interface ScheduleProviderState {
     schedule: ScheduleSlot[];
+    isLoading: boolean;
     addSlot: (slot: Omit<ScheduleSlot, 'id'>) => void;
     updateSlot: (id: string, updates: Partial<ScheduleSlot>) => void;
     removeSlot: (id: string) => void;
@@ -34,6 +35,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     const { classes } = useSchoolData();
     const client = useClient();
     const { user } = useAuth();
+    const [isLoading, setIsLoading] = useState(true);
     
     // Initialize with empty or local storage as fallback/cache
     const [schedule, setSchedule] = useState<ScheduleSlot[]>(() => {
@@ -49,6 +51,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const loadSchedule = async () => {
              if (user) {
+                setIsLoading(true);
                 // User logged in, fetch from DB
                 try {
                     const res = await client.getSettings();
@@ -63,11 +66,14 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
                     }
                 } catch (e) {
                     console.error("Failed to load schedule", e);
+                } finally {
+                    setIsLoading(false);
                 }
             } else {
                 // User logged out, clear schedule
                 setSchedule(defaultSchedule);
                 localStorage.removeItem(STORAGE_KEY);
+                setIsLoading(false);
             }
         };
         loadSchedule();
@@ -142,6 +148,7 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
     return (
         <ScheduleContext.Provider value={{
             schedule,
+            isLoading,
             addSlot,
             updateSlot,
             removeSlot,

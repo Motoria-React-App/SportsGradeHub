@@ -13,7 +13,7 @@ const LAST_CLASS_KEY = "sportsgrade_last_class";
 export default function WelcomePage() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
-    const { getCurrentClass } = useSchedule();
+    const { getCurrentClass, isLoading } = useSchedule();
     const { students } = useSchoolData();
     const { settings } = useSettings();
 
@@ -51,6 +51,19 @@ export default function WelcomePage() {
                 return count >= settings.maxJustifications;
             })
         : [];
+
+    // Loading state while fetching schedule
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6">
+                <div className="w-full max-w-lg flex flex-col items-center justify-center gap-4 animate-pulse">
+                    <div className="h-4 w-32 bg-muted rounded"></div>
+                    <div className="h-16 w-16 bg-muted rounded-2xl"></div>
+                    <div className="h-8 w-48 bg-muted rounded"></div>
+                </div>
+            </div>
+        );
+    }
 
     const handleStartEvaluation = (classId: string) => {
         // Save as last opened class
