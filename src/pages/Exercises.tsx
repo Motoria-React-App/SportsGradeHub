@@ -16,7 +16,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
-import type { Exercise, Gender, ScoreRange, EvaluationCriterion } from "@/types/types";
+import type { Exercise, Gender, ScoreRange, EvaluationCriterion, CriterionWithRanges } from "@/types/types";
 import {
   Search,
   Plus,
@@ -35,6 +35,7 @@ import {
   Pencil,
   Save,
   X,
+  TrendingUp,
 } from "lucide-react";
 import { IconGenderMale, IconGenderFemale } from "@tabler/icons-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -122,14 +123,18 @@ export default function Exercises() {
   const [showRanges, setShowRanges] = useState(false);
 
   // Evaluation type state (for new exercise)
-  const [evaluationType, setEvaluationType] = useState<'range' | 'criteria'>('range');
+  const [evaluationType, setEvaluationType] = useState<'range' | 'criteria' | 'criteria-ranges'>('range');
   const [criteria, setCriteria] = useState<EvaluationCriterion[]>([
     { name: '', maxScore: 10 }
   ]);
+  const [criteriaWithRanges, setCriteriaWithRanges] = useState<CriterionWithRanges[]>([
+    { name: '', unit: 'cm', maxScore: 10, ranges: { M: [{ min: 0, max: 100, score: 6 }] } }
+  ]);
 
   // Evaluation type state (for edit)
-  const [editEvaluationType, setEditEvaluationType] = useState<'range' | 'criteria'>('range');
+  const [editEvaluationType, setEditEvaluationType] = useState<'range' | 'criteria' | 'criteria-ranges'>('range');
   const [editCriteria, setEditCriteria] = useState<EvaluationCriterion[]>([]);
+  const [editCriteriaWithRanges, setEditCriteriaWithRanges] = useState<CriterionWithRanges[]>([]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -238,6 +243,7 @@ export default function Exercises() {
     setShowRanges(false);
     setEvaluationType('range');
     setCriteria([{ name: '', maxScore: 10 }]);
+    setCriteriaWithRanges([{ name: '', unit: 'cm', maxScore: 10, ranges: { M: [{ min: 0, max: 100, score: 6 }] } }]);
     setErrors({});
   };
 
@@ -262,6 +268,9 @@ export default function Exercises() {
       // Build evaluation criteria if type is 'criteria'
       const validCriteria = criteria.filter(c => c.name.trim() !== '');
 
+      // Build criteria with ranges if type is 'criteria-ranges'
+      const validCriteriaWithRanges = criteriaWithRanges.filter(c => c.name.trim() !== '');
+
       const response = await client.createExercise({
         name: formData.name,
         exerciseGroupId: formData.exerciseGroupId,
@@ -270,6 +279,7 @@ export default function Exercises() {
         evaluationType,
         evaluationRanges: evaluationType === 'range' ? evaluationRanges : undefined,
         evaluationCriteria: evaluationType === 'criteria' ? validCriteria : undefined,
+        evaluationCriteriaWithRanges: evaluationType === 'criteria-ranges' ? validCriteriaWithRanges : undefined,
       });
 
       if (response.success) {
@@ -385,6 +395,13 @@ export default function Exercises() {
       setEditCriteria([{ name: '', maxScore: 10 }]);
     }
 
+    // Load criteria with ranges if they exist
+    if (exercise.evaluationCriteriaWithRanges && exercise.evaluationCriteriaWithRanges.length > 0) {
+      setEditCriteriaWithRanges(exercise.evaluationCriteriaWithRanges);
+    } else {
+      setEditCriteriaWithRanges([{ name: '', unit: 'cm', maxScore: 10, ranges: { M: [{ min: 0, max: 100, score: 6 }] } }]);
+    }
+
     // Load ranges if they exist
     if (exercise.evaluationRanges?.M) {
       setEditRangesMale(exercise.evaluationRanges.M);
@@ -419,6 +436,9 @@ export default function Exercises() {
       // Build evaluation criteria
       const validCriteria = editCriteria.filter(c => c.name.trim() !== '');
 
+      // Build criteria with ranges
+      const validCriteriaWithRanges = editCriteriaWithRanges.filter(c => c.name.trim() !== '');
+
       const response = await client.updateExercise(selectedExercise.id, {
         name: editFormData.name,
         exerciseGroupId: editFormData.exerciseGroupId,
@@ -427,6 +447,7 @@ export default function Exercises() {
         evaluationType: editEvaluationType,
         evaluationRanges: editEvaluationType === 'range' ? evaluationRanges : undefined,
         evaluationCriteria: editEvaluationType === 'criteria' ? validCriteria : undefined,
+        evaluationCriteriaWithRanges: editEvaluationType === 'criteria-ranges' ? validCriteriaWithRanges : undefined,
       });
 
       if (response.success) {
@@ -552,41 +573,48 @@ export default function Exercises() {
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with decorative background */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Esercizi</h1>
-          <p className="text-muted-foreground">Gestisci il catalogo degli esercizi</p>
+          <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
+            Catalogo Esercizi
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Gestisci e organizza gli esercizi per le tue classi
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => setNewGroupDialogOpen(true)}>
+        <div className="flex gap-3">
+          <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
             <FolderPlus className="h-4 w-4" />
             Nuovo Gruppo
           </Button>
-          <Button className="gap-2" onClick={() => setDialogOpen(true)}>
+          <Button className="gap-2 shadow-md hover:shadow-lg transition-all bg-linear-to-r from-primary to-primary/90" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             Nuovo Esercizio
           </Button>
         </div>
       </div>
 
+      {/* Decorative background element */}
+      <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
+
       {/* Search and Filter */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-[300px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+          <div className="relative flex-1 md:w-[350px] w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Cerca esercizio..."
-              className="pl-8"
+              placeholder="Cerca per nome o unità..."
+              className="pl-9 bg-background/50 border-muted-foreground/20 focus:border-primary/50 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-            <SelectTrigger className="w-[200px]">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Gruppo" />
+            <SelectTrigger className="w-full sm:w-[220px] bg-background/50 border-muted-foreground/20">
+              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Filtra per Gruppo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti i gruppi</SelectItem>
@@ -598,18 +626,29 @@ export default function Exercises() {
             </SelectContent>
           </Select>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
           {filteredExercises.length} esercizi trovati
         </div>
       </div>
 
       {/* Exercise Groups Display */}
-      <div className="space-y-8">
+      <div className="space-y-10 pb-10">
         {orderedGroups.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nessun gruppo trovato</p>
-            <p className="text-sm mt-2">Crea un gruppo per iniziare</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed rounded-xl border-muted-foreground/20 bg-muted/5">
+            <div className="bg-background p-4 rounded-full shadow-sm">
+              <Activity className="h-10 w-10 text-primary/50" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">Nessun gruppo trovato</h3>
+              <p className="text-muted-foreground max-w-sm mx-auto">
+                Non hai ancora creato gruppi di esercizi o la ricerca non ha prodotto risultati.
+              </p>
+            </div>
+            {(searchQuery || selectedGroup !== 'all') && (
+              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedGroup('all'); }}>
+                Azzera filtri
+              </Button>
+            )}
           </div>
         )}
 
@@ -618,90 +657,108 @@ export default function Exercises() {
           const groupName = getGroupName(groupId);
 
           return (
-            <div key={groupId} className="space-y-4">
+            <div key={groupId} className="space-y-5 animate-in slide-in-from-bottom duration-500 fade-in">
               {/* Section Header */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-primary/10 border-primary/20">
-                  <Dumbbell className="h-5 w-5 text-primary" />
-                  <h2 className="text-base font-semibold text-primary">
+              <div className="flex items-center gap-4 group/header">
+                <div className="flex items-center gap-3 pl-2">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary shadow-sm group-hover/header:scale-105 transition-transform">
+                    <Dumbbell className="h-5 w-5" />
+                  </div>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">
                     {groupName}
                   </h2>
                 </div>
-                <div className="flex-1 h-[2px] rounded-full bg-gradient-to-r from-primary/40 to-transparent" />
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium bg-primary/10 border-primary/20 text-primary">
-                  <span>{groupExercises.length}</span>
-                  <span className="opacity-75">eserciz{groupExercises.length === 1 ? 'io' : 'i'}</span>
+                <div className="h-px flex-1 bg-linear-to-r from-border to-transparent" />
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="font-normal text-muted-foreground bg-secondary/50">
+                    {groupExercises.length} esercizi
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/header:opacity-100 transition-all"
+                    onClick={() => openDeleteGroupDialog(groupId)}
+                    title="Elimina gruppo"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => openDeleteGroupDialog(groupId)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
 
               {/* Carousel */}
-              <div className="px-12">
+              <div className="px-4 md:px-12">
                 <Carousel
                   opts={{
                     align: "start",
                     loop: false,
+                    slidesToScroll: 1
                   }}
                   className="w-full"
                 >
-                  <CarouselContent className="-ml-2 md:-ml-4">
+                  <CarouselContent className="-ml-3 md:-ml-5 pb-4">
                     {groupExercises.map((ex) => (
-                      <CarouselItem key={ex.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                        <Card className="flex flex-col h-full hover:shadow-md transition-all duration-200 group">
+                      <CarouselItem key={ex.id} className="pl-3 md:pl-5 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                        <Card className="flex flex-col h-full hover:shadow-md transition-all duration-200 cursor-pointer group/card border-muted/60">
                           <CardHeader className="pb-3">
                             <div className="flex justify-between items-start gap-2">
-                              <CardTitle className="text-lg font-bold leading-tight group-hover:text-primary transition-colors">
-                                {ex.name}
-                              </CardTitle>
-                              <Badge variant="secondary" className="capitalize shrink-0">
-                                {unitDisplayNames[ex.unit] || ex.unit}
-                              </Badge>
+                              <div className="space-y-1">
+                                <CardTitle className="text-base font-bold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
+                                  {ex.name}
+                                </CardTitle>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  {unitIcons[ex.unit]}
+                                  <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
+                                </p>
+                              </div>
                             </div>
-                            <CardDescription className="flex items-center gap-1 mt-1">
-                              {unitIcons[ex.unit]}
-                              <span>Unità: {ex.unit}</span>
-                            </CardDescription>
                           </CardHeader>
-                          <CardContent className="flex-1 pb-3 space-y-2">
-                            {ex.maxScore && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Star className="h-4 w-4" />
-                                <span>Punteggio max: {ex.maxScore}</span>
-                              </div>
-                            )}
-                            {ex.evaluationType === 'criteria' && ex.evaluationCriteria && ex.evaluationCriteria.length > 0 ? (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Star className="h-4 w-4" />
-                                <span>{ex.evaluationCriteria.length} criteri configurati</span>
-                              </div>
-                            ) : ex.evaluationRanges && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Ruler className="h-4 w-4" />
-                                <span>Fasce di valutazione configurate</span>
-                              </div>
-                            )}
+
+                          <CardContent className="flex-1 pb-3 space-y-3">
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              {ex.maxScore && (
+                                <Badge variant="secondary" className="font-normal bg-secondary/50 hover:bg-secondary/70">
+                                  Max: {ex.maxScore} pt
+                                </Badge>
+                              )}
+
+                              {ex.evaluationType === 'criteria' ? (
+                                <Badge variant="outline" className="font-normal border-purple-200 text-purple-700 bg-purple-50">
+                                  {ex.evaluationCriteria?.length || 0} Criteri
+                                </Badge>
+                              ) : ex.evaluationType === 'criteria-ranges' ? (
+                                <Badge variant="outline" className="font-normal border-indigo-200 text-indigo-700 bg-indigo-50">
+                                  {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="font-normal border-blue-200 text-blue-700 bg-blue-50">
+                                  Fasce
+                                </Badge>
+                              )}
+                            </div>
                           </CardContent>
-                          <CardFooter className="pt-0 flex justify-between">
-                            <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" size="sm" onClick={() => openDeleteDialog(ex)}>
+
+                          <CardFooter className="pt-0 flex justify-between gap-2">
+                            <Button
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                              onClick={() => openDeleteDialog(ex)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" className="pl-0 hover:pl-2 transition-all" size="sm" onClick={() => openDetailDialog(ex)}>
-                              Dettagli <Dumbbell className="ml-2 h-3 w-3" />
+                            <Button
+                              variant="outline"
+                              className="flex-1 h-8 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-all"
+                              onClick={() => openDetailDialog(ex)}
+                            >
+                              Dettagli
                             </Button>
                           </CardFooter>
                         </Card>
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious />
-                  <CarouselNext />
+                  <CarouselPrevious className="-left-3 md:-left-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
+                  <CarouselNext className="-right-3 md:-right-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
                 </Carousel>
               </div>
             </div>
@@ -801,7 +858,7 @@ export default function Exercises() {
             {/* Evaluation Type Selection */}
             <div className="space-y-4">
               <Label>Tipo di Valutazione</Label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
                   variant={evaluationType === 'range' ? 'default' : 'outline'}
@@ -821,6 +878,16 @@ export default function Exercises() {
                 >
                   <Star className="h-4 w-4 mr-2" />
                   Criteri
+                </Button>
+                <Button
+                  type="button"
+                  variant={evaluationType === 'criteria-ranges' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setEvaluationType('criteria-ranges')}
+                  className="flex-1"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Criteri+Fasce
                 </Button>
               </div>
 
@@ -942,6 +1009,364 @@ export default function Exercises() {
                   <div className="p-3 rounded-lg bg-primary/10 text-center">
                     <p className="text-sm font-medium">
                       Punteggio Totale Massimo: {criteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Criteria with Ranges evaluation */}
+              {evaluationType === 'criteria-ranges' && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Definisci criteri con fasce di valutazione. Per ogni criterio, inserisci una prestazione che verrà convertita in punteggio tramite le fasce.
+                  </p>
+
+                  <div className="space-y-4">
+                    {criteriaWithRanges.map((criterion, criterionIndex) => (
+                      <div key={criterionIndex} className="p-4 rounded-lg bg-background border space-y-3">
+                        {/* Criterion Header */}
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">Criterio {criterionIndex + 1}</Label>
+                          {criteriaWithRanges.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setCriteriaWithRanges(criteriaWithRanges.filter((_, i) => i !== criterionIndex))}
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Criterion Name, Unit, Max Score */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Nome</Label>
+                            <Input
+                              placeholder="es. Ricezione"
+                              value={criterion.name}
+                              onChange={(e) => {
+                                const updated = [...criteriaWithRanges];
+                                updated[criterionIndex] = { ...updated[criterionIndex], name: e.target.value };
+                                setCriteriaWithRanges(updated);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Unità</Label>
+                            <Select
+                              value={criterion.unit}
+                              onValueChange={(value) => {
+                                const updated = [...criteriaWithRanges];
+                                updated[criterionIndex] = { ...updated[criterionIndex], unit: value as BackendUnit };
+                                setCriteriaWithRanges(updated);
+                              }}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cm">cm</SelectItem>
+                                <SelectItem value="m">m</SelectItem>
+                                <SelectItem value="sec">sec</SelectItem>
+                                <SelectItem value="reps">reps</SelectItem>
+                                <SelectItem value="qualitativo">qual.</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={criterion.maxScore}
+                              onChange={(e) => {
+                                const updated = [...criteriaWithRanges];
+                                updated[criterionIndex] = { ...updated[criterionIndex], maxScore: parseInt(e.target.value) || 1 };
+                                setCriteriaWithRanges(updated);
+                              }}
+                              className="h-8"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Gender Ranges Toggle */}
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id={`criterion-${criterionIndex}-gender`}
+                            checked={criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F}
+                            onCheckedChange={(checked: boolean) => {
+                              const updated = [...criteriaWithRanges];
+                              if (checked) {
+                                updated[criterionIndex] = {
+                                  ...updated[criterionIndex],
+                                  ranges: {
+                                    M: criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }],
+                                    F: [{ min: 0, max: 100, score: 6 }]
+                                  }
+                                };
+                              } else {
+                                const maleRanges = criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }];
+                                updated[criterionIndex] = {
+                                  ...updated[criterionIndex],
+                                  ranges: { M: maleRanges, F: maleRanges }
+                                };
+                              }
+                              setCriteriaWithRanges(updated);
+                            }}
+                            className="rounded"
+                          />
+                          <Label htmlFor={`criterion-${criterionIndex}-gender`} className="text-xs cursor-pointer">
+                            Fasce diverse per M/F
+                          </Label>
+                        </div>
+
+                        {/* Ranges for Male */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs font-medium flex items-center gap-1">
+                              <IconGenderMale className="h-3 w-3 text-blue-500" />
+                              {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                            </Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const updated = [...criteriaWithRanges];
+                                const currentRanges = updated[criterionIndex].ranges?.M || [];
+                                updated[criterionIndex] = {
+                                  ...updated[criterionIndex],
+                                  ranges: {
+                                    ...updated[criterionIndex].ranges,
+                                    M: [...currentRanges, { min: 0, max: 100, score: 6 }]
+                                  }
+                                };
+                                setCriteriaWithRanges(updated);
+                              }}
+                              className="h-6 text-xs"
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              Aggiungi
+                            </Button>
+                          </div>
+                          <div className="space-y-1">
+                            {(criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }]).map((range, rangeIndex) => (
+                              <div key={rangeIndex} className="flex items-center gap-1">
+                                <Input
+                                  type="text"
+                                  placeholder="Min"
+                                  value={range.min}
+                                  onChange={(e) => {
+                                    const updated = [...criteriaWithRanges];
+                                    const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                    };
+                                    setCriteriaWithRanges(updated);
+                                  }}
+                                  className="h-7 text-xs"
+                                />
+                                <Input
+                                  type="text"
+                                  placeholder="Max"
+                                  value={range.max}
+                                  onChange={(e) => {
+                                    const updated = [...criteriaWithRanges];
+                                    const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                    };
+                                    setCriteriaWithRanges(updated);
+                                  }}
+                                  className="h-7 text-xs"
+                                />
+                                <Select
+                                  value={range.score.toString()}
+                                  onValueChange={(v) => {
+                                    const updated = [...criteriaWithRanges];
+                                    const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], score: parseFloat(v) };
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                    };
+                                    setCriteriaWithRanges(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 text-xs w-16">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {italianScores.map((score) => (
+                                      <SelectItem key={score} value={score.toString()}>
+                                        {score}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {(criterion.ranges?.M || []).length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      const updated = [...criteriaWithRanges];
+                                      const ranges = (updated[criterionIndex].ranges?.M || []).filter((_, i) => i !== rangeIndex);
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                      };
+                                      setCriteriaWithRanges(updated);
+                                    }}
+                                    className="h-7 w-7 p-0 text-destructive"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Ranges for Female (if different) */}
+                        {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-medium flex items-center gap-1">
+                                <IconGenderFemale className="h-3 w-3 text-pink-500" />
+                                Fasce Femmine
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const updated = [...criteriaWithRanges];
+                                  const currentRanges = updated[criterionIndex].ranges?.F || [];
+                                  updated[criterionIndex] = {
+                                    ...updated[criterionIndex],
+                                    ranges: {
+                                      ...updated[criterionIndex].ranges,
+                                      F: [...currentRanges, { min: 0, max: 100, score: 6 }]
+                                    }
+                                  };
+                                  setCriteriaWithRanges(updated);
+                                }}
+                                className="h-6 text-xs"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Aggiungi
+                              </Button>
+                            </div>
+                            <div className="space-y-1">
+                              {(criterion.ranges?.F || []).map((range, rangeIndex) => (
+                                <div key={rangeIndex} className="flex items-center gap-1">
+                                  <Input
+                                    type="text"
+                                    placeholder="Min"
+                                    value={range.min}
+                                    onChange={(e) => {
+                                      const updated = [...criteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                      };
+                                      setCriteriaWithRanges(updated);
+                                    }}
+                                    className="h-7 text-xs"
+                                  />
+                                  <Input
+                                    type="text"
+                                    placeholder="Max"
+                                    value={range.max}
+                                    onChange={(e) => {
+                                      const updated = [...criteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                      };
+                                      setCriteriaWithRanges(updated);
+                                    }}
+                                    className="h-7 text-xs"
+                                  />
+                                  <Select
+                                    value={range.score.toString()}
+                                    onValueChange={(v) => {
+                                      const updated = [...criteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], score: parseFloat(v) };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                      };
+                                      setCriteriaWithRanges(updated);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs w-16">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {italianScores.map((score) => (
+                                        <SelectItem key={score} value={score.toString()}>
+                                          {score}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(criterion.ranges?.F || []).length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const updated = [...criteriaWithRanges];
+                                        const ranges = (updated[criterionIndex].ranges?.F || []).filter((_, i) => i !== rangeIndex);
+                                        updated[criterionIndex] = {
+                                          ...updated[criterionIndex],
+                                          ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                        };
+                                        setCriteriaWithRanges(updated);
+                                      }}
+                                      className="h-7 w-7 p-0 text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCriteriaWithRanges([...criteriaWithRanges, { name: '', unit: 'cm', maxScore: 10, ranges: { M: [{ min: 0, max: 100, score: 6 }] } }])}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Aggiungi Criterio
+                  </Button>
+
+                  <div className="p-3 rounded-lg bg-primary/10 text-center">
+                    <p className="text-sm font-medium">
+                      Punteggio Totale Massimo: {criteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
                     </p>
                   </div>
                 </div>
@@ -1160,10 +1585,10 @@ export default function Exercises() {
 
                 {/* Evaluation Type Toggle (Edit Mode) */}
                 {isEditing && (
-                  <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       type="button"
-                      variant={editEvaluationType === 'range' ? 'default' : 'ghost'}
+                      variant={editEvaluationType === 'range' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setEditEvaluationType('range')}
                       className="h-8"
@@ -1173,13 +1598,23 @@ export default function Exercises() {
                     </Button>
                     <Button
                       type="button"
-                      variant={editEvaluationType === 'criteria' ? 'default' : 'ghost'}
+                      variant={editEvaluationType === 'criteria' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setEditEvaluationType('criteria')}
                       className="h-8"
                     >
                       <Star className="h-4 w-4 mr-2" />
                       Criteri
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={editEvaluationType === 'criteria-ranges' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setEditEvaluationType('criteria-ranges')}
+                      className="h-8"
+                    >
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      Criteri+Fasce
                     </Button>
                   </div>
                 )}
@@ -1191,6 +1626,11 @@ export default function Exercises() {
                       <>
                         <Star className="h-4 w-4" />
                         <span>Valutazione per Criteri</span>
+                      </>
+                    ) : (selectedExercise.evaluationType || 'range') === 'criteria-ranges' ? (
+                      <>
+                        <TrendingUp className="h-4 w-4" />
+                        <span>Criteri con Fasce</span>
                       </>
                     ) : (
                       <>
@@ -1444,6 +1884,364 @@ export default function Exercises() {
                   </div>
                 )}
 
+                {/* Criteria with Ranges evaluation (Edit Mode) - COPY FROM CREATE FORM BUT WITH edit prefix */}
+                {isEditing && editEvaluationType === 'criteria-ranges' && (
+                  <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      Definisci criteri con fasce di valutazione. Per ogni criterio, inserisci una prestazione che verrà convertita in punteggio tramite le fasce.
+                    </p>
+
+                    <div className="space-y-4">
+                      {editCriteriaWithRanges.map((criterion, criterionIndex) => (
+                        <div key={criterionIndex} className="p-4 rounded-lg bg-background border space-y-3">
+                          {/* Criterion Header */}
+                          <div className="flex items-center justify-between">
+                            <Label className="text-sm font-semibold">Criterio {criterionIndex + 1}</Label>
+                            {editCriteriaWithRanges.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setEditCriteriaWithRanges(editCriteriaWithRanges.filter((_, i) => i !== criterionIndex))}
+                                className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+
+                          {/* Criterion Name, Unit, Max Score */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Nome</Label>
+                              <Input
+                                placeholder="es. Ricezione"
+                                value={criterion.name}
+                                onChange={(e) => {
+                                  const updated = [...editCriteriaWithRanges];
+                                  updated[criterionIndex] = { ...updated[criterionIndex], name: e.target.value };
+                                  setEditCriteriaWithRanges(updated);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Unità</Label>
+                              <Select
+                                value={criterion.unit}
+                                onValueChange={(value) => {
+                                  const updated = [...editCriteriaWithRanges];
+                                  updated[criterionIndex] = { ...updated[criterionIndex], unit: value as BackendUnit };
+                                  setEditCriteriaWithRanges(updated);
+                                }}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cm">cm</SelectItem>
+                                  <SelectItem value="m">m</SelectItem>
+                                  <SelectItem value="sec">sec</SelectItem>
+                                  <SelectItem value="reps">reps</SelectItem>
+                                  <SelectItem value="qualitativo">qual.</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={criterion.maxScore}
+                                onChange={(e) => {
+                                  const updated = [...editCriteriaWithRanges];
+                                  updated[criterionIndex] = { ...updated[criterionIndex], maxScore: parseInt(e.target.value) || 1 };
+                                  setEditCriteriaWithRanges(updated);
+                                }}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Gender Ranges Toggle */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`edit-criterion-${criterionIndex}-gender`}
+                              checked={criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F}
+                              onCheckedChange={(checked: boolean) => {
+                                const updated = [...editCriteriaWithRanges];
+                                if (checked) {
+                                  updated[criterionIndex] = {
+                                    ...updated[criterionIndex],
+                                    ranges: {
+                                      M: criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }],
+                                      F: [{ min: 0, max: 100, score: 6 }]
+                                    }
+                                  };
+                                } else {
+                                  const maleRanges = criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }];
+                                  updated[criterionIndex] = {
+                                    ...updated[criterionIndex],
+                                    ranges: { M: maleRanges, F: maleRanges }
+                                  };
+                                }
+                                setEditCriteriaWithRanges(updated);
+                              }}
+                              className="rounded"
+                            />
+                            <Label htmlFor={`edit-criterion-${criterionIndex}-gender`} className="text-xs cursor-pointer">
+                              Fasce diverse per M/F
+                            </Label>
+                          </div>
+
+                          {/* Ranges for Male */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-medium flex items-center gap-1">
+                                <IconGenderMale className="h-3 w-3 text-blue-500" />
+                                {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                              </Label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const updated = [...editCriteriaWithRanges];
+                                  const currentRanges = updated[criterionIndex].ranges?.M || [];
+                                  updated[criterionIndex] = {
+                                    ...updated[criterionIndex],
+                                    ranges: {
+                                      ...updated[criterionIndex].ranges,
+                                      M: [...currentRanges, { min: 0, max: 100, score: 6 }]
+                                    }
+                                  };
+                                  setEditCriteriaWithRanges(updated);
+                                }}
+                                className="h-6 text-xs"
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Aggiungi
+                              </Button>
+                            </div>
+                            <div className="space-y-1">
+                              {(criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }]).map((range, rangeIndex) => (
+                                <div key={rangeIndex} className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={range.min}
+                                    onChange={(e) => {
+                                      const updated = [...editCriteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                      };
+                                      setEditCriteriaWithRanges(updated);
+                                    }}
+                                    className="h-7 text-xs"
+                                  />
+                                  <Input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={range.max}
+                                    onChange={(e) => {
+                                      const updated = [...editCriteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                      };
+                                      setEditCriteriaWithRanges(updated);
+                                    }}
+                                    className="h-7 text-xs"
+                                  />
+                                  <Select
+                                    value={range.score.toString()}
+                                    onValueChange={(v) => {
+                                      const updated = [...editCriteriaWithRanges];
+                                      const ranges = [...(updated[criterionIndex].ranges?.M || [])];
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], score: parseFloat(v) };
+                                      updated[criterionIndex] = {
+                                        ...updated[criterionIndex],
+                                        ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                      };
+                                      setEditCriteriaWithRanges(updated);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 text-xs w-16">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {italianScores.map((score) => (
+                                        <SelectItem key={score} value={score.toString()}>
+                                          {score}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(criterion.ranges?.M || []).length > 1 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        const updated = [...editCriteriaWithRanges];
+                                        const ranges = (updated[criterionIndex].ranges?.M || []).filter((_, i) => i !== rangeIndex);
+                                        updated[criterionIndex] = {
+                                          ...updated[criterionIndex],
+                                          ranges: { ...updated[criterionIndex].ranges, M: ranges }
+                                        };
+                                        setEditCriteriaWithRanges(updated);
+                                      }}
+                                      className="h-7 w-7 p-0 text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Ranges for Female (if enabled) */}
+                          {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F && (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-xs font-medium flex items-center gap-1">
+                                  <IconGenderFemale className="h-3 w-3 text-pink-500" />
+                                  Fasce Femmine
+                                </Label>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const updated = [...editCriteriaWithRanges];
+                                    const currentRanges = updated[criterionIndex].ranges?.F || [];
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: {
+                                        ...updated[criterionIndex].ranges,
+                                        F: [...currentRanges, { min: 0, max: 100, score: 6 }]
+                                      }
+                                    };
+                                    setEditCriteriaWithRanges(updated);
+                                  }}
+                                  className="h-6 text-xs"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  Aggiungi
+                                </Button>
+                              </div>
+                              <div className="space-y-1">
+                                {(criterion.ranges?.F || []).map((range, rangeIndex) => (
+                                  <div key={rangeIndex} className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      placeholder="Min"
+                                      value={range.min}
+                                      onChange={(e) => {
+                                        const updated = [...editCriteriaWithRanges];
+                                        const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                        updated[criterionIndex] = {
+                                          ...updated[criterionIndex],
+                                          ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                        };
+                                        setEditCriteriaWithRanges(updated);
+                                      }}
+                                      className="h-7 text-xs"
+                                    />
+                                    <Input
+                                      type="number"
+                                      placeholder="Max"
+                                      value={range.max}
+                                      onChange={(e) => {
+                                        const updated = [...editCriteriaWithRanges];
+                                        const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                        updated[criterionIndex] = {
+                                          ...updated[criterionIndex],
+                                          ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                        };
+                                        setEditCriteriaWithRanges(updated);
+                                      }}
+                                      className="h-7 text-xs"
+                                    />
+                                    <Select
+                                      value={range.score.toString()}
+                                      onValueChange={(v) => {
+                                        const updated = [...editCriteriaWithRanges];
+                                        const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], score: parseFloat(v) };
+                                        updated[criterionIndex] = {
+                                          ...updated[criterionIndex],
+                                          ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                        };
+                                        setEditCriteriaWithRanges(updated);
+                                      }}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs w-16">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {italianScores.map((score) => (
+                                          <SelectItem key={score} value={score.toString()}>
+                                            {score}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {(criterion.ranges?.F || []).length > 1 && (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => {
+                                          const updated = [...editCriteriaWithRanges];
+                                          const ranges = (updated[criterionIndex].ranges?.F || []).filter((_, i) => i !== rangeIndex);
+                                          updated[criterionIndex] = {
+                                            ...updated[criterionIndex],
+                                            ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                          };
+                                          setEditCriteriaWithRanges(updated);
+                                        }}
+                                        className="h-7 w-7 p-0 text-destructive"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditCriteriaWithRanges([...editCriteriaWithRanges, { name: '', unit: 'cm', maxScore: 10, ranges: { M: [{ min: 0, max: 100, score: 6 }] } }])}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Aggiungi Criterio
+                    </Button>
+
+                    <div className="p-3 rounded-lg bg-primary/10 text-center">
+                      <p className="text-sm font-medium">
+                        Punteggio Totale Massimo: {editCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* View Mode - Show ranges or criteria */}
                 {!isEditing && (
                   <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
@@ -1465,6 +2263,68 @@ export default function Exercises() {
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Nessun criterio di valutazione configurato</p>
+                      )
+                    ) : (selectedExercise.evaluationType === 'criteria-ranges') ? (
+                      /* Criteria with Ranges view */
+                      selectedExercise.evaluationCriteriaWithRanges && selectedExercise.evaluationCriteriaWithRanges.length > 0 ? (
+                        <div className="space-y-4">
+                          <div className="grid gap-3">
+                            {selectedExercise.evaluationCriteriaWithRanges.map((criterion, i) => (
+                              <div key={i} className="p-3 bg-background rounded-lg border space-y-2">
+                                <div className="flex justify-between items-center border-b pb-2">
+                                  <div className="font-medium flex items-center gap-2">
+                                    <Badge variant="outline" className="h-5 text-[10px]">{criterion.unit}</Badge>
+                                    {criterion.name}
+                                  </div>
+                                  <Badge variant="secondary">Max: {criterion.maxScore}</Badge>
+                                </div>
+
+                                {/* Ranges Preview */}
+                                <div className="space-y-4 pt-2">
+                                  {criterion.ranges?.M && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                        <IconGenderMale className="h-3.5 w-3.5 text-blue-500" />
+                                        Fasce {criterion.ranges?.F ? 'Maschi' : 'Uniche'}
+                                      </div>
+                                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
+                                        {criterion.ranges.M.map((r, idx) => (
+                                          <div key={idx} className="p-1.5 bg-muted/40 rounded border text-center whitespace-nowrap">
+                                            {r.min}-{r.max} → <strong>{r.score}</strong>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {criterion.ranges?.F && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                                        <IconGenderFemale className="h-3.5 w-3.5 text-pink-500" />
+                                        Fasce Femmine
+                                      </div>
+                                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
+                                        {criterion.ranges.F.map((r, idx) => (
+                                          <div key={idx} className="p-1.5 bg-muted/40 rounded border text-center whitespace-nowrap">
+                                            {r.min}-{r.max} → <strong>{r.score}</strong>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="p-3 rounded-lg bg-primary/10 text-center">
+                            <p className="text-sm font-medium">
+                              Punteggio Totale Massimo: {selectedExercise.evaluationCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nessun criterio con fasce configurato</p>
                       )
                     ) : (
                       /* Ranges view */

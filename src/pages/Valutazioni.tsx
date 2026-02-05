@@ -123,6 +123,8 @@ export default function Valutazioni() {
     const [notesValue, setNotesValue] = useState<string>("");
     // Criteria scores state for criteria-based evaluation
     const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>({});
+    // Criteria performances state for criteria-ranges evaluation
+    const [criteriaPerformances, setCriteriaPerformances] = useState<Record<string, number>>({});
 
     // Filter exercises based on selected class
     const filteredExercises = useMemo(() => {
@@ -271,6 +273,12 @@ export default function Valutazioni() {
         } else {
             setCriteriaScores({});
         }
+        // Load criteria performances if they exist
+        if (evaluation.criteriaPerformances) {
+            setCriteriaPerformances(evaluation.criteriaPerformances);
+        } else {
+            setCriteriaPerformances({});
+        }
     };
 
     // Save evaluation changes - this creates a new record (backend will have duplicates, but we deduplicate on frontend)
@@ -285,6 +293,7 @@ export default function Valutazioni() {
         try {
             let calculatedScore = 0;
             const isCriteriaBased = exercise.evaluationType === 'criteria' && exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0;
+            const isCriteriaRangesBased = exercise.evaluationType === 'criteria-ranges' && exercise.evaluationCriteriaWithRanges && exercise.evaluationCriteriaWithRanges.length > 0;
 
             if (confirmed) {
                 if (isCriteriaBased) {
@@ -302,6 +311,42 @@ export default function Valutazioni() {
                         calculatedScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
                     }
                     calculatedScore = Math.round(calculatedScore * 10) / 10; // Round to 1 decimal
+                } else if (isCriteriaRangesBased) {
+                    // Calculate score from criteria with ranges
+                    const calculatedCriteriaScores: Record<string, number> = {};
+                    let totalScored = 0;
+                    let totalMax = 0;
+
+                    exercise.evaluationCriteriaWithRanges!.forEach(criterion => {
+                        const performance = criteriaPerformances[criterion.name];
+                        if (performance !== undefined && !isNaN(performance)) {
+                            // Get ranges for this criterion based on student gender
+                            const ranges = criterion.ranges?.[student.gender] || criterion.ranges?.['M'];
+                            if (ranges && ranges.length > 0) {
+                                // Find matching range
+                                for (const range of ranges) {
+                                    if (performance >= range.min && performance <= range.max) {
+                                        calculatedCriteriaScores[criterion.name] = range.score;
+                                        totalScored += range.score;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        totalMax += criterion.maxScore;
+                    });
+
+                    const maxScore = exercise.maxScore || 10;
+                    if (settings.enableBasePoint) {
+                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                        calculatedScore = 1 + (percentage * (maxScore - 1));
+                    } else {
+                        calculatedScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                    }
+                    calculatedScore = Math.round(calculatedScore * 10) / 10;
+
+                    // Store calculated scores
+                    setCriteriaScores(calculatedCriteriaScores);
                 } else {
                     // Calculate score from performance value using ranges
                     const performanceNum = parseFloat(performanceInputValue);
@@ -327,10 +372,11 @@ export default function Valutazioni() {
             await client.createEvaluation({
                 studentId: selectedEvaluationForGrading.studentId,
                 exerciseId: selectedEvaluationForGrading.exerciseId,
-                performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : performanceInputValue,
+                performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : isCriteriaRangesBased ? JSON.stringify(criteriaPerformances) : performanceInputValue,
                 score: calculatedScore,
                 comments: notesValue,
-                criteriaScores: isCriteriaBased ? criteriaScores : undefined,
+                criteriaScores: isCriteriaBased || isCriteriaRangesBased ? criteriaScores : undefined,
+                criteriaPerformances: isCriteriaRangesBased ? criteriaPerformances : undefined,
             });
 
             await refreshEvaluations();
@@ -338,14 +384,16 @@ export default function Valutazioni() {
             if (confirmed) {
                 setSelectedEvaluationForGrading(null);
                 setCriteriaScores({});
+                setCriteriaPerformances({});
             } else {
                 // Update the object manually so UI reflects change without closing.
                 setSelectedEvaluationForGrading({
                     ...selectedEvaluationForGrading,
-                    performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : performanceInputValue,
+                    performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : isCriteriaRangesBased ? JSON.stringify(criteriaPerformances) : performanceInputValue,
                     score: calculatedScore,
                     comments: notesValue,
-                    criteriaScores: isCriteriaBased ? criteriaScores : undefined,
+                    criteriaScores: isCriteriaBased || isCriteriaRangesBased ? criteriaScores : undefined,
+                    criteriaPerformances: isCriteriaRangesBased ? criteriaPerformances : undefined,
                 } as Evaluation);
             }
         } catch (error) {
@@ -765,6 +813,106 @@ export default function Valutazioni() {
                                                     );
                                                 })()}
                                             </div>
+                                        ) : gradingExercise.evaluationType === 'criteria-ranges' && gradingExercise.evaluationCriteriaWithRanges && gradingExercise.evaluationCriteriaWithRanges.length > 0 ? (
+                                            /* Criteria with Ranges evaluation */
+                                            <div className="space-y-3">
+                                                <Label>Prestazioni per Criterio</Label>
+                                                <div className="space-y-2">
+                                                    {gradingExercise.evaluationCriteriaWithRanges.map((criterion) => {
+                                                        const performance = criteriaPerformances[criterion.name];
+                                                        let calculatedScore: number | null = null;
+
+                                                        // Calculate score from performance if value exists
+                                                        if (performance !== undefined && !isNaN(performance)) {
+                                                            const ranges = criterion.ranges?.[gradingStudent.gender] || criterion.ranges?.['M'];
+                                                            if (ranges && ranges.length > 0) {
+                                                                for (const range of ranges) {
+                                                                    if (performance >= range.min && performance <= range.max) {
+                                                                        calculatedScore = range.score;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+
+                                                        return (
+                                                            <div key={criterion.name} className="p-3 rounded-lg bg-muted/30 space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <p className="text-sm font-medium">{criterion.name}</p>
+                                                                        <p className="text-xs text-muted-foreground">Max: {criterion.maxScore} punti</p>
+                                                                    </div>
+                                                                    {calculatedScore !== null && (
+                                                                        <Badge variant="secondary" className="ml-2">
+                                                                            {calculatedScore} pt
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Input
+                                                                        type="text"
+                                                                        placeholder={`Inserisci ${criterion.unit}`}
+                                                                        value={criteriaPerformances[criterion.name] ?? ''}
+                                                                        onChange={(e) => {
+                                                                            const val = parseFloat(e.target.value);
+                                                                            setCriteriaPerformances({
+                                                                                ...criteriaPerformances,
+                                                                                [criterion.name]: isNaN(val) ? 0 : val
+                                                                            });
+                                                                        }}
+                                                                        className="flex-1 h-8"
+                                                                    />
+                                                                    <span className="text-xs text-muted-foreground w-12">{criterion.unit}</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* Criteria-ranges score preview */}
+                                                {(() => {
+                                                    let totalScored = 0;
+                                                    let totalMax = 0;
+
+                                                    gradingExercise.evaluationCriteriaWithRanges.forEach(criterion => {
+                                                        const performance = criteriaPerformances[criterion.name];
+                                                        if (performance !== undefined && !isNaN(performance)) {
+                                                            const ranges = criterion.ranges?.[gradingStudent.gender] || criterion.ranges?.['M'];
+                                                            if (ranges && ranges.length > 0) {
+                                                                for (const range of ranges) {
+                                                                    if (performance >= range.min && performance <= range.max) {
+                                                                        totalScored += range.score;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        totalMax += criterion.maxScore;
+                                                    });
+
+                                                    const maxScore = gradingExercise.maxScore || 10;
+                                                    let calculatedGrade = 0;
+                                                    if (settings.enableBasePoint) {
+                                                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+                                                        calculatedGrade = 1 + (percentage * (maxScore - 1));
+                                                    } else {
+                                                        calculatedGrade = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+                                                    }
+
+                                                    const roundedGrade = Math.round(calculatedGrade * 10) / 10;
+
+                                                    return (
+                                                        <div className="p-4 rounded-lg bg-muted/50 text-center">
+                                                            <p className="text-sm text-muted-foreground mb-1">
+                                                                Punteggio: {totalScored} / {totalMax}
+                                                            </p>
+                                                            <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
+                                                                {formatGrade(roundedGrade)}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })()}
+                                            </div>
                                         ) : (
                                             /* Range-based evaluation */
                                             <>
@@ -824,10 +972,12 @@ export default function Valutazioni() {
                                         {/* Action buttons */}
                                         {(() => {
                                             const isCriteriaBased = gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0;
+                                            const isCriteriaRangesBased = gradingExercise.evaluationType === 'criteria-ranges' && gradingExercise.evaluationCriteriaWithRanges && gradingExercise.evaluationCriteriaWithRanges.length > 0;
                                             const hasCriteriaInput = isCriteriaBased && Object.values(criteriaScores).some(v => v > 0);
-                                            const hasRangeInput = !isCriteriaBased && performanceInputValue;
-                                            const hasAnyInput = hasCriteriaInput || hasRangeInput;
-                                            const canConfirm = isCriteriaBased ? hasCriteriaInput : (hasRangeInput && gradingPreviewScore !== null);
+                                            const hasCriteriaRangesInput = isCriteriaRangesBased && Object.values(criteriaPerformances).some(v => v !== undefined && !isNaN(v) && v !== 0);
+                                            const hasRangeInput = !isCriteriaBased && !isCriteriaRangesBased && performanceInputValue;
+                                            const hasAnyInput = hasCriteriaInput || hasCriteriaRangesInput || hasRangeInput;
+                                            const canConfirm = isCriteriaBased ? hasCriteriaInput : isCriteriaRangesBased ? hasCriteriaRangesInput : (hasRangeInput && gradingPreviewScore !== null);
 
                                             return (
                                                 <div className="grid grid-cols-2 gap-3 w-full">
@@ -852,7 +1002,7 @@ export default function Valutazioni() {
                                                         ) : (
                                                             <Check className="mr-2 h-4 w-4" />
                                                         )}
-                                                        Conferma
+                                                        Conferma Voto
                                                     </Button>
                                                 </div>
                                             );

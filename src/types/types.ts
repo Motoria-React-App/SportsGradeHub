@@ -59,9 +59,10 @@ export interface Exercise {
     name: string;
     unit: 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';
     maxScore?: number;
-    evaluationType?: 'range' | 'criteria';  // Tipo di valutazione (default: 'range')
+    evaluationType?: 'range' | 'criteria' | 'criteria-ranges';  // Tipo di valutazione (default: 'range')
     evaluationRanges?: Partial<Record<Gender, ScoreRange[]>>;  // Per valutazione per fasce
     evaluationCriteria?: EvaluationCriterion[];  // Per valutazione per criteri
+    evaluationCriteriaWithRanges?: CriterionWithRanges[];  // Per valutazione per criteri con fasce
     createdAt: string;
     updatedAt: string;
 }
@@ -78,6 +79,14 @@ export interface EvaluationCriterion {
     maxScore: number;   // Punteggio massimo per questo criterio
 }
 
+// Criterio di valutazione con fasce (per valutazione ibrida)
+export interface CriterionWithRanges {
+    name: string;                                          // Nome del criterio (es. "Ricezione", "Battuta")
+    unit: 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';   // Unità di misura per questo criterio
+    maxScore: number;                                      // Punteggio massimo per questo criterio
+    ranges?: Partial<Record<Gender, ScoreRange[]>>;        // Fasce di valutazione per genere
+}
+
 export interface Evaluation {
     id: string;
     studentId: string;
@@ -86,6 +95,7 @@ export interface Evaluation {
     performanceValue: string | number;
     score: number;
     criteriaScores?: Record<string, number>;  // Punteggi per criterio (nome criterio -> punteggio)
+    criteriaPerformances?: Record<string, number>;  // Prestazioni grezze per criterio (solo per criteria-ranges)
     createdAt: string;
     updatedAt: string;
     comments?: string;

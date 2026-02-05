@@ -20,6 +20,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useAuth, useClient } from "./provider/clientProvider";
 import { useEffect } from "react";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { EasterEgg } from "@/components/EasterEgg";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <CommandDialogDemo />
+        <OnboardingTour />
         {children}
       </SidebarInset>
     </SidebarProvider>
