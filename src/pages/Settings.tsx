@@ -1124,7 +1124,7 @@ export default function Settings() {
 
                                 <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 p-4">
                                     <div className="flex">
-                                        <div className="flex-shrink-0">
+                                        <div className="shrink-0">
                                             <Database className="h-5 w-5 text-blue-400" aria-hidden="true" />
                                         </div>
                                         <div className="ml-3">
