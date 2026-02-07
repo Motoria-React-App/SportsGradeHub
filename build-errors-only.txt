@@ -1,0 +1,38 @@
+﻿
+src/components/OnboardingT
+our.tsx(66,15): error 
+TS6133: 
+'hasCompletedTour' is 
+declared but its value is 
+never read.
+src/pages/Exercises.tsx(3,
+29): error TS6133: 
+'CardDescription' is 
+declared but its value is 
+never read.
+src/pages/Exercises.tsx(70
+7,26): error TS18048: 
+'ex.evaluationType' is 
+possibly 'undefined'.
+src/pages/Exercises.tsx(70
+9,33): error TS2339: 
+Property 'requiresGender' 
+does not exist on type 
+'Exercise'.
+src/pages/Exercises.tsx(84
+1,32): error TS18048: 
+'ex.evaluationType' is 
+possibly 'undefined'.
+src/pages/Exercises.tsx(84
+3,39): error TS2339: 
+Property 'requiresGender' 
+does not exist on type 
+'Exercise'.
+src/pages/Exercises.tsx(10
+90,93): error TS2345: 
+Argument of type 'number 
+| ""' is not assignable 
+to parameter of type 
+'number'.
+
+

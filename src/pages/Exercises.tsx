@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -704,7 +704,7 @@ export default function Exercises() {
                             📏 Fasce
                           </Badge>
                         )}
-                        {ex.evaluationType.includes('ranges') && (
+                        {ex.evaluationType?.includes('ranges') && (
                           <Badge variant="secondary" className="font-normal text-[10px]">
                             {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
                           </Badge>
@@ -838,7 +838,7 @@ export default function Exercises() {
                                   📏 Fasce
                                 </Badge>
                               )}
-                              {ex.evaluationType.includes('ranges') && (
+                              {ex.evaluationType?.includes('ranges') && (
                                 <Badge variant="secondary" className="font-normal text-[10px]">
                                   {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
                                 </Badge>
@@ -1086,7 +1086,7 @@ export default function Exercises() {
                               onBlur={(e) => {
                                 // Ensure minimum value of 1 on blur
                                 const updated = [...criteria];
-                                const val = e.target.value === '' ? '' : (parseInt(e.target.value) || 1);
+                                const val = e.target.value === '' ? 1 : (parseInt(e.target.value) || 1);
                                 updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
                                 setCriteria(updated);
                               }}

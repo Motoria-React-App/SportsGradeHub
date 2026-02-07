@@ -64,7 +64,7 @@ export function OnboardingTour() {
 
     useEffect(() => {
         const hasCompletedTour = localStorage.getItem("onboarding_completed");
-        if (true) {
+        if (!hasCompletedTour) {
             setOpen(true);
         }
     }, []);

@@ -63,6 +63,7 @@ export interface Exercise {
     evaluationRanges?: Partial<Record<Gender, ScoreRange[]>>;  // Per valutazione per fasce
     evaluationCriteria?: EvaluationCriterion[];  // Per valutazione per criteri
     evaluationCriteriaWithRanges?: CriterionWithRanges[];  // Per valutazione per criteri con fasce
+    requiresGender?: boolean;  // Indica se l'esercizio richiede fasce diverse per genere
     createdAt: string;
     updatedAt: string;
 }
