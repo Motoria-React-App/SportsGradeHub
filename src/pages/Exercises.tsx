@@ -16,6 +16,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
+import { useSettings } from "@/provider/settingsProvider";
 import type { Exercise, Gender, ScoreRange, EvaluationCriterion, CriterionWithRanges } from "@/types/types";
 import {
   Search,
@@ -64,6 +65,9 @@ const italianScores = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8
 // Backend unit type
 type BackendUnit = 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';
 
+// Special group ID for unassigned exercises
+const UNASSIGNED_GROUP_ID = "unassigned";
+
 export default function Exercises() {
   const {
     exercises,
@@ -72,6 +76,7 @@ export default function Exercises() {
     refreshExerciseGroups
   } = useSchoolData();
   const client = useClient();
+  const { settings } = useSettings();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
@@ -219,7 +224,8 @@ export default function Exercises() {
     if (!formData.name.trim()) {
       newErrors.name = "Il nome dell'esercizio è obbligatorio";
     }
-    if (!formData.exerciseGroupId) {
+    // Only require group if exercise groups are enabled
+    if (settings.enableExerciseGroups && !formData.exerciseGroupId) {
       newErrors.exerciseGroupId = "Seleziona un gruppo di esercizi";
     }
     if (!formData.unit) {
@@ -271,9 +277,12 @@ export default function Exercises() {
       // Build criteria with ranges if type is 'criteria-ranges'
       const validCriteriaWithRanges = criteriaWithRanges.filter(c => c.name.trim() !== '');
 
+      // Use UNASSIGNED_GROUP_ID if groups are disabled and no group is provided
+      const groupId = formData.exerciseGroupId || (!settings.enableExerciseGroups ? UNASSIGNED_GROUP_ID : '');
+
       const response = await client.createExercise({
         name: formData.name,
-        exerciseGroupId: formData.exerciseGroupId,
+        exerciseGroupId: groupId,
         unit: formData.unit,
         maxScore: formData.maxScore,
         evaluationType,
@@ -522,7 +531,7 @@ export default function Exercises() {
                 <Input
                   type="text"
                   value={range.min}
-                  onChange={(e) => updateRange(gender, index, 'min', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => updateRange(gender, index, 'min', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                   className="h-8"
                 />
               </div>
@@ -531,7 +540,7 @@ export default function Exercises() {
                 <Input
                   type="text"
                   value={range.max}
-                  onChange={(e) => updateRange(gender, index, 'max', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => updateRange(gender, index, 'max', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                   className="h-8"
                 />
               </div>
@@ -584,10 +593,12 @@ export default function Exercises() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
-            <FolderPlus className="h-4 w-4" />
-            Nuovo Gruppo
-          </Button>
+          {settings.enableExerciseGroups && (
+            <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
+              <FolderPlus className="h-4 w-4" />
+              Nuovo Gruppo
+            </Button>
+          )}
           <Button className="gap-2 shadow-md hover:shadow-lg transition-all bg-linear-to-r from-primary to-primary/90" onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4" />
             Nuovo Esercizio
@@ -611,6 +622,8 @@ export default function Exercises() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          {/* Only show group filter when groups are enabled */}
+          {settings.enableExerciseGroups && (
           <Select value={selectedGroup} onValueChange={setSelectedGroup}>
             <SelectTrigger className="w-full sm:w-[220px] bg-background/50 border-muted-foreground/20">
               <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -625,39 +638,132 @@ export default function Exercises() {
               ))}
             </SelectContent>
           </Select>
+          )}
         </div>
         <div className="text-sm font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
           {filteredExercises.length} esercizi trovati
         </div>
       </div>
 
-      {/* Exercise Groups Display */}
+      {/* Exercise Display - Conditional based on groups enabled/disabled */}
       <div className="space-y-10 pb-10">
-        {orderedGroups.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed rounded-xl border-muted-foreground/20 bg-muted/5">
-            <div className="bg-background p-4 rounded-full shadow-sm">
-              <Activity className="h-10 w-10 text-primary/50" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold">Nessun gruppo trovato</h3>
-              <p className="text-muted-foreground max-w-sm mx-auto">
-                Non hai ancora creato gruppi di esercizi o la ricerca non ha prodotto risultati.
-              </p>
-            </div>
-            {(searchQuery || selectedGroup !== 'all') && (
-              <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedGroup('all'); }}>
-                Azzera filtri
-              </Button>
+        {/* When groups are DISABLED - show flat list */}
+        {!settings.enableExerciseGroups && (
+          <div className="space-y-5">
+            {filteredExercises.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed rounded-xl border-muted-foreground/20 bg-muted/5">
+                <div className="bg-background p-4 rounded-full shadow-sm">
+                  <Activity className="h-10 w-10 text-primary/50" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold">Nessun esercizio trovato</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    Non hai ancora creato esercizi o la ricerca non ha prodotto risultati.
+                  </p>
+                </div>
+                {searchQuery && (
+                  <Button variant="link" onClick={() => setSearchQuery('')}>
+                    Azzera filtri
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredExercises.map((ex) => (
+                  <Card key={ex.id} className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group/card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
+                        {ex.name}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          {unitIcons[ex.unit]}
+                          <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
+                        </div>
+                        {ex.maxScore && (
+                          <>
+                            <span>•</span>
+                            <span className="font-medium">Max {ex.maxScore} pt</span>
+                          </>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="flex-1 pb-3 space-y-2">
+                      <div className="flex flex-wrap gap-1.5 text-xs items-center">
+                        {ex.evaluationType === 'criteria' ? (
+                          <Badge variant="outline" className="font-normal">
+                            ⭐ {ex.evaluationCriteria?.length || 0} Criteri
+                          </Badge>
+                        ) : ex.evaluationType === 'criteria-ranges' ? (
+                          <Badge variant="outline" className="font-normal">
+                            📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="font-normal">
+                            📏 Fasce
+                          </Badge>
+                        )}
+                        {ex.evaluationType.includes('ranges') && (
+                          <Badge variant="secondary" className="font-normal text-[10px]">
+                            {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="pt-0 flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive h-8 w-8"
+                        onClick={() => openDeleteDialog(ex)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-8 text-xs"
+                        onClick={() => openDetailDialog(ex)}
+                      >
+                        Dettagli
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         )}
 
-        {orderedGroups.map((groupId) => {
-          const groupExercises = exercisesByGroup[groupId] || [];
-          const groupName = getGroupName(groupId);
+        {/* When groups are ENABLED - show grouped sections */}
+        {settings.enableExerciseGroups && (
+          <>
+            {orderedGroups.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 border-2 border-dashed rounded-xl border-muted-foreground/20 bg-muted/5">
+                <div className="bg-background p-4 rounded-full shadow-sm">
+                  <Activity className="h-10 w-10 text-primary/50" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold">Nessun gruppo trovato</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    Non hai ancora creato gruppi di esercizi o la ricerca non ha prodotto risultati.
+                  </p>
+                </div>
+                {(searchQuery || selectedGroup !== 'all') && (
+                  <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedGroup('all'); }}>
+                    Azzera filtri
+                  </Button>
+                )}
+              </div>
+            )}
 
-          return (
-            <div key={groupId} className="space-y-5 animate-in slide-in-from-bottom duration-500 fade-in">
+            {orderedGroups.map((groupId) => {
+              const groupExercises = exercisesByGroup[groupId] || [];
+              const groupName = getGroupName(groupId);
+
+              return (
+                <div key={groupId} className="space-y-5 animate-in slide-in-from-bottom duration-500 fade-in">
               {/* Section Header */}
               <div className="flex items-center gap-4 group/header">
                 <div className="flex items-center gap-3 pl-2">
@@ -698,56 +804,60 @@ export default function Exercises() {
                   <CarouselContent className="-ml-3 md:-ml-5 pb-4">
                     {groupExercises.map((ex) => (
                       <CarouselItem key={ex.id} className="pl-3 md:pl-5 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                        <Card className="flex flex-col h-full hover:shadow-md transition-all duration-200 cursor-pointer group/card border-muted/60">
+                        <Card className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group/card">
                           <CardHeader className="pb-3">
-                            <div className="flex justify-between items-start gap-2">
-                              <div className="space-y-1">
-                                <CardTitle className="text-base font-bold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
-                                  {ex.name}
-                                </CardTitle>
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  {unitIcons[ex.unit]}
-                                  <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
-                                </p>
+                            <CardTitle className="text-base font-semibold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
+                              {ex.name}
+                            </CardTitle>
+                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                {unitIcons[ex.unit]}
+                                <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
                               </div>
+                              {ex.maxScore && (
+                                <>
+                                  <span>•</span>
+                                  <span className="font-medium">Max {ex.maxScore} pt</span>
+                                </>
+                              )}
                             </div>
                           </CardHeader>
 
-                          <CardContent className="flex-1 pb-3 space-y-3">
-                            <div className="flex flex-wrap gap-2 text-xs">
-                              {ex.maxScore && (
-                                <Badge variant="secondary" className="font-normal bg-secondary/50 hover:bg-secondary/70">
-                                  Max: {ex.maxScore} pt
-                                </Badge>
-                              )}
-
+                          <CardContent className="flex-1 pb-3 space-y-2">
+                            <div className="flex flex-wrap gap-1.5 text-xs items-center">
                               {ex.evaluationType === 'criteria' ? (
-                                <Badge variant="outline" className="font-normal border-purple-200 text-purple-700 bg-purple-50">
-                                  {ex.evaluationCriteria?.length || 0} Criteri
+                                <Badge variant="outline" className="font-normal">
+                                  ⭐ {ex.evaluationCriteria?.length || 0} Criteri
                                 </Badge>
                               ) : ex.evaluationType === 'criteria-ranges' ? (
-                                <Badge variant="outline" className="font-normal border-indigo-200 text-indigo-700 bg-indigo-50">
-                                  {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                                <Badge variant="outline" className="font-normal">
+                                  📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="font-normal border-blue-200 text-blue-700 bg-blue-50">
-                                  Fasce
+                                <Badge variant="outline" className="font-normal">
+                                  📏 Fasce
+                                </Badge>
+                              )}
+                              {ex.evaluationType.includes('ranges') && (
+                                <Badge variant="secondary" className="font-normal text-[10px]">
+                                  {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
                                 </Badge>
                               )}
                             </div>
                           </CardContent>
 
-                          <CardFooter className="pt-0 flex justify-between gap-2">
+                          <CardFooter className="pt-0 flex gap-2">
                             <Button
                               variant="ghost"
-                              className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                              size="icon"
+                              className="text-muted-foreground hover:text-destructive h-8 w-8"
                               onClick={() => openDeleteDialog(ex)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
-                              className="flex-1 h-8 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-all"
+                              className="flex-1 h-8 text-xs"
                               onClick={() => openDetailDialog(ex)}
                             >
                               Dettagli
@@ -764,6 +874,8 @@ export default function Exercises() {
             </div>
           );
         })}
+          </>
+        )}
       </div>
 
       {/* Add Exercise Dialog */}
@@ -793,32 +905,34 @@ export default function Exercises() {
               {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
             </div>
 
-            {/* Exercise Group Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="exercise-group">Gruppo Esercizi *</Label>
-              <Select
-                value={formData.exerciseGroupId}
-                onValueChange={(value) => setFormData({ ...formData, exerciseGroupId: value })}
-              >
-                <SelectTrigger id="exercise-group" className={errors.exerciseGroupId ? "border-destructive" : ""}>
-                  <SelectValue placeholder="Seleziona un gruppo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {exerciseGroups.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
-                      Nessun gruppo. Creane uno prima.
-                    </div>
-                  ) : (
-                    exerciseGroups.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.groupName}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-              {errors.exerciseGroupId && <p className="text-sm text-destructive">{errors.exerciseGroupId}</p>}
-            </div>
+            {/* Exercise Group Selection - only show if enabled */}
+            {settings.enableExerciseGroups && (
+              <div className="space-y-2">
+                <Label htmlFor="exercise-group">Gruppo Esercizi *</Label>
+                <Select
+                  value={formData.exerciseGroupId}
+                  onValueChange={(value) => setFormData({ ...formData, exerciseGroupId: value })}
+                >
+                  <SelectTrigger id="exercise-group" className={errors.exerciseGroupId ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Seleziona un gruppo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {exerciseGroups.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Nessun gruppo. Creane uno prima.
+                      </div>
+                    ) : (
+                      exerciseGroups.map((group) => (
+                        <SelectItem key={group.id} value={group.id}>
+                          {group.groupName}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.exerciseGroupId && <p className="text-sm text-destructive">{errors.exerciseGroupId}</p>}
+              </div>
+            )}
 
             {/* Unit Selection */}
             <div className="grid grid-cols-2 gap-4">
@@ -850,7 +964,7 @@ export default function Exercises() {
                   min="1"
                   max="10"
                   value={formData.maxScore}
-                  onChange={(e) => setFormData({ ...formData, maxScore: parseInt(e.target.value) || 10 })}
+                  onChange={(e) => setFormData({ ...formData, maxScore: e.target.value === '' ? 10 : (parseInt(e.target.value) || 10) })}
                 />
               </div>
             </div>
@@ -972,7 +1086,7 @@ export default function Exercises() {
                               onBlur={(e) => {
                                 // Ensure minimum value of 1 on blur
                                 const updated = [...criteria];
-                                const val = parseInt(e.target.value) || 1;
+                                const val = e.target.value === '' ? '' : (parseInt(e.target.value) || 1);
                                 updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
                                 setCriteria(updated);
                               }}
@@ -1085,7 +1199,8 @@ export default function Exercises() {
                               value={criterion.maxScore}
                               onChange={(e) => {
                                 const updated = [...criteriaWithRanges];
-                                updated[criterionIndex] = { ...updated[criterionIndex], maxScore: parseInt(e.target.value) || 1 };
+                                const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                updated[criterionIndex] = { ...updated[criterionIndex], maxScore: val || 1 };
                                 setCriteriaWithRanges(updated);
                               }}
                               className="h-8"
@@ -1163,7 +1278,7 @@ export default function Exercises() {
                                   onChange={(e) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -1179,7 +1294,7 @@ export default function Exercises() {
                                   onChange={(e) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -1276,7 +1391,7 @@ export default function Exercises() {
                                     onChange={(e) => {
                                       const updated = [...criteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, F: ranges }
@@ -1292,7 +1407,7 @@ export default function Exercises() {
                                     onChange={(e) => {
                                       const updated = [...criteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, F: ranges }
@@ -1516,30 +1631,32 @@ export default function Exercises() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Gruppo</Label>
-                    {isEditing ? (
-                      <Select
-                        value={editFormData.exerciseGroupId}
-                        onValueChange={(value) => setEditFormData({ ...editFormData, exerciseGroupId: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {exerciseGroups.map((group) => (
-                            <SelectItem key={group.id} value={group.id}>
-                              {group.groupName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="p-3 bg-muted rounded-md">{getGroupName(selectedExercise.exerciseGroupId)}</div>
-                    )}
-                  </div>
+                  {settings.enableExerciseGroups && (
+                    <div className="space-y-2">
+                      <Label>Gruppo</Label>
+                      {isEditing ? (
+                        <Select
+                          value={editFormData.exerciseGroupId}
+                          onValueChange={(value) => setEditFormData({ ...editFormData, exerciseGroupId: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {exerciseGroups.map((group) => (
+                              <SelectItem key={group.id} value={group.id}>
+                                {group.groupName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="p-3 bg-muted rounded-md">{getGroupName(selectedExercise.exerciseGroupId)}</div>
+                      )}
+                    </div>
+                  )}
 
-                  <div className="space-y-2">
+                  <div className={`space-y-2 ${!settings.enableExerciseGroups ? 'col-span-2' : ''}`}>
                     <Label>Unità di Misura</Label>
                     {isEditing ? (
                       <Select
@@ -1569,7 +1686,7 @@ export default function Exercises() {
                     <Input
                       type="text"
                       value={editFormData.maxScore}
-                      onChange={(e) => setEditFormData({ ...editFormData, maxScore: parseInt(e.target.value) || 10 })}
+                      onChange={(e) => setEditFormData({ ...editFormData, maxScore: e.target.value === '' ? 10 : (parseInt(e.target.value) || 10) })}
                     />
                   ) : (
                     <div className="p-3 bg-muted rounded-md">{selectedExercise.maxScore || 10}</div>
@@ -1679,7 +1796,10 @@ export default function Exercises() {
                                   <Input
                                     type="number"
                                     value={range.min}
-                                    onChange={(e) => updateEditRange('M', index, 'min', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                      updateEditRange('M', index, 'min', val);
+                                    }}
                                     className="h-8"
                                   />
                                 </div>
@@ -1688,7 +1808,10 @@ export default function Exercises() {
                                   <Input
                                     type="number"
                                     value={range.max}
-                                    onChange={(e) => updateEditRange('M', index, 'max', parseFloat(e.target.value) || 0)}
+                                    onChange={(e) => {
+                                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                                      updateEditRange('M', index, 'max', val);
+                                    }}
                                     className="h-8"
                                   />
                                 </div>
@@ -1749,7 +1872,7 @@ export default function Exercises() {
                                     <Input
                                       type="number"
                                       value={range.min}
-                                      onChange={(e) => updateEditRange('F', index, 'min', parseFloat(e.target.value) || 0)}
+                                      onChange={(e) => updateEditRange('F', index, 'min', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                                       className="h-8"
                                     />
                                   </div>
@@ -1758,7 +1881,7 @@ export default function Exercises() {
                                     <Input
                                       type="number"
                                       value={range.max}
-                                      onChange={(e) => updateEditRange('F', index, 'max', parseFloat(e.target.value) || 0)}
+                                      onChange={(e) => updateEditRange('F', index, 'max', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                                       className="h-8"
                                     />
                                   </div>
@@ -1842,7 +1965,7 @@ export default function Exercises() {
                                 }}
                                 onBlur={(e) => {
                                   const updated = [...editCriteria];
-                                  const val = parseInt(e.target.value) || 1;
+                                  const val = e.target.value === '' ? 1 : (parseInt(e.target.value) || 1);
                                   updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
                                   setEditCriteria(updated);
                                 }}
@@ -1955,7 +2078,7 @@ export default function Exercises() {
                                 value={criterion.maxScore}
                                 onChange={(e) => {
                                   const updated = [...editCriteriaWithRanges];
-                                  updated[criterionIndex] = { ...updated[criterionIndex], maxScore: parseInt(e.target.value) || 1 };
+                                  updated[criterionIndex] = { ...updated[criterionIndex], maxScore: e.target.value === '' ? 1 : (parseInt(e.target.value) || 1) };
                                   setEditCriteriaWithRanges(updated);
                                 }}
                                 className="h-8"
@@ -2033,7 +2156,7 @@ export default function Exercises() {
                                     onChange={(e) => {
                                       const updated = [...editCriteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -2049,7 +2172,7 @@ export default function Exercises() {
                                     onChange={(e) => {
                                       const updated = [...editCriteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -2146,7 +2269,7 @@ export default function Exercises() {
                                       onChange={(e) => {
                                         const updated = [...editCriteriaWithRanges];
                                         const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                        ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseFloat(e.target.value) || 0 };
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                         updated[criterionIndex] = {
                                           ...updated[criterionIndex],
                                           ranges: { ...updated[criterionIndex].ranges, F: ranges }
@@ -2162,7 +2285,7 @@ export default function Exercises() {
                                       onChange={(e) => {
                                         const updated = [...editCriteriaWithRanges];
                                         const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                        ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseFloat(e.target.value) || 0 };
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
                                         updated[criterionIndex] = {
                                           ...updated[criterionIndex],
                                           ranges: { ...updated[criterionIndex].ranges, F: ranges }

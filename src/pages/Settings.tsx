@@ -569,6 +569,28 @@ export default function Settings() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Gruppi Esercizi</CardTitle>
+                                <CardDescription>Abilita l'organizzazione degli esercizi in gruppi tematici.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="enable-groups" className="text-base">Abilita Gruppi Esercizi</Label>
+                                        <p className="text-sm text-muted-foreground">Organizza gli esercizi in gruppi per disciplina, livello o categoria. Quando disabilitato, gli esercizi non richiederanno l'assegnazione a un gruppo. Le assegnazioni esistenti verranno preservate.</p>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <Switch
+                                            id="enable-groups"
+                                            checked={settings.enableExerciseGroups}
+                                            onCheckedChange={(checked) => updateSettings({ enableExerciseGroups: checked })}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     {/* Display Settings */}

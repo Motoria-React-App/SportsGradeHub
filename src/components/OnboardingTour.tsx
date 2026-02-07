@@ -52,7 +52,7 @@ const STEPS: Step[] = [
     },
     {
         title: "Personalizzazione Avanzata",
-        description: "Adatta SportsGradeHub alle tue esigenze. Configura parametri di sessione, preferenze di calcolo e molto altro dalle impostazioni.",
+        description: "Adatta SportsGradeHub alle tue esigenze. Configura parametri di sessione, preferenze di calcolo e molto altro dalle impostazioni. Puoi anche abilitare l'organizzazione degli esercizi in gruppi tematici per una gestione ancora più strutturata.",
         image: "/onboarding/setting.png",
         color: "",
     },

@@ -30,6 +30,9 @@ export interface AppSettings {
     exportFormat: 'csv' | 'excel' | 'pdf';  // default: 'csv'
     includeNotesInExport: boolean;  // default: true
 
+    // Exercise Groups
+    enableExerciseGroups: boolean;  // default: false (abilita organizzazione esercizi in gruppi)
+
     // Justifications (Giustifiche)
     maxJustifications: number;          // default: 3 (soglia massima per periodo)
     schoolPeriods: SchoolPeriod[];      // periodi scolastici configurabili
@@ -51,6 +54,7 @@ const defaultSettings: AppSettings = {
     collapsibleClasses: false,
     exportFormat: 'csv',
     includeNotesInExport: true,
+    enableExerciseGroups: false,
     // Justifications defaults
     maxJustifications: 3,
     schoolPeriods: [],
