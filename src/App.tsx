@@ -22,18 +22,15 @@ import { useAuth, useClient } from "./provider/clientProvider";
 import { useEffect } from "react";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { EasterEgg } from "@/components/EasterEgg";
+import LoadingPage from "./pages/Loading";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center">
-        <div className="flex items-center font-bold gap-2 self-center text-7xl animate-pulse">
-          SportsGradeHub
-        </div>
-      </div>
-    );
+      <LoadingPage />
+    )
   }
 
   if (!isAuthenticated) {

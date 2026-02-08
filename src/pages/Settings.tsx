@@ -25,6 +25,11 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useClient } from "@/provider/clientProvider";
 import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar";
+import {
     HelpCircle,
     LogOut,
     Moon,
@@ -52,19 +57,20 @@ import { useState, useRef } from "react";
 import * as XLSX from 'xlsx';
 
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { IconInnerShadowTop } from "@tabler/icons-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
     const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule, importSchedule } = useSchedule();
-    const { classes, evaluations, exercises, students, refreshEvaluations } = useSchoolData();
+    const { classes } = useSchoolData();
     const { theme, setTheme } = useTheme();
     const client = useClient();
     const user = client.UserModel;
     const navigate = useNavigate();
     const { exportAllEvaluations, exportAllStudents } = useExport();
-    const { formatDate } = useDateFormatter();
+    const { formatDate } = useDateFormatter()
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     // State for adding new slot
     const [newSlotDay, setNewSlotDay] = useState<DayOfWeek>('lunedi');
@@ -72,7 +78,11 @@ export default function Settings() {
     const [newSlotEnd, setNewSlotEnd] = useState('09:00');
     const [newSlotClass, setNewSlotClass] = useState(classes[0]?.id || '');
     const [isExporting, setIsExporting] = useState(false);
-    const [isRecalculating, setIsRecalculating] = useState(false);
+
+    // Account details state
+    const [firstName, setFirstName] = useState(user?.user.displayName?.split(' ')?.[0] || "");
+    const [lastName, setLastName] = useState(user?.user.displayName?.split(' ')?.[1] || "");
+    // const [isRecalculating, setIsRecalculating] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleImportClick = () => {
@@ -265,111 +275,111 @@ export default function Settings() {
         });
     };
 
-    const handleRecalculateGrades = async () => {
-        if (!confirm("ATTENZIONE: Questa operazione ricalcolerà tutti i voti degli esercizi basati su criteri usando l'impostazione attuale (Punto Base). Vuoi procedere?")) return;
+    // const handleRecalculateGrades = async () => {
+    //     if (!confirm("ATTENZIONE: Questa operazione ricalcolerà tutti i voti degli esercizi basati su criteri usando l'impostazione attuale (Punto Base). Vuoi procedere?")) return;
 
-        setIsRecalculating(true);
-        try {
-            // 1. Deduplicate to find latest evaluations
-            const latestEvaluations = new Map<string, any>();
-            evaluations.forEach((ev) => {
-                const key = `${ev.studentId}-${ev.exerciseId}`;
-                const existing = latestEvaluations.get(key);
-                if (!existing || new Date(ev.createdAt) > new Date(existing.createdAt)) {
-                    latestEvaluations.set(key, ev);
-                }
-            });
+    //     setIsRecalculating(true);
+    //     try {
+    //         // 1. Deduplicate to find latest evaluations
+    //         const latestEvaluations = new Map<string, any>();
+    //         evaluations.forEach((ev) => {
+    //             const key = `${ev.studentId}-${ev.exerciseId}`;
+    //             const existing = latestEvaluations.get(key);
+    //             if (!existing || new Date(ev.createdAt) > new Date(existing.createdAt)) {
+    //                 latestEvaluations.set(key, ev);
+    //             }
+    //         });
 
-            // 2. Filter for criteria-based exercises
-            let updatedCount = 0;
-            const evalsToProcess = Array.from(latestEvaluations.values());
+    //         // 2. Filter for criteria-based exercises
+    //         let updatedCount = 0;
+    //         const evalsToProcess = Array.from(latestEvaluations.values());
 
-            for (const ev of evalsToProcess) {
-                const ex = exercises.find(e => e.id === ev.exerciseId);
-                if (!ex) continue;
+    //         for (const ev of evalsToProcess) {
+    //             const ex = exercises.find(e => e.id === ev.exerciseId);
+    //             if (!ex) continue;
 
-                const maxScore = ex.maxScore || 10;
-                let newScore = 0;
-                let shouldUpdate = false;
+    //             const maxScore = ex.maxScore || 10;
+    //             let newScore = 0;
+    //             let shouldUpdate = false;
 
-                if (ex.evaluationType === 'criteria' && ex.evaluationCriteria) {
-                    // Criteria-based calculation
-                    let criteriaScores: Record<string, number> = {};
-                    try {
-                        criteriaScores = JSON.parse(ev.performanceValue || '{}');
-                    } catch (e) { continue; }
+    //             if (ex.evaluationType === 'criteria' && ex.evaluationCriteria) {
+    //                 // Criteria-based calculation
+    //                 let criteriaScores: Record<string, number> = {};
+    //                 try {
+    //                     criteriaScores = JSON.parse(ev.performanceValue || '{}');
+    //                 } catch (e) { continue; }
 
-                    const totalMax = ex.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
-                    const totalScored = ex.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
+    //                 const totalMax = ex.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0);
+    //                 const totalScored = ex.evaluationCriteria.reduce((sum, c) => sum + (criteriaScores[c.name] || 0), 0);
 
-                    if (settings.enableBasePoint) {
-                        const percentage = totalMax > 0 ? totalScored / totalMax : 0;
-                        newScore = 1 + (percentage * (maxScore - 1));
-                    } else {
-                        newScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
-                    }
-                    shouldUpdate = true;
-                } else if (ex.evaluationType === 'range' && ex.evaluationRanges) {
-                    // Range-based calculation
-                    // Need student gender
-                    const student = students.find(s => s.id === ev.studentId);
-                    if (!student) continue;
+    //                 if (settings.enableBasePoint) {
+    //                     const percentage = totalMax > 0 ? totalScored / totalMax : 0;
+    //                     newScore = 1 + (percentage * (maxScore - 1));
+    //                 } else {
+    //                     newScore = totalMax > 0 ? (totalScored / totalMax) * maxScore : 0;
+    //                 }
+    //                 shouldUpdate = true;
+    //             } else if (ex.evaluationType === 'range' && ex.evaluationRanges) {
+    //                 // Range-based calculation
+    //                 // Need student gender
+    //                 const student = students.find(s => s.id === ev.studentId);
+    //                 if (!student) continue;
 
-                    const performanceNum = parseFloat(ev.performanceValue);
-                    if (isNaN(performanceNum)) continue;
+    //                 const performanceNum = parseFloat(ev.performanceValue);
+    //                 if (isNaN(performanceNum)) continue;
 
-                    const ranges = ex.evaluationRanges[student.gender] || ex.evaluationRanges['M'];
-                    if (!ranges) continue;
+    //                 const ranges = ex.evaluationRanges[student.gender] || ex.evaluationRanges['M'];
+    //                 if (!ranges) continue;
 
-                    let rawScore: number | null = null;
-                    for (const range of ranges) {
-                        if (performanceNum >= range.min && performanceNum <= range.max) {
-                            rawScore = range.score;
-                            break;
-                        }
-                    }
+    //                 let rawScore: number | null = null;
+    //                 for (const range of ranges) {
+    //                     if (performanceNum >= range.min && performanceNum <= range.max) {
+    //                         rawScore = range.score;
+    //                         break;
+    //                     }
+    //                 }
 
-                    if (rawScore !== null) {
-                        if (settings.enableBasePoint) {
-                            const percentage = maxScore > 0 ? rawScore / maxScore : 0;
-                            newScore = 1 + (percentage * (maxScore - 1));
-                        } else {
-                            newScore = rawScore;
-                        }
-                        shouldUpdate = true;
-                    }
-                }
+    //                 if (rawScore !== null) {
+    //                     if (settings.enableBasePoint) {
+    //                         const percentage = maxScore > 0 ? rawScore / maxScore : 0;
+    //                         newScore = 1 + (percentage * (maxScore - 1));
+    //                     } else {
+    //                         newScore = rawScore;
+    //                     }
+    //                     shouldUpdate = true;
+    //                 }
+    //             }
 
-                if (shouldUpdate) {
-                    newScore = Math.round(newScore * 10) / 10;
+    //             if (shouldUpdate) {
+    //                 newScore = Math.round(newScore * 10) / 10;
 
-                    if (Math.abs(newScore - ev.score) > 0.01) {
-                        await client.createEvaluation({
-                            studentId: ev.studentId,
-                            exerciseId: ev.exerciseId,
-                            performanceValue: ev.performanceValue,
-                            score: newScore,
-                            comments: ev.comments,
-                            criteriaScores: (ev as any).criteriaScores
-                        });
-                        updatedCount++;
-                    }
-                }
-            }
+    //                 if (Math.abs(newScore - ev.score) > 0.01) {
+    //                     await client.createEvaluation({
+    //                         studentId: ev.studentId,
+    //                         exerciseId: ev.exerciseId,
+    //                         performanceValue: ev.performanceValue,
+    //                         score: newScore,
+    //                         comments: ev.comments,
+    //                         criteriaScores: (ev as any).criteriaScores
+    //                     });
+    //                     updatedCount++;
+    //                 }
+    //             }
+    //         }
 
-            if (updatedCount > 0) {
-                await refreshEvaluations();
-                toast.success(`Aggiornati ${updatedCount} voti con successo.`);
-            } else {
-                toast.info("Nessun voto necessitava di aggiornamento.");
-            }
-        } catch (error) {
-            console.error("Error recalculating grades:", error);
-            toast.error("Errore durante il ricalcolo dei voti.");
-        } finally {
-            setIsRecalculating(false);
-        }
-    };
+    //         if (updatedCount > 0) {
+    //             await refreshEvaluations();
+    //             toast.success(`Aggiornati ${updatedCount} voti con successo.`);
+    //         } else {
+    //             toast.info("Nessun voto necessitava di aggiornamento.");
+    //         }
+    //     } catch (error) {
+    //         console.error("Error recalculating grades:", error);
+    //         toast.error("Errore durante il ricalcolo dei voti.");
+    //     } finally {
+    //         setIsRecalculating(false);
+    //     }
+    // };
 
 
 
@@ -505,7 +515,7 @@ export default function Settings() {
                                     </Select>
                                 </div>
 
-                                <Separator />
+                                {/* <Separator />
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
@@ -529,6 +539,7 @@ export default function Settings() {
                                         />
                                     </div>
                                 </div>
+                                */}
                             </CardContent>
                         </Card>
 
@@ -662,9 +673,9 @@ export default function Settings() {
                                     </Select>
                                 </div>
 
-                                <Separator />
+                                {/* <Separator /> */}
 
-                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                {/* <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
                                         <Label className="text-base">Formato Data</Label>
                                         <p className="text-sm text-muted-foreground">Come visualizzare le date.</p>
@@ -681,7 +692,7 @@ export default function Settings() {
                                             <SelectItem value="YYYY-MM-DD">2025-01-31</SelectItem>
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </div> */}
 
                                 <Separator />
 
@@ -1052,15 +1063,15 @@ export default function Settings() {
                                         <SelectContent>
                                             <SelectItem value="csv">CSV (Excel, Sheets)</SelectItem>
                                             <SelectItem value="excel">Excel (.xlsx)</SelectItem>
-                                            <SelectItem value="pdf">PDF (Documento)</SelectItem>
+                                            {/* <SelectItem value="pdf">PDF (Documento)</SelectItem> */}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <Separator />
 
-                                <div className="flex items-center justify-between space-x-2">
-                                    <Label htmlFor="export-notes" className="flex flex-col space-y-1">
+                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
+                                    <Label htmlFor="export-notes" className="flex flex-col justify-start items-start space-y-0.5">
                                         <span>Includi Note</span>
                                         <span className="font-normal text-sm text-muted-foreground">Includi i commenti testuali nelle esportazioni.</span>
                                     </Label>
@@ -1195,49 +1206,143 @@ export default function Settings() {
                     {/* Account Settings */}
                     <TabsContent value="account" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Account</h2>
-                            <p className="text-sm text-muted-foreground">Gestisci il tuo profilo utente.</p>
+                            <h2 className="text-xl font-semibold">Profilo Utente</h2>
+                            <p className="text-sm text-muted-foreground">Gestisci le tue informazioni personali e la sicurezza dell'account.</p>
                         </div>
                         <Separator />
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Profilo</CardTitle>
-                                <CardDescription>Informazioni sull'utente corrente.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center">
-                                        <User className="h-10 w-10 text-muted-foreground" />
+                        <Card className="overflow-hidden">
+                            <CardHeader className="pb-0">
+                                <div className="flex flex-row justify-center items-center gap-6">
+                                    <div className="relative group">
+                                        <Avatar className="h-28 w-28 border-4 border-background shadow-xl">
+                                            <AvatarImage src={user?.user.avatar} alt={firstName} />
+                                            <AvatarFallback className="text-3xl bg-primary/10 text-primary uppercase font-bold">
+                                                {firstName?.[0]}{lastName?.[0]}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <Button
+                                            size="icon"
+                                            variant="secondary"
+                                            className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg border border-background opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Cambia avatar"
+                                        >
+                                            <Palette className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <div>
-                                        <h3 className="text-lg font-medium">{user?.user.email || "Utente Ospite"}</h3>
-                                        <p className="text-sm text-muted-foreground">{user?.user.email == "admin@gmail.com" ? "Amministratore" : "Docente"}</p>
+                                    <div className="flex-1 text-center sm:text-left space-y-1">
+                                        <h3 className="text-2xl capitalize font-bold tracking-tight">{firstName} {lastName}</h3>
+                                        <div className="flex items-center justify-center sm:justify-start gap-2 pt-2">
+                                            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                Account Attivo
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                Ultimo accesso: {lastSync ? formatDate(lastSync.toISOString()) : "Oggi"}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
-                                        <Input id="email" value={user?.user.email || ""} disabled />
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                <div className="grid gap-6">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="firstName" className="text-sm font-semibold">Nome</Label>
+                                            <Input
+                                                id="firstName"
+                                                placeholder="Il tuo nome"
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                                className="bg-secondary/20 focus-visible:ring-primary"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="lastName" className="text-sm font-semibold">Cognome</Label>
+                                            <Input
+                                                id="lastName"
+                                                placeholder="Il tuo cognome"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                                className="bg-secondary/20 focus-visible:ring-primary"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="role">Ruolo</Label>
-                                        <Input id="role" value={user?.user.email == "admin@gmail.com" ? "Amministratore" : "Docente"} disabled />
+
+                                    <div className="grid gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="email" className="text-sm font-semibold">Email (Non modificabile)</Label>
+                                            <Input
+                                                id="email"
+                                                value={user?.user.email || ""}
+                                                disabled
+                                                className="bg-muted/50 cursor-not-allowed border-dashed"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <Separator className="my-2" />
+
+                                    <div className="bg-amber-50 dark:bg-amber-950/20 rounded-xl p-4 border border-amber-100 dark:border-amber-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="space-y-1 text-center sm:text-left">
+                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">Sicurezza Account</h4>
+                                            <p className="text-xs text-amber-800/70 dark:text-amber-300/60">
+                                                È consigliabile cambiare la password regolarmente per mantenere l'account sicuro.
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-amber-200 bg-white text-amber-900 hover:bg-amber-50 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200"
+                                            onClick={() => toast.info("Funzionalità di reset password in arrivo")}
+                                        >
+                                            <RefreshCw className="mr-2 h-4 w-4" />
+                                            Reset Password
+                                        </Button>
                                     </div>
                                 </div>
                             </CardContent>
-                            <CardFooter className="flex justify-between border-t px-6 py-4">
-                                <p className="text-sm text-muted-foreground">
-
-                                </p>
-                                <Button variant="destructive" onClick={async () => await client.logout()}>
+                            <CardFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t bg-secondary/10 px-6 py-6">
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="w-full sm:w-auto order-2 sm:order-1"
+                                    onClick={() => setDeleteDialogOpen(true)}
+                                >
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    Logout
+                                    Esci dall'Account
+                                </Button>
+
+                                <Button
+                                    className="w-full sm:w-auto order-1 sm:order-2 shadow-lg shadow-primary/20"
+                                    onClick={() => {
+                                        // Mock saving
+                                        toast.success("Modifiche salvate con successo!");
+                                    }}
+                                >
+                                    Salva Modifiche
                                 </Button>
                             </CardFooter>
                         </Card>
                     </TabsContent>
+
+                    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Sei sicuro di voler uscire dall'account?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Sicuro
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                <AlertDialogAction onClick={async () => {
+                                    await client.logout()
+                                }} className="bg-destructive hover:bg-destructive/90">
+                                    Logout
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
 
                     {/* About */}
                     <TabsContent value="about" className="space-y-6 mt-0">
@@ -1268,7 +1373,7 @@ export default function Settings() {
                                     </div>
                                     <div className="flex justify-between py-2">
                                         <span className="font-medium">Licenza</span>
-                                        <span className="text-muted-foreground">Pro</span>
+                                        <span className="text-muted-foreground">-</span>
                                     </div>
                                 </div>
 

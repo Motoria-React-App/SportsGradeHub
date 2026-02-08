@@ -3,6 +3,8 @@ import {
   IconInnerShadowTop,
 } from "@tabler/icons-react"
 
+import { MdDesk } from "react-icons/md"
+
 import {
   Sidebar,
   SidebarContent,
@@ -33,7 +35,6 @@ import { SchoolClass } from "@/types/types"
 import {
   Home,
   Search,
-  FileText,
   Plus,
   Activity,
   Users,
@@ -94,7 +95,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     classes: classes.map((item: SchoolClass) => ({
       title: item.className,
       url: `/classes/${item.id}`,
-      icon: FileText,
+      icon: MdDesk,
     })) as NavItemType[],
   }
 

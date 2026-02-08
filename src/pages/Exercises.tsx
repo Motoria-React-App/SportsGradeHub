@@ -610,7 +610,7 @@ export default function Exercises() {
       <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
 
       {/* Search and Filter */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/50 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/50 backdrop-blur-sm py-4 rounded-xl shadow-sm">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-[350px] w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -624,20 +624,20 @@ export default function Exercises() {
           </div>
           {/* Only show group filter when groups are enabled */}
           {settings.enableExerciseGroups && (
-          <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-            <SelectTrigger className="w-full sm:w-[220px] bg-background/50 border-muted-foreground/20">
-              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Filtra per Gruppo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tutti i gruppi</SelectItem>
-              {exerciseGroups.map((group) => (
-                <SelectItem key={group.id} value={group.id}>
-                  {group.groupName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+              <SelectTrigger className="w-full sm:w-[220px] bg-background/50 border-muted-foreground/20">
+                <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Filtra per Gruppo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tutti i gruppi</SelectItem>
+                {exerciseGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.groupName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
         <div className="text-sm font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
@@ -693,22 +693,18 @@ export default function Exercises() {
                       <div className="flex flex-wrap gap-1.5 text-xs items-center">
                         {ex.evaluationType === 'criteria' ? (
                           <Badge variant="outline" className="font-normal">
-                            ⭐ {ex.evaluationCriteria?.length || 0} Criteri
+                            {ex.evaluationCriteria?.length || 0} Criteri
                           </Badge>
                         ) : ex.evaluationType === 'criteria-ranges' ? (
                           <Badge variant="outline" className="font-normal">
-                            📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                            {ex.evaluationCriteriaWithRanges?.length || 0} Criteri + Fasce
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="font-normal">
-                            📏 Fasce
+                            Fasce
                           </Badge>
                         )}
-                        {ex.evaluationType?.includes('ranges') && (
-                          <Badge variant="secondary" className="font-normal text-[10px]">
-                            {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
-                          </Badge>
-                        )}
+
                       </div>
                     </CardContent>
 
@@ -764,116 +760,116 @@ export default function Exercises() {
 
               return (
                 <div key={groupId} className="space-y-5 animate-in slide-in-from-bottom duration-500 fade-in">
-              {/* Section Header */}
-              <div className="flex items-center gap-4 group/header">
-                <div className="flex items-center gap-3 pl-2">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary shadow-sm group-hover/header:scale-105 transition-transform">
-                    <Dumbbell className="h-5 w-5" />
+                  {/* Section Header */}
+                  <div className="flex items-center gap-4 group/header">
+                    <div className="flex items-center gap-3 pl-2">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary shadow-sm group-hover/header:scale-105 transition-transform">
+                        <Dumbbell className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-xl font-bold tracking-tight text-foreground">
+                        {groupName}
+                      </h2>
+                    </div>
+                    <div className="h-px flex-1 bg-linear-to-r from-border to-transparent" />
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="font-normal text-muted-foreground bg-secondary/50">
+                        {groupExercises.length} esercizi
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/header:opacity-100 transition-all"
+                        onClick={() => openDeleteGroupDialog(groupId)}
+                        title="Elimina gruppo"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">
-                    {groupName}
-                  </h2>
+
+                  {/* Carousel */}
+                  <div className="px-4 md:px-12">
+                    <Carousel
+                      opts={{
+                        align: "start",
+                        loop: false,
+                        slidesToScroll: 1
+                      }}
+                      className="w-full"
+                    >
+                      <CarouselContent className="-ml-3 md:-ml-5 pb-4">
+                        {groupExercises.map((ex) => (
+                          <CarouselItem key={ex.id} className="pl-3 md:pl-5 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
+                            <Card className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group/card">
+                              <CardHeader className="pb-3">
+                                <CardTitle className="text-base font-semibold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
+                                  {ex.name}
+                                </CardTitle>
+                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    {unitIcons[ex.unit]}
+                                    <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
+                                  </div>
+                                  {ex.maxScore && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="font-medium">Max {ex.maxScore} pt</span>
+                                    </>
+                                  )}
+                                </div>
+                              </CardHeader>
+
+                              <CardContent className="flex-1 pb-3 space-y-2">
+                                <div className="flex flex-wrap gap-1.5 text-xs items-center">
+                                  {ex.evaluationType === 'criteria' ? (
+                                    <Badge variant="outline" className="font-normal">
+                                      ⭐ {ex.evaluationCriteria?.length || 0} Criteri
+                                    </Badge>
+                                  ) : ex.evaluationType === 'criteria-ranges' ? (
+                                    <Badge variant="outline" className="font-normal">
+                                      📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="font-normal">
+                                      📏 Fasce
+                                    </Badge>
+                                  )}
+                                  {ex.evaluationType?.includes('ranges') && (
+                                    <Badge variant="secondary" className="font-normal text-[10px]">
+                                      {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </CardContent>
+
+                              <CardFooter className="pt-0 flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-muted-foreground hover:text-destructive h-8 w-8"
+                                  onClick={() => openDeleteDialog(ex)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="flex-1 h-8 text-xs"
+                                  onClick={() => openDetailDialog(ex)}
+                                >
+                                  Dettagli
+                                </Button>
+                              </CardFooter>
+                            </Card>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious className="-left-3 md:-left-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
+                      <CarouselNext className="-right-3 md:-right-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
+                    </Carousel>
+                  </div>
                 </div>
-                <div className="h-px flex-1 bg-linear-to-r from-border to-transparent" />
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="font-normal text-muted-foreground bg-secondary/50">
-                    {groupExercises.length} esercizi
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/header:opacity-100 transition-all"
-                    onClick={() => openDeleteGroupDialog(groupId)}
-                    title="Elimina gruppo"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Carousel */}
-              <div className="px-4 md:px-12">
-                <Carousel
-                  opts={{
-                    align: "start",
-                    loop: false,
-                    slidesToScroll: 1
-                  }}
-                  className="w-full"
-                >
-                  <CarouselContent className="-ml-3 md:-ml-5 pb-4">
-                    {groupExercises.map((ex) => (
-                      <CarouselItem key={ex.id} className="pl-3 md:pl-5 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5">
-                        <Card className="flex flex-col h-full hover:shadow-lg transition-shadow cursor-pointer group/card">
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-base font-semibold leading-tight group-hover/card:text-primary transition-colors line-clamp-2">
-                              {ex.name}
-                            </CardTitle>
-                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                {unitIcons[ex.unit]}
-                                <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
-                              </div>
-                              {ex.maxScore && (
-                                <>
-                                  <span>•</span>
-                                  <span className="font-medium">Max {ex.maxScore} pt</span>
-                                </>
-                              )}
-                            </div>
-                          </CardHeader>
-
-                          <CardContent className="flex-1 pb-3 space-y-2">
-                            <div className="flex flex-wrap gap-1.5 text-xs items-center">
-                              {ex.evaluationType === 'criteria' ? (
-                                <Badge variant="outline" className="font-normal">
-                                  ⭐ {ex.evaluationCriteria?.length || 0} Criteri
-                                </Badge>
-                              ) : ex.evaluationType === 'criteria-ranges' ? (
-                                <Badge variant="outline" className="font-normal">
-                                  📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="font-normal">
-                                  📏 Fasce
-                                </Badge>
-                              )}
-                              {ex.evaluationType?.includes('ranges') && (
-                                <Badge variant="secondary" className="font-normal text-[10px]">
-                                  {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
-                                </Badge>
-                              )}
-                            </div>
-                          </CardContent>
-
-                          <CardFooter className="pt-0 flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-muted-foreground hover:text-destructive h-8 w-8"
-                              onClick={() => openDeleteDialog(ex)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="flex-1 h-8 text-xs"
-                              onClick={() => openDetailDialog(ex)}
-                            >
-                              Dettagli
-                            </Button>
-                          </CardFooter>
-                        </Card>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  <CarouselPrevious className="-left-3 md:-left-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
-                  <CarouselNext className="-right-3 md:-right-12 h-10 w-10 border-muted-foreground/20 hover:border-primary hover:text-primary" />
-                </Carousel>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })}
           </>
         )}
       </div>

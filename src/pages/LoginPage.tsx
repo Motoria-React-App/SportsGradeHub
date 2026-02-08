@@ -2,6 +2,7 @@ import { GalleryVerticalEnd } from "lucide-react"
 import { Navigate } from "react-router-dom"
 import { LoginForm } from "../components/login-form"
 import { useAuth } from "@/provider/clientProvider"
+import LoadingPage from "./Loading";
 
 export default function LoginPage() {
     const { isAuthenticated, isLoading } = useAuth();
@@ -10,11 +11,7 @@ export default function LoginPage() {
     {/*Borroni Cacca*/ }
     if (isLoading) {
         return (
-            <div className="flex min-h-svh flex-col items-center justify-center">
-                <div className="flex items-center font-bold gap-2 self-center text-7xl animate-pulse">
-                    SportsGradeHub
-                </div>
-            </div>
+            <LoadingPage />
         );
     }
 
