@@ -31,6 +31,9 @@ import { Textarea } from '@/components/ui/textarea';
 import {
     AreaChart,
     Area,
+    BarChart,
+    Bar,
+    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -115,6 +118,45 @@ export default function StudentDetail() {
             };
         });
     }, [filteredEvaluations, exercises, formatGrade]);
+
+    // Breakdown data for criteria/sub-exercises
+    const breakdownData = useMemo(() => {
+        if (!selectedExerciseId) return [];
+        const exercise = exercises.find(ex => ex.id === selectedExerciseId);
+        if (!exercise) return [];
+
+        const criteriaNames = [
+            ...(exercise.evaluationCriteria?.map(c => c.name) || []),
+            ...(exercise.evaluationCriteriaWithRanges?.map(c => c.name) || [])
+        ];
+
+        if (criteriaNames.length === 0) {
+            // Not composite, just show individual evaluations as bars with dates
+            return filteredEvaluations.map((ev) => ({
+                name: new Date(ev.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }),
+                score: ev.score,
+                exerciseName: exercise.name,
+                fullDate: new Date(ev.createdAt).toLocaleDateString('it-IT'),
+            }));
+        }
+
+        // Composite: X-axis is criteria names, multiple bars for different dates
+        return criteriaNames.map(cName => {
+            const data: any = { name: cName };
+            filteredEvaluations.slice(-5).forEach((ev, idx) => {
+                const dateLabel = new Date(ev.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+                data[`val_${idx}`] = (ev.criteriaScores?.[cName]) || 0;
+                data[`date_${idx}`] = dateLabel;
+            });
+            return data;
+        });
+    }, [selectedExerciseId, filteredEvaluations, exercises]);
+
+    const isCompositeExercise = useMemo(() => {
+        if (!selectedExerciseId) return false;
+        const ex = exercises.find(e => e.id === selectedExerciseId);
+        return !!(ex?.evaluationCriteria?.length || ex?.evaluationCriteriaWithRanges?.length);
+    }, [selectedExerciseId, exercises]);
 
     // Yearly stats
     const yearlyStats = useMemo(() => {
@@ -290,58 +332,118 @@ export default function StudentDetail() {
                         ) : (
                             <div className="p-6">
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#a0a0a0" stopOpacity={0.8} />
-                                                <stop offset="50%" stopColor="#707070" stopOpacity={0.5} />
-                                                <stop offset="100%" stopColor="#404040" stopOpacity={0.2} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="0" stroke="rgba(255,255,255,0.05)" />
-                                        <XAxis
-                                            dataKey="date"
-                                            stroke="#888"
-                                            tick={{ fill: '#888', fontSize: 12 }}
-                                            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                                            interval="preserveStartEnd"
-                                        />
-                                        <YAxis
-                                            domain={['dataMin', 'dataMax']}
-                                            stroke="#888"
-                                            tick={{ fill: '#888', fontSize: 12 }}
-                                            axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                                        />
-                                        <Tooltip
-                                            content={({ active, payload, label }) => {
-                                                if (active && payload && payload.length) {
-                                                    const data = payload[0].payload;
-                                                    return (
-                                                        <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.1)' }} className="border rounded-lg p-3 text-white shadow-xl">
-                                                            <p className="font-medium mb-1 text-sm">{label}</p>
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-gray-400 text-xs">Voto:</span>
-                                                                    <span className="font-bold text-white">{data.formattedScore}</span>
-                                                                </div>
-                                                                <div className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
-                                                                    {data.exerciseName}
+                                    {selectedExerciseId ? (
+                                        <BarChart data={breakdownData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis
+                                                dataKey="name"
+                                                stroke="#888"
+                                                tick={{ fill: '#888', fontSize: 11 }}
+                                                angle={-45}
+                                                textAnchor="end"
+                                                interval={0}
+                                            />
+                                            <YAxis
+                                                domain={[0, 10]}
+                                                stroke="#888"
+                                                tick={{ fill: '#888', fontSize: 12 }}
+                                            />
+                                            <Tooltip
+                                                content={({ active, payload, label }) => {
+                                                    if (active && payload && payload.length) {
+                                                        return (
+                                                            <div className="bg-black/90 border border-white/10 rounded-lg p-3 text-white shadow-xl text-xs">
+                                                                <p className="font-bold mb-2 border-b border-white/20 pb-1">{label}</p>
+                                                                <div className="space-y-1.5">
+                                                                    {payload.map((p, i) => (
+                                                                        <div key={i} className="flex items-center justify-between gap-4">
+                                                                            <span className="text-gray-400">
+                                                                                {p.payload[`date_${p.dataKey?.toString().split('_')[1]}`] || p.payload.fullDate || 'Voto'}:
+                                                                            </span>
+                                                                            <span className="font-bold">{formatGrade(p.value as number)}</span>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Area
-                                            type="monotone"
-                                            dataKey="score"
-                                            stroke="#d0d0d0"
-                                            strokeWidth={2}
-                                            fill="url(#colorScore)"
-                                        />
-                                    </AreaChart>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            {isCompositeExercise ? (
+                                                // Grouped bars for each evaluation
+                                                filteredEvaluations.slice(-5).map((ev, idx) => (
+                                                    <Bar
+                                                        key={ev.id}
+                                                        dataKey={`val_${idx}`}
+                                                        name={new Date(ev.createdAt).toLocaleDateString()}
+                                                        fill={idx === filteredEvaluations.slice(-5).length - 1 ? '#3b82f6' : `rgba(59, 130, 246, ${0.3 + idx * 0.15})`}
+                                                        radius={[4, 4, 0, 0]}
+                                                        barSize={20}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <Bar dataKey="score" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40}>
+                                                    {breakdownData.map((_, index) => (
+                                                        <Cell key={`cell-${index}`} fill={`rgba(59, 130, 246, ${1 - (breakdownData.length - 1 - index) * 0.15})`} />
+                                                    ))}
+                                                </Bar>
+                                            )}
+                                        </BarChart>
+                                    ) : (
+                                        <AreaChart data={chartData}>
+                                            <defs>
+                                                <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                                    <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.1} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="#888"
+                                                tick={{ fill: '#888', fontSize: 12 }}
+                                                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                                interval="preserveStartEnd"
+                                            />
+                                            <YAxis
+                                                domain={[0, 10]}
+                                                stroke="#888"
+                                                tick={{ fill: '#888', fontSize: 12 }}
+                                                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
+                                            />
+                                            <Tooltip
+                                                content={({ active, payload, label }) => {
+                                                    if (active && payload && payload.length) {
+                                                        const data = payload[0].payload;
+                                                        return (
+                                                            <div style={{ backgroundColor: 'rgba(0,0,0,0.9)', borderColor: 'rgba(255,255,255,0.1)' }} className="border rounded-lg p-3 text-white shadow-xl">
+                                                                <p className="font-medium mb-1 text-sm">{label}</p>
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-gray-400 text-xs">Voto:</span>
+                                                                        <span className="font-bold text-white">{data.formattedScore}</span>
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
+                                                                        {data.exerciseName}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="score"
+                                                stroke="#3b82f6"
+                                                strokeWidth={3}
+                                                fill="url(#colorScore)"
+                                            />
+                                        </AreaChart>
+                                    )}
                                 </ResponsiveContainer>
                             </div>
                         )

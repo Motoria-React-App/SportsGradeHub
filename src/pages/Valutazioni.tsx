@@ -62,6 +62,12 @@ function calculateScore(
     return null;
 }
 
+// Helper to parse numeric input with support for commas
+function parseInputNumber(val: string): number {
+    if (!val) return 0;
+    return parseFloat(val.toString().replace(",", ".")) || 0;
+}
+
 export default function Valutazioni() {
     const {
         students,
@@ -564,7 +570,7 @@ export default function Valutazioni() {
     const gradingStudent = selectedEvaluationForGrading ? getStudent(selectedEvaluationForGrading.studentId) : null;
     const gradingExercise = selectedEvaluationForGrading ? getExercise(selectedEvaluationForGrading.exerciseId) : null;
     const gradingStatus = selectedEvaluationForGrading ? getEvaluationStatus(selectedEvaluationForGrading) : null;
-    const gradingPerformanceNum = parseFloat(performanceInputValue);
+    const gradingPerformanceNum = parseInputNumber(performanceInputValue);
     const gradingPreviewScore = useMemo(() => {
         if (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent) {
             let score = calculateScore(gradingPerformanceNum, gradingExercise, gradingStudent.gender);
@@ -773,7 +779,7 @@ export default function Valutazioni() {
                                                                 max={criterion.maxScore}
                                                                 value={criteriaScores[criterion.name] || ''}
                                                                 onChange={(e) => {
-                                                                    const val = parseInt(e.target.value) || 0;
+                                                                    const val = parseInputNumber(e.target.value);
                                                                     const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
                                                                     setCriteriaScores({
                                                                         ...criteriaScores,
@@ -854,7 +860,7 @@ export default function Valutazioni() {
                                                                         placeholder={`Inserisci ${criterion.unit}`}
                                                                         value={criteriaPerformances[criterion.name] ?? ''}
                                                                         onChange={(e) => {
-                                                                            const val = parseFloat(e.target.value);
+                                                                            const val = parseInputNumber(e.target.value);
                                                                             setCriteriaPerformances({
                                                                                 ...criteriaPerformances,
                                                                                 [criterion.name]: isNaN(val) ? 0 : val

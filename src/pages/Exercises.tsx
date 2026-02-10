@@ -206,14 +206,30 @@ export default function Exercises() {
     }
   };
 
-  const updateRange = (gender: 'M' | 'F', index: number, field: keyof ScoreRange, value: number) => {
+  // Helper to parse and format range values (handles , and infinity)
+  const parseRangeValue = (val: string): number => {
+    if (val === "" || val === undefined) return 0;
+    const normalized = val.toString().replace(",", ".").trim().toLowerCase();
+    if (normalized === "inf" || normalized === "infinito" || normalized === "∞") return 999999;
+    if (normalized === "-inf" || normalized === "-infinito" || normalized === "-∞") return -999999;
+    return parseFloat(normalized) || 0;
+  };
+
+  const formatRangeValue = (val: number): string => {
+    if (val === 999999) return "infinito";
+    if (val === -999999) return "-infinito";
+    return val.toString().replace(".", ",");
+  };
+
+  const updateRange = (gender: 'M' | 'F', index: number, field: keyof ScoreRange, value: any) => {
+    const parsedValue = field === 'score' ? parseFloat(value) : parseRangeValue(value.toString());
     if (gender === 'M') {
       const updated = [...rangesMale];
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...updated[index], [field]: parsedValue };
       setRangesMale(updated);
     } else {
       const updated = [...rangesFemale];
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...updated[index], [field]: parsedValue };
       setRangesFemale(updated);
     }
   };
@@ -491,14 +507,15 @@ export default function Exercises() {
     }
   };
 
-  const updateEditRange = (gender: 'M' | 'F', index: number, field: keyof ScoreRange, value: number) => {
+  const updateEditRange = (gender: 'M' | 'F', index: number, field: keyof ScoreRange, value: any) => {
+    const parsedValue = field === 'score' ? parseFloat(value) : parseRangeValue(value.toString());
     if (gender === 'M') {
       const updated = [...editRangesMale];
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...updated[index], [field]: parsedValue };
       setEditRangesMale(updated);
     } else {
       const updated = [...editRangesFemale];
-      updated[index] = { ...updated[index], [field]: value };
+      updated[index] = { ...updated[index], [field]: parsedValue };
       setEditRangesFemale(updated);
     }
   };
@@ -530,8 +547,9 @@ export default function Exercises() {
                 <Label className="text-xs text-muted-foreground">Min</Label>
                 <Input
                   type="text"
-                  value={range.min}
-                  onChange={(e) => updateRange(gender, index, 'min', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                  value={formatRangeValue(range.min)}
+                  onChange={(e) => updateRange(gender, index, 'min', e.target.value)}
+                  placeholder="es. 10 o inf"
                   className="h-8"
                 />
               </div>
@@ -539,8 +557,9 @@ export default function Exercises() {
                 <Label className="text-xs text-muted-foreground">Max</Label>
                 <Input
                   type="text"
-                  value={range.max}
-                  onChange={(e) => updateRange(gender, index, 'max', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                  value={formatRangeValue(range.max)}
+                  onChange={(e) => updateRange(gender, index, 'max', e.target.value)}
+                  placeholder="es. 100 o inf"
                   className="h-8"
                 />
               </div>
@@ -1270,11 +1289,11 @@ export default function Exercises() {
                                 <Input
                                   type="text"
                                   placeholder="Min"
-                                  value={range.min}
+                                  value={formatRangeValue(range.min)}
                                   onChange={(e) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseRangeValue(e.target.value) };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -1286,11 +1305,11 @@ export default function Exercises() {
                                 <Input
                                   type="text"
                                   placeholder="Max"
-                                  value={range.max}
+                                  value={formatRangeValue(range.max)}
                                   onChange={(e) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseRangeValue(e.target.value) };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
@@ -1383,11 +1402,11 @@ export default function Exercises() {
                                   <Input
                                     type="text"
                                     placeholder="Min"
-                                    value={range.min}
+                                    value={formatRangeValue(range.min)}
                                     onChange={(e) => {
                                       const updated = [...criteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseRangeValue(e.target.value) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, F: ranges }
@@ -1399,11 +1418,11 @@ export default function Exercises() {
                                   <Input
                                     type="text"
                                     placeholder="Max"
-                                    value={range.max}
+                                    value={formatRangeValue(range.max)}
                                     onChange={(e) => {
                                       const updated = [...criteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseRangeValue(e.target.value) };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, F: ranges }
