@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { IconGenderMale, IconGenderFemale } from "@tabler/icons-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DecimalInput } from "@/components/ui/decimal-input";
 
 // Unit display names in Italian
 const unitDisplayNames: Record<string, string> = {
@@ -545,20 +546,22 @@ export default function Exercises() {
             <div className="flex-1 grid grid-cols-3 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Min</Label>
-                <Input
-                  type="text"
-                  value={formatRangeValue(range.min)}
-                  onChange={(e) => updateRange(gender, index, 'min', e.target.value)}
+                  <DecimalInput
+                  value={range.min}
+                  onChange={(val) => updateRange(gender, index, 'min', val)}
+                  format={formatRangeValue}
+                  parse={parseRangeValue}
                   placeholder="es. 10 o inf"
                   className="h-8"
                 />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground">Max</Label>
-                <Input
-                  type="text"
-                  value={formatRangeValue(range.max)}
-                  onChange={(e) => updateRange(gender, index, 'max', e.target.value)}
+                <DecimalInput
+                  value={range.max}
+                  onChange={(val) => updateRange(gender, index, 'max', val)}
+                  format={formatRangeValue}
+                  parse={parseRangeValue}
                   placeholder="es. 100 o inf"
                   className="h-8"
                 />
@@ -1286,36 +1289,38 @@ export default function Exercises() {
                           <div className="space-y-1">
                             {(criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }]).map((range, rangeIndex) => (
                               <div key={rangeIndex} className="flex items-center gap-1">
-                                <Input
-                                  type="text"
-                                  placeholder="Min"
-                                  value={formatRangeValue(range.min)}
-                                  onChange={(e) => {
+                                <DecimalInput
+                                  value={range.min}
+                                  onChange={(val) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseRangeValue(e.target.value) };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: val };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
                                     };
                                     setCriteriaWithRanges(updated);
                                   }}
+                                  format={formatRangeValue}
+                                  parse={parseRangeValue}
+                                  placeholder="Min"
                                   className="h-7 text-xs"
                                 />
-                                <Input
-                                  type="text"
-                                  placeholder="Max"
-                                  value={formatRangeValue(range.max)}
-                                  onChange={(e) => {
+                                <DecimalInput
+                                  value={range.max}
+                                  onChange={(val) => {
                                     const updated = [...criteriaWithRanges];
                                     const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseRangeValue(e.target.value) };
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: val };
                                     updated[criterionIndex] = {
                                       ...updated[criterionIndex],
                                       ranges: { ...updated[criterionIndex].ranges, M: ranges }
                                     };
                                     setCriteriaWithRanges(updated);
                                   }}
+                                  format={formatRangeValue}
+                                  parse={parseRangeValue}
+                                  placeholder="Max"
                                   className="h-7 text-xs"
                                 />
                                 <Select
@@ -1399,38 +1404,40 @@ export default function Exercises() {
                             <div className="space-y-1">
                               {(criterion.ranges?.F || []).map((range, rangeIndex) => (
                                 <div key={rangeIndex} className="flex items-center gap-1">
-                                  <Input
-                                    type="text"
-                                    placeholder="Min"
-                                    value={formatRangeValue(range.min)}
-                                    onChange={(e) => {
-                                      const updated = [...criteriaWithRanges];
-                                      const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: parseRangeValue(e.target.value) };
-                                      updated[criterionIndex] = {
-                                        ...updated[criterionIndex],
-                                        ranges: { ...updated[criterionIndex].ranges, F: ranges }
-                                      };
-                                      setCriteriaWithRanges(updated);
-                                    }}
-                                    className="h-7 text-xs"
-                                  />
-                                  <Input
-                                    type="text"
-                                    placeholder="Max"
-                                    value={formatRangeValue(range.max)}
-                                    onChange={(e) => {
-                                      const updated = [...criteriaWithRanges];
-                                      const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: parseRangeValue(e.target.value) };
-                                      updated[criterionIndex] = {
-                                        ...updated[criterionIndex],
-                                        ranges: { ...updated[criterionIndex].ranges, F: ranges }
-                                      };
-                                      setCriteriaWithRanges(updated);
-                                    }}
-                                    className="h-7 text-xs"
-                                  />
+                                <DecimalInput
+                                  value={range.min}
+                                  onChange={(val) => {
+                                    const updated = [...criteriaWithRanges];
+                                    const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], min: val };
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                    };
+                                    setCriteriaWithRanges(updated);
+                                  }}
+                                  format={formatRangeValue}
+                                  parse={parseRangeValue}
+                                  placeholder="Min"
+                                  className="h-7 text-xs"
+                                />
+                                <DecimalInput
+                                  value={range.max}
+                                  onChange={(val) => {
+                                    const updated = [...criteriaWithRanges];
+                                    const ranges = [...(updated[criterionIndex].ranges?.F || [])];
+                                    ranges[rangeIndex] = { ...ranges[rangeIndex], max: val };
+                                    updated[criterionIndex] = {
+                                      ...updated[criterionIndex],
+                                      ranges: { ...updated[criterionIndex].ranges, F: ranges }
+                                    };
+                                    setCriteriaWithRanges(updated);
+                                  }}
+                                  format={formatRangeValue}
+                                  parse={parseRangeValue}
+                                  placeholder="Max"
+                                  className="h-7 text-xs"
+                                />
                                   <Select
                                     value={range.score.toString()}
                                     onValueChange={(v) => {
@@ -1808,25 +1815,21 @@ export default function Exercises() {
                               <div className="flex-1 grid grid-cols-3 gap-2">
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">Min</Label>
-                                  <Input
-                                    type="number"
+                                  <DecimalInput
                                     value={range.min}
-                                    onChange={(e) => {
-                                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                      updateEditRange('M', index, 'min', val);
-                                    }}
+                                    onChange={(val) => updateEditRange('M', index, 'min', val)}
+                                    format={formatRangeValue}
+                                    parse={parseRangeValue}
                                     className="h-8"
                                   />
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">Max</Label>
-                                  <Input
-                                    type="number"
+                                  <DecimalInput
                                     value={range.max}
-                                    onChange={(e) => {
-                                      const val = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                                      updateEditRange('M', index, 'max', val);
-                                    }}
+                                    onChange={(val) => updateEditRange('M', index, 'max', val)}
+                                    format={formatRangeValue}
+                                    parse={parseRangeValue}
                                     className="h-8"
                                   />
                                 </div>
@@ -1884,19 +1887,21 @@ export default function Exercises() {
                                 <div className="flex-1 grid grid-cols-3 gap-2">
                                   <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">Min</Label>
-                                    <Input
-                                      type="number"
+                                    <DecimalInput
                                       value={range.min}
-                                      onChange={(e) => updateEditRange('F', index, 'min', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                                      onChange={(val) => updateEditRange('F', index, 'min', val)}
+                                      format={formatRangeValue}
+                                      parse={parseRangeValue}
                                       className="h-8"
                                     />
                                   </div>
                                   <div className="space-y-1">
                                     <Label className="text-xs text-muted-foreground">Max</Label>
-                                    <Input
-                                      type="number"
+                                    <DecimalInput
                                       value={range.max}
-                                      onChange={(e) => updateEditRange('F', index, 'max', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
+                                      onChange={(val) => updateEditRange('F', index, 'max', val)}
+                                      format={formatRangeValue}
+                                      parse={parseRangeValue}
                                       className="h-8"
                                     />
                                   </div>
@@ -2164,36 +2169,38 @@ export default function Exercises() {
                             <div className="space-y-1">
                               {(criterion.ranges?.M || [{ min: 0, max: 100, score: 6 }]).map((range, rangeIndex) => (
                                 <div key={rangeIndex} className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    placeholder="Min"
+                                  <DecimalInput
                                     value={range.min}
-                                    onChange={(e) => {
+                                    onChange={(val) => {
                                       const updated = [...editCriteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], min: val };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, M: ranges }
                                       };
                                       setEditCriteriaWithRanges(updated);
                                     }}
+                                    format={formatRangeValue}
+                                    parse={parseRangeValue}
+                                    placeholder="Min"
                                     className="h-7 text-xs"
                                   />
-                                  <Input
-                                    type="number"
-                                    placeholder="Max"
+                                  <DecimalInput
                                     value={range.max}
-                                    onChange={(e) => {
+                                    onChange={(val) => {
                                       const updated = [...editCriteriaWithRanges];
                                       const ranges = [...(updated[criterionIndex].ranges?.M || [])];
-                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                      ranges[rangeIndex] = { ...ranges[rangeIndex], max: val };
                                       updated[criterionIndex] = {
                                         ...updated[criterionIndex],
                                         ranges: { ...updated[criterionIndex].ranges, M: ranges }
                                       };
                                       setEditCriteriaWithRanges(updated);
                                     }}
+                                    format={formatRangeValue}
+                                    parse={parseRangeValue}
+                                    placeholder="Max"
                                     className="h-7 text-xs"
                                   />
                                   <Select
@@ -2277,36 +2284,38 @@ export default function Exercises() {
                               <div className="space-y-1">
                                 {(criterion.ranges?.F || []).map((range, rangeIndex) => (
                                   <div key={rangeIndex} className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      placeholder="Min"
+                                    <DecimalInput
                                       value={range.min}
-                                      onChange={(e) => {
+                                      onChange={(val) => {
                                         const updated = [...editCriteriaWithRanges];
                                         const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                        ranges[rangeIndex] = { ...ranges[rangeIndex], min: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], min: val };
                                         updated[criterionIndex] = {
                                           ...updated[criterionIndex],
                                           ranges: { ...updated[criterionIndex].ranges, F: ranges }
                                         };
                                         setEditCriteriaWithRanges(updated);
                                       }}
+                                      format={formatRangeValue}
+                                      parse={parseRangeValue}
+                                      placeholder="Min"
                                       className="h-7 text-xs"
                                     />
-                                    <Input
-                                      type="number"
-                                      placeholder="Max"
+                                    <DecimalInput
                                       value={range.max}
-                                      onChange={(e) => {
+                                      onChange={(val) => {
                                         const updated = [...editCriteriaWithRanges];
                                         const ranges = [...(updated[criterionIndex].ranges?.F || [])];
-                                        ranges[rangeIndex] = { ...ranges[rangeIndex], max: e.target.value === '' ? 0 : (parseFloat(e.target.value) || 0) };
+                                        ranges[rangeIndex] = { ...ranges[rangeIndex], max: val };
                                         updated[criterionIndex] = {
                                           ...updated[criterionIndex],
                                           ranges: { ...updated[criterionIndex].ranges, F: ranges }
                                         };
                                         setEditCriteriaWithRanges(updated);
                                       }}
+                                      format={formatRangeValue}
+                                      parse={parseRangeValue}
+                                      placeholder="Max"
                                       className="h-7 text-xs"
                                     />
                                     <Select

@@ -28,6 +28,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DecimalInput } from "@/components/ui/decimal-input";
 
 // Types for evaluation state
 type EvaluationStatus = "non-valutato" | "valutando" | "valutato";
@@ -768,27 +769,23 @@ export default function Valutazioni() {
                                                 <Label>Punteggi per Criterio</Label>
                                                 <div className="space-y-2">
                                                     {gradingExercise.evaluationCriteria.map((criterion) => (
-                                                        <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                                                            <div className="flex-1">
-                                                                <p className="text-sm font-medium">{criterion.name}</p>
-                                                                <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                            <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                                                <div className="flex-1">
+                                                                    <p className="text-sm font-medium">{criterion.name}</p>
+                                                                    <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                                </div>
+                                                                <DecimalInput
+                                                                    value={criteriaScores[criterion.name] || 0}
+                                                                    onChange={(val) => {
+                                                                        const clampedVal = Math.min(val, criterion.maxScore); // Removed Math.max(0) to allow negatives
+                                                                        setCriteriaScores({
+                                                                            ...criteriaScores,
+                                                                            [criterion.name]: clampedVal
+                                                                        });
+                                                                    }}
+                                                                    className="w-20 h-8 text-center"
+                                                                />
                                                             </div>
-                                                            <Input
-                                                                type="text"
-                                                                min="0"
-                                                                max={criterion.maxScore}
-                                                                value={criteriaScores[criterion.name] || ''}
-                                                                onChange={(e) => {
-                                                                    const val = parseInputNumber(e.target.value);
-                                                                    const clampedVal = Math.min(Math.max(val, 0), criterion.maxScore);
-                                                                    setCriteriaScores({
-                                                                        ...criteriaScores,
-                                                                        [criterion.name]: clampedVal
-                                                                    });
-                                                                }}
-                                                                className="w-20 h-8 text-center"
-                                                            />
-                                                        </div>
                                                     ))}
                                                 </div>
 
@@ -855,21 +852,19 @@ export default function Valutazioni() {
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                    <Input
-                                                                        type="text"
-                                                                        placeholder={`Inserisci ${criterion.unit}`}
-                                                                        value={criteriaPerformances[criterion.name] ?? ''}
-                                                                        onChange={(e) => {
-                                                                            const val = parseInputNumber(e.target.value);
-                                                                            setCriteriaPerformances({
-                                                                                ...criteriaPerformances,
-                                                                                [criterion.name]: isNaN(val) ? 0 : val
-                                                                            });
-                                                                        }}
-                                                                        className="flex-1 h-8"
-                                                                    />
-                                                                    <span className="text-xs text-muted-foreground w-12">{criterion.unit}</span>
-                                                                </div>
+                                                                        <DecimalInput
+                                                                            placeholder={`Inserisci ${criterion.unit}`}
+                                                                            value={criteriaPerformances[criterion.name] ?? 0}
+                                                                            onChange={(val) => {
+                                                                                setCriteriaPerformances({
+                                                                                    ...criteriaPerformances,
+                                                                                    [criterion.name]: val
+                                                                                });
+                                                                            }}
+                                                                            className="flex-1 h-8"
+                                                                        />
+                                                                        <span className="text-xs text-muted-foreground w-12">{criterion.unit}</span>
+                                                                    </div>
                                                             </div>
                                                         );
                                                     })}
