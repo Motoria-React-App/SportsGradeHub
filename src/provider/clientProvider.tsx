@@ -432,7 +432,7 @@ class Client {
     public async refreshAccessToken(): Promise<boolean> {
         try {
             // Refresh token is sent via cookie automatically
-            const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST");
+            const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST", undefined, true);
 
             if (response.success) {
                 // If the server returns a new access token in body, update it (optional depending on implementation)
