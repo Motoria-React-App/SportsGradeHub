@@ -425,29 +425,34 @@ class Client {
         return null;
     }
 
-
-
-
-    // Refresh the access token using the refresh token (via cookie)
-    public async refreshAccessToken(): Promise<boolean> {
+    /**
+     * Attempts to refresh the access token using the refresh token (sent via cookie).
+     * Returns:
+     *  - 'success': token refreshed successfully, caller should retry the original request
+     *  - 'expired': server explicitly rejected the refresh (401), session is truly dead
+     *  - 'error': network or server error, do NOT logout (it may be transient)
+     */
+    public async refreshAccessToken(): Promise<'success' | 'expired' | 'error'> {
         try {
-            // Refresh token is sent via cookie automatically
+            // Pass isRetry=true to prevent sendRequest from trying to refresh AGAIN
+            // if this call fails (which would cause an infinite loop).
             const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST", undefined, true);
 
             if (response.success) {
-                // If the server returns a new access token in body, update it (optional depending on implementation)
-                // But primarily we rely on the cookie being updated by the response headers
-
-                // We might want to re-fetch the user to ensure we have the latest state
-                // but for now, just marking as success is enough for the interceptor to retry
-
-                return true;
+                return 'success';
             }
 
-            return false;
+            // If the refresh endpoint explicitly returned 401, the refresh token is
+            // truly invalid/expired. The session cannot be recovered.
+            if (response.error?.statusCode === 401) {
+                return 'expired';
+            }
+
+            // Any other error (network, 5xx, etc.) is treated as transient.
+            return 'error';
         } catch (error) {
             console.error("Error refreshing token:", error);
-            return false;
+            return 'error';
         }
     }
 
@@ -506,17 +511,19 @@ class Client {
             // Se riceviamo 401 e non è già un retry, prova a refreshare il token
             if (!result.success && result.error?.statusCode === 401 && !isRetry) {
 
-                const refreshed = await this.refreshAccessToken();
+                const refreshResult = await this.refreshAccessToken();
 
-                if (refreshed) {
-                    // Riprova la richiesta originale
-
+                if (refreshResult === 'success') {
+                    // Token rinnovato con successo: riprova la richiesta originale
                     return await this.sendRequest<T>(endpoint, method, body, true);
-                } else {
-                    // Refresh fallito, l'utente deve riloggarsi
-                    console.error("Token refresh failed, user needs to login again");
+                } else if (refreshResult === 'expired') {
+                    // Il refresh token è scaduto: sessione definitivamente terminata,
+                    // slogga l'utente
+                    console.warn("Session expired: refresh token rejected by server. Logging out.");
                     this.logout();
                 }
+                // Se 'error' (rete/transitorio), non fare logout: restituiamo il
+                // risultato 401 originale e lasciamo che il chiamante gestisca.
             }
 
             return result;
