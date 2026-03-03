@@ -751,6 +751,11 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         return c;
     }, []);
 
+    // Keep a ref to user so callbacks can read the latest value
+    // without needing to be recreated every time user changes.
+    const userRef = React.useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
+
     // Initialize user state from client on mount and validate session
     useEffect(() => {
         const initializeSession = async () => {
@@ -794,7 +799,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshClasses = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const response = await client.getNonArchivedClasses();
             if (response.success && response.data) {
@@ -803,10 +808,10 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch classes", error);
         }
-    }, [client, user]);
+    }, [client]);
 
     const refreshStudents = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const response = await client.getStudents();
             if (response.success && response.data) {
@@ -815,10 +820,10 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch students", error);
         }
-    }, [client, user]);
+    }, [client]);
 
     const refreshExercises = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const response = await client.getAllExercises();
             if (response.success && response.data) {
@@ -827,10 +832,10 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch exercises", error);
         }
-    }, [client, user]);
+    }, [client]);
 
     const refreshExerciseGroups = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const response = await client.getAllExerciseGroups();
             if (response.success && response.data) {
@@ -839,10 +844,10 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch exercise groups", error);
         }
-    }, [client, user]);
+    }, [client]);
 
     const refreshEvaluations = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const response = await client.getAllEvaluations();
             if (response.success && response.data) {
@@ -851,7 +856,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         } catch (error) {
             console.error("Failed to fetch evaluations", error);
         }
-    }, [client, user]);
+    }, [client]);
 
     const refreshAllData = useCallback(async () => {
         await Promise.all([

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import { useClient, useAuth } from "./clientProvider";
 
 // Periodo scolastico personalizzabile
@@ -83,6 +83,10 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
     const client = useClient();
     const { user } = useAuth();
 
+    // Keep a stable ref to user so callbacks don't need user in their deps
+    const userRef = useRef(user);
+    useEffect(() => { userRef.current = user; }, [user]);
+
     const [settings, setSettings] = useState<AppSettings>(() => {
         const stored = localStorage.getItem(storageKey);
         if (stored) {
@@ -144,7 +148,7 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
             const updated = { ...prev, ...newSettings };
 
             // Sync to DB (fire and forget)
-            if (user) {
+            if (userRef.current) {
                 client.updateSettings({ general: updated }).catch(e => {
                     console.error("Failed to save settings to DB", e);
                 });
@@ -152,7 +156,7 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
 
             return updated;
         });
-    }, [client, user]);
+    }, [client]); // Stable: does not depend on user (uses ref instead)
 
     // Automatic period activation
     useEffect(() => {
