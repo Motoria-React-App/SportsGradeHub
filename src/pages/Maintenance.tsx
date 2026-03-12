@@ -13,7 +13,7 @@ export default function Maintenance() {
       
       <div className="space-y-4 max-w-2xl">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Sito in Manutenzione
+          Sito in Manutenzione programmata
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
           Stiamo eseguendo degli aggiornamenti importanti per migliorare la tua esperienza. 
