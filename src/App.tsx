@@ -10,6 +10,7 @@ import Exercises from "@/pages/Exercises";
 import LoginPage from "@/pages/LoginPage";
 import Settings from "@/pages/Settings";
 import WelcomePage from "@/pages/WelcomePage";
+import Maintenance from "@/pages/Maintenance";
 
 
 // Layout wrapper for authenticated pages (with sidebar and command dialog)
@@ -69,6 +70,11 @@ function App() {
     checkAuth();
   }, []);
 
+  const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
+
+  if (isMaintenanceMode) {
+    return <Maintenance />;
+  }
 
   return (
     <Router>
