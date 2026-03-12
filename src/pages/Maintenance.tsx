@@ -17,7 +17,7 @@ export default function Maintenance() {
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
           Stiamo eseguendo degli aggiornamenti importanti per migliorare la tua esperienza. 
-          Il servizio tornerà online al più presto. Ci scusiamo per il disagio!
+          Il servizio tornerà online al più presto. Ci scusiamo per il disagio!😜
         </p>
       </div>
 
