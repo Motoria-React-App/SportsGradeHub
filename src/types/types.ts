@@ -102,6 +102,9 @@ export interface Evaluation {
     comments?: string;
 }
 
+export type EvaluationStatus = "non-valutato" | "valutando" | "valutato";
+export type SortMode = "alpha-asc" | "alpha-desc" | "grade-high" | "grade-low" | "completion";
+
 // ============ EXPANDED TYPES FOR API RESPONSES ============
 // These are used when the backend returns nested data (e.g., getClassById)
 

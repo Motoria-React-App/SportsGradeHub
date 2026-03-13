@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
-import type { Student, Exercise, Evaluation, Gender } from "@/types/types";
-import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2 } from "lucide-react";
+import type { Student, Exercise, Evaluation, Gender, EvaluationStatus, SortMode } from "@/types/types";
+import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2, Columns3, Grid3X3, ArrowUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
@@ -29,9 +31,8 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DecimalInput } from "@/components/ui/decimal-input";
+import ValutazioniGridView from "@/components/ValutazioniGridView";
 
-// Types for evaluation state
-type EvaluationStatus = "non-valutato" | "valutando" | "valutato";
 
 // Helper to determine status based on evaluation value
 function getEvaluationStatus(evaluation: Evaluation): EvaluationStatus {
@@ -85,6 +86,8 @@ export default function Valutazioni() {
     // Filters
     const [selectedClassId, setSelectedClassId] = useState<string>("all");
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>("all");
+    const [viewMode, setViewMode] = useState<"kanban" | "grid">("kanban");
+    const [sortMode, setSortMode] = useState<SortMode>("alpha-asc");
 
     const { classId, exerciseId } = useParams();
     const location = useLocation();
@@ -220,6 +223,42 @@ export default function Valutazioni() {
 
         return groups;
     }, [filteredEvaluations, selectedEvaluationForGrading]);
+
+    // Sort evaluations helper for kanban columns
+    const sortEvaluations = (evals: Evaluation[]): Evaluation[] => {
+        const sorted = [...evals];
+        switch (sortMode) {
+            case "alpha-asc":
+                sorted.sort((a, b) => {
+                    const sa = getStudent(a.studentId);
+                    const sb = getStudent(b.studentId);
+                    if (!sa || !sb) return 0;
+                    return `${sa.lastName} ${sa.firstName}`.localeCompare(`${sb.lastName} ${sb.firstName}`);
+                });
+                break;
+            case "alpha-desc":
+                sorted.sort((a, b) => {
+                    const sa = getStudent(a.studentId);
+                    const sb = getStudent(b.studentId);
+                    if (!sa || !sb) return 0;
+                    return `${sb.lastName} ${sb.firstName}`.localeCompare(`${sa.lastName} ${sa.firstName}`);
+                });
+                break;
+            case "grade-high":
+                sorted.sort((a, b) => b.score - a.score);
+                break;
+            case "grade-low":
+                sorted.sort((a, b) => a.score - b.score);
+                break;
+            case "completion":
+                sorted.sort((a, b) => {
+                    const statusOrder = { "valutato": 0, "valutando": 1, "non-valutato": 2 };
+                    return statusOrder[getEvaluationStatus(a)] - statusOrder[getEvaluationStatus(b)];
+                });
+                break;
+        }
+        return sorted;
+    };
 
     // Handle assigning exercise to students (creates evaluations)
     const handleAssignExercise = async () => {
@@ -446,6 +485,35 @@ export default function Valutazioni() {
         }
     };
 
+    // Handle saving evaluation from grid view inline editing
+    const handleGridSaveEvaluation = async (
+        studentId: string,
+        exerciseId: string,
+        data: {
+            performanceValue: string;
+            score: number;
+            criteriaScores?: Record<string, number>;
+            criteriaPerformances?: Record<string, number>;
+            comments?: string;
+        }
+    ) => {
+        try {
+            await client.createEvaluation({
+                studentId,
+                exerciseId,
+                performanceValue: data.performanceValue,
+                score: data.score,
+                criteriaScores: data.criteriaScores,
+                criteriaPerformances: data.criteriaPerformances,
+                comments: data.comments || "",
+            });
+            await refreshEvaluations();
+        } catch (error) {
+            console.error("Error saving grid evaluation:", error);
+        }
+    };
+
+
     // Get student details
     const getStudent = (studentId: string): Student | undefined => {
         return students.find((s) => s.id === studentId);
@@ -478,7 +546,7 @@ export default function Valutazioni() {
         bgClass: string;
         size?: "small" | "default" | "large";
     }) => {
-        const items = groupedEvaluations[status];
+        const items = sortEvaluations(groupedEvaluations[status]);
 
         const sizeClasses = {
             small: "min-w-[240px]",
@@ -606,6 +674,32 @@ export default function Valutazioni() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* View mode toggle */}
+                        <ToggleGroup
+                            type="single"
+                            value={viewMode}
+                            onValueChange={(v) => { if (v) setViewMode(v as "kanban" | "grid"); }}
+                            variant="outline"
+                            size="sm"
+                        >
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <ToggleGroupItem value="kanban" aria-label="Vista Kanban">
+                                        <Columns3 className="h-4 w-4" />
+                                    </ToggleGroupItem>
+                                </TooltipTrigger>
+                                <TooltipContent>Vista Kanban</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <ToggleGroupItem value="grid" aria-label="Vista Griglia">
+                                        <Grid3X3 className="h-4 w-4" />
+                                    </ToggleGroupItem>
+                                </TooltipTrigger>
+                                <TooltipContent>Vista Griglia</TooltipContent>
+                            </Tooltip>
+                        </ToggleGroup>
+
                         {selectedExerciseId !== "all" && filteredEvaluations.length > 0 && (
                             <Button
                                 variant="outline"
@@ -654,56 +748,96 @@ export default function Valutazioni() {
                         </Select>
                     </div>
 
-                    {totalEvaluations > 0 && (
-                        <div className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline" className="text-base px-3 py-1">
-                                {completedEvaluations}/{totalEvaluations} valutati
-                            </Badge>
-                            <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-green-500 transition-all"
-                                    style={{
-                                        width: `${(completedEvaluations / totalEvaluations) * 100}%`,
-                                    }}
-                                />
-                            </div>
+                    {/* Sort dropdown */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                            <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                                <SelectTrigger className="w-[180px] h-8 text-xs">
+                                    <SelectValue placeholder="Ordina per..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="alpha-asc">Alfabetico A→Z</SelectItem>
+                                    <SelectItem value="alpha-desc">Alfabetico Z→A</SelectItem>
+                                    <SelectItem value="grade-high">Voto più alto</SelectItem>
+                                    <SelectItem value="grade-low">Voto più basso</SelectItem>
+                                    <SelectItem value="completion">Completamento</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
+
+                        {totalEvaluations > 0 && (
+                            <div className="flex items-center gap-2 text-sm">
+                                <Badge variant="outline" className="text-base px-3 py-1">
+                                    {completedEvaluations}/{totalEvaluations} valutati
+                                </Badge>
+                                <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-green-500 transition-all"
+                                        style={{
+                                            width: `${(completedEvaluations / totalEvaluations) * 100}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Kanban columns and grading panel */}
+                {/* Kanban columns / Grid view and grading panel */}
                 <div className="flex gap-6 items-stretch relative flex-1 min-h-0">
-                    {/* Columns */}
-                    <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
-                        <Column
-                            title="Non Valutato"
-                            status="non-valutato"
-                            icon={AlertCircle}
-                            colorClass="text-slate-600 dark:text-slate-400"
-                            bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
-                            size="small"
-                        />
-                        <Column
-                            title="Valutando"
-                            status="valutando"
-                            icon={Clock}
-                            colorClass="text-yellow-600 dark:text-yellow-400"
-                            bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
-                            size="small"
-                        />
-                        <Column
-                            title="Valutato"
-                            status="valutato"
-                            icon={Check}
-                            colorClass="text-green-600 dark:text-green-400"
-                            bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                            size="large"
-                        />
-                    </div>
+                    {viewMode === "kanban" ? (
+                        /* Kanban Columns */
+                        <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
+                            <Column
+                                title="Non Valutato"
+                                status="non-valutato"
+                                icon={AlertCircle}
+                                colorClass="text-slate-600 dark:text-slate-400"
+                                bgClass="bg-slate-50/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800"
+                                size="small"
+                            />
+                            <Column
+                                title="Valutando"
+                                status="valutando"
+                                icon={Clock}
+                                colorClass="text-yellow-600 dark:text-yellow-400"
+                                bgClass="bg-yellow-50/50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                                size="small"
+                            />
+                            <Column
+                                title="Valutato"
+                                status="valutato"
+                                icon={Check}
+                                colorClass="text-green-600 dark:text-green-400"
+                                bgClass="bg-green-50/50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                                size="large"
+                            />
+                        </div>
+                    ) : (
+                        /* Grid View */
+                        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                            <ValutazioniGridView
+                                filteredEvaluations={filteredEvaluations}
+                                students={students}
+                                exercises={exercises}
+                                classes={classes}
+                                filteredExercises={filteredExercises}
+                                selectedClassId={selectedClassId}
+                                selectedExerciseId={selectedExerciseId}
+                                formatGrade={formatGrade}
+                                getGradeColor={getGradeColor}
+                                getGradeBgColor={getGradeBgColor}
+                                sortMode={sortMode}
+                                onSaveEvaluation={handleGridSaveEvaluation}
+                                enableBasePoint={settings.enableBasePoint}
+                            />
+                        </div>
+                    )}
 
-                    {/* Grading panel - positioned fixed on right */}
+                    {/* Grading panel - positioned fixed on right (kanban only) */}
                     <AnimatePresence>
-                        {selectedEvaluationForGrading && gradingStudent && gradingExercise && (
+                        {viewMode === "kanban" && selectedEvaluationForGrading && gradingStudent && gradingExercise && (
                             <motion.div
                                 key="grading-panel"
                                 initial={{ opacity: 0, x: 50 }}
@@ -769,23 +903,23 @@ export default function Valutazioni() {
                                                 <Label>Punteggi per Criterio</Label>
                                                 <div className="space-y-2">
                                                     {gradingExercise.evaluationCriteria.map((criterion) => (
-                                                            <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                                                                <div className="flex-1">
-                                                                    <p className="text-sm font-medium">{criterion.name}</p>
-                                                                    <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
-                                                                </div>
-                                                                <DecimalInput
-                                                                    value={criteriaScores[criterion.name] || 0}
-                                                                    onChange={(val) => {
-                                                                        const clampedVal = Math.min(val, criterion.maxScore); // Removed Math.max(0) to allow negatives
-                                                                        setCriteriaScores({
-                                                                            ...criteriaScores,
-                                                                            [criterion.name]: clampedVal
-                                                                        });
-                                                                    }}
-                                                                    className="w-20 h-8 text-center"
-                                                                />
+                                                        <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
+                                                            <div className="flex-1">
+                                                                <p className="text-sm font-medium">{criterion.name}</p>
+                                                                <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
                                                             </div>
+                                                            <DecimalInput
+                                                                value={criteriaScores[criterion.name] || 0}
+                                                                onChange={(val) => {
+                                                                    const clampedVal = Math.min(val, criterion.maxScore); // Removed Math.max(0) to allow negatives
+                                                                    setCriteriaScores({
+                                                                        ...criteriaScores,
+                                                                        [criterion.name]: clampedVal
+                                                                    });
+                                                                }}
+                                                                className="w-20 h-8 text-center"
+                                                            />
+                                                        </div>
                                                     ))}
                                                 </div>
 
@@ -852,19 +986,19 @@ export default function Valutazioni() {
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
-                                                                        <DecimalInput
-                                                                            placeholder={`Inserisci ${criterion.unit}`}
-                                                                            value={criteriaPerformances[criterion.name] ?? 0}
-                                                                            onChange={(val) => {
-                                                                                setCriteriaPerformances({
-                                                                                    ...criteriaPerformances,
-                                                                                    [criterion.name]: val
-                                                                                });
-                                                                            }}
-                                                                            className="flex-1 h-8"
-                                                                        />
-                                                                        <span className="text-xs text-muted-foreground w-12">{criterion.unit}</span>
-                                                                    </div>
+                                                                    <DecimalInput
+                                                                        placeholder={`Inserisci ${criterion.unit}`}
+                                                                        value={criteriaPerformances[criterion.name] ?? 0}
+                                                                        onChange={(val) => {
+                                                                            setCriteriaPerformances({
+                                                                                ...criteriaPerformances,
+                                                                                [criterion.name]: val
+                                                                            });
+                                                                        }}
+                                                                        className="flex-1 h-8"
+                                                                    />
+                                                                    <span className="text-xs text-muted-foreground w-12">{criterion.unit}</span>
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
