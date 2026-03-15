@@ -11,6 +11,8 @@ import LoginPage from "@/pages/LoginPage";
 import Settings from "@/pages/Settings";
 import WelcomePage from "@/pages/WelcomePage";
 import Maintenance from "@/pages/Maintenance";
+import TermsPage from "@/pages/TermsPage";
+import PrivacyPage from "@/pages/PrivacyPage";
 
 
 // Layout wrapper for authenticated pages (with sidebar and command dialog)
@@ -84,6 +86,10 @@ function App() {
         {/* Login page - standalone without sidebar */}
         <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
+        
+        {/* Public info pages */}
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
 
         {/* Authenticated routes */}
         <Route path="/welcome" element={<WelcomePage />} />
