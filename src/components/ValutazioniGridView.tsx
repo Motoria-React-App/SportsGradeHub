@@ -57,21 +57,22 @@ function calculateScoreFromRanges(
 }
 
 // Parse numeric input with comma support
-function parseInputNumber(val: string): number {
-    if (!val) return 0;
-    return parseFloat(val.toString().replace(",", ".")) || 0;
+function parseInputNumber(val: string): number | null {
+    if (val === "" || val === undefined || val === null) return null;
+    const parsed = parseFloat(val.toString().replace(",", "."));
+    return isNaN(parsed) ? null : parsed;
 }
 
 // Format number with comma as decimal separator
-function formatNumber(val: number): string {
-    if (val === 0) return "";
+function formatNumber(val: number | null): string {
+    if (val === null || val === undefined) return "";
     return val.toString().replace(".", ",");
 }
 
 // ─── Inline editable cell ───────────────────────────────────────────────────
 interface InlineCellProps {
-    value: number;
-    onCommit: (value: number) => void;
+    value: number | null;
+    onCommit: (value: number | null) => void;
     maxValue?: number;
     unit?: string;
     isSaving?: boolean;
@@ -98,7 +99,7 @@ function InlineCell({ value, onCommit, maxValue, unit, isSaving, justSaved }: In
     const handleBlur = () => {
         setEditing(false);
         const parsed = parseInputNumber(localValue);
-        const clamped = maxValue !== undefined ? Math.min(parsed, maxValue) : parsed;
+        const clamped = (parsed !== null && maxValue !== undefined) ? Math.min(parsed, maxValue) : parsed;
         if (clamped !== value) {
             onCommit(clamped);
         } else {
@@ -325,7 +326,7 @@ export default function ValutazioniGridView({
         // Range-based
         const perfStr = ev.performanceValue?.toString() || "";
         const performanceNum = parseInputNumber(perfStr);
-        if (isNaN(performanceNum) || performanceNum === 0) return 0;
+        if (performanceNum === null || isNaN(performanceNum)) return 0;
 
         const ranges = exercise.evaluationRanges?.[student.gender] || exercise.evaluationRanges?.["M"];
         let rangeScore = calculateScoreFromRanges(performanceNum, ranges);
@@ -346,7 +347,7 @@ export default function ValutazioniGridView({
     const handleCellCommit = useCallback(async (
         student: Student,
         columnKey: string,
-        newValue: number
+        newValue: number | null
     ) => {
         if (!exercise) return;
 
@@ -369,7 +370,11 @@ export default function ValutazioniGridView({
 
             if (isCriteriaBased) {
                 const updatedScores = { ...(ev?.criteriaScores || {}) };
-                updatedScores[columnKey] = newValue;
+                if (newValue === null) {
+                    delete updatedScores[columnKey];
+                } else {
+                    updatedScores[columnKey] = newValue;
+                }
 
                 // Calculate final score
                 const totalMax = exercise.evaluationCriteria!.reduce((sum, c) => sum + c.maxScore, 0);
@@ -395,7 +400,11 @@ export default function ValutazioniGridView({
                 };
             } else if (isCriteriaRangesBased) {
                 const updatedPerformances = { ...(ev?.criteriaPerformances || {}) };
-                updatedPerformances[columnKey] = newValue;
+                if (newValue === null) {
+                    delete updatedPerformances[columnKey];
+                } else {
+                    updatedPerformances[columnKey] = newValue;
+                }
 
                 // Compute per-criterion scores
                 const computedCriteriaScores: Record<string, number> = {};
@@ -438,9 +447,9 @@ export default function ValutazioniGridView({
                 };
             } else {
                 // Range-based: single performance value
-                const performanceValue = newValue.toString();
+                const performanceValue = newValue === null ? "" : newValue.toString();
                 const ranges = exercise.evaluationRanges?.[student.gender] || exercise.evaluationRanges?.["M"];
-                let rangeScore = calculateScoreFromRanges(newValue, ranges);
+                let rangeScore = newValue === null ? null : calculateScoreFromRanges(newValue, ranges);
 
                 if (rangeScore !== null && enableBasePoint) {
                     const maxScore = exercise.maxScore || 10;
@@ -506,17 +515,17 @@ export default function ValutazioniGridView({
     }, [exercise, evalMap, onSaveEvaluation, enableBasePoint]);
 
     // ─── Get cell value from evaluation ─────────────────────────────────────
-    const getCellValue = useCallback((ev: Evaluation | undefined, columnKey: string): number => {
-        if (!ev || !exercise) return 0;
+    const getCellValue = useCallback((ev: Evaluation | undefined, columnKey: string): number | null => {
+        if (!ev || !exercise) return null;
 
         const isCriteriaBased = exercise.evaluationType === "criteria" && exercise.evaluationCriteria?.length;
         const isCriteriaRangesBased = exercise.evaluationType === "criteria-ranges" && exercise.evaluationCriteriaWithRanges?.length;
 
         if (isCriteriaBased) {
-            return ev.criteriaScores?.[columnKey] || 0;
+            return ev.criteriaScores?.[columnKey] ?? null;
         }
         if (isCriteriaRangesBased) {
-            return ev.criteriaPerformances?.[columnKey] || 0;
+            return ev.criteriaPerformances?.[columnKey] ?? null;
         }
         // Range-based
         const perfStr = ev.performanceValue?.toString() || "";
@@ -539,11 +548,12 @@ export default function ValutazioniGridView({
                 let hasVal = false;
 
                 if (isCriteriaBased) {
-                    hasVal = ev?.criteriaScores?.[col.key] !== undefined;
+                    hasVal = ev?.criteriaScores?.[col.key] !== undefined && ev.criteriaScores[col.key] !== null;
                 } else if (isCriteriaRangesBased) {
-                    hasVal = ev?.criteriaPerformances?.[col.key] !== undefined && !isNaN(ev.criteriaPerformances[col.key]);
+                    hasVal = ev?.criteriaPerformances?.[col.key] !== undefined && ev.criteriaPerformances[col.key] !== null && !isNaN(ev.criteriaPerformances[col.key]);
                 } else {
-                    hasVal = ev?.performanceValue !== undefined && parseInputNumber(ev.performanceValue.toString()) > 0;
+                    const val = ev?.performanceValue;
+                    hasVal = val !== undefined && val !== null && val !== "" && parseInputNumber(val.toString()) !== null;
                 }
 
                 if (hasVal) filledCount++;
@@ -701,12 +711,13 @@ export default function ValutazioniGridView({
                                 return (
                                     <TableRow
                                         key={student.id}
-                                        className={cn(rowBg, rowBorder, "transition-colors")}
+                                        className={cn(rowBg, "transition-colors")}
                                     >
                                         {/* Student name – sticky */}
                                         <TableCell className={cn(
                                             "sticky left-0 z-10 border-r font-medium backdrop-blur-sm",
-                                            rowBg
+                                            rowBg,
+                                            rowBorder
                                         )}>
                                             <div className="flex items-center gap-2">
                                                 <div className={cn(

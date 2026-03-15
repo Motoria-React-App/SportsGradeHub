@@ -35,10 +35,29 @@ import ValutazioniGridView from "@/components/ValutazioniGridView";
 
 
 // Helper to determine status based on evaluation value
-function getEvaluationStatus(evaluation: Evaluation): EvaluationStatus {
+function getEvaluationStatus(evaluation: Evaluation, exercise?: Exercise): EvaluationStatus {
+    if (exercise) {
+        const isCriteriaBased = exercise.evaluationType === 'criteria' && exercise.evaluationCriteria && exercise.evaluationCriteria.length > 0;
+        const isCriteriaRangesBased = exercise.evaluationType === 'criteria-ranges' && exercise.evaluationCriteriaWithRanges && exercise.evaluationCriteriaWithRanges.length > 0;
+
+        if (isCriteriaBased || isCriteriaRangesBased) {
+            const criteria = isCriteriaBased ? exercise.evaluationCriteria : exercise.evaluationCriteriaWithRanges;
+            const scores = isCriteriaBased ? evaluation.criteriaScores : evaluation.criteriaPerformances;
+
+            if (!scores || Object.keys(scores).length === 0) return "non-valutato";
+
+            const filledCount = criteria!.filter(c => scores[c.name] !== undefined && scores[c.name] !== null).length;
+
+            if (filledCount === criteria!.length) return "valutato";
+            if (filledCount > 0) return "valutando";
+            return "non-valutato";
+        }
+    }
+
     if (evaluation.score > 0) return "valutato";
     if (evaluation.performanceValue !== null && evaluation.performanceValue !== undefined && evaluation.performanceValue !== "") {
-        return "valutando";
+        const perfStr = evaluation.performanceValue.toString();
+        if (perfStr.trim() !== "" && perfStr !== "0") return "valutando";
     }
     return "non-valutato";
 }
@@ -208,7 +227,8 @@ export default function Valutazioni() {
         };
 
         filteredEvaluations.forEach((ev) => {
-            let status = getEvaluationStatus(ev);
+            const exercise = exercises.find(ex => ex.id === ev.exerciseId);
+            let status = getEvaluationStatus(ev, exercise);
 
             // If this evaluation is currently selected for grading, force status to "valutando"
             // This ensures the user sees who they are currently evaluating in the middle column
@@ -253,7 +273,9 @@ export default function Valutazioni() {
             case "completion":
                 sorted.sort((a, b) => {
                     const statusOrder = { "valutato": 0, "valutando": 1, "non-valutato": 2 };
-                    return statusOrder[getEvaluationStatus(a)] - statusOrder[getEvaluationStatus(b)];
+                    const exerciseA = exercises.find(ex => ex.id === a.exerciseId);
+                    const exerciseB = exercises.find(ex => ex.id === b.exerciseId);
+                    return statusOrder[getEvaluationStatus(a, exerciseA)] - statusOrder[getEvaluationStatus(b, exerciseB)];
                 });
                 break;
         }
@@ -638,7 +660,7 @@ export default function Valutazioni() {
     // Grading panel data (calculated outside render to avoid inline component issues)
     const gradingStudent = selectedEvaluationForGrading ? getStudent(selectedEvaluationForGrading.studentId) : null;
     const gradingExercise = selectedEvaluationForGrading ? getExercise(selectedEvaluationForGrading.exerciseId) : null;
-    const gradingStatus = selectedEvaluationForGrading ? getEvaluationStatus(selectedEvaluationForGrading) : null;
+    const gradingStatus = selectedEvaluationForGrading ? getEvaluationStatus(selectedEvaluationForGrading, gradingExercise || undefined) : null;
     const gradingPerformanceNum = parseInputNumber(performanceInputValue);
     const gradingPreviewScore = useMemo(() => {
         if (!isNaN(gradingPerformanceNum) && gradingExercise && gradingStudent) {
