@@ -223,7 +223,7 @@ export default function ValutazioniGridView({
         // Apply optimistic overrides
         Object.values(optimisticEvals).forEach(ev => {
             const key = `${ev.studentId}-${ev.exerciseId}`;
-            map.set(key, ev); 
+            map.set(key, ev);
         });
 
         return map;
