@@ -24,11 +24,11 @@ import { toast } from "sonner";
 
 export default function Students() {
     const client = useClient();
-    const { students, classes, evaluations, refreshStudents } = useSchoolData();
+    const { classes, students, evaluations, refreshStudents, setStudents } = useSchoolData();
     const { settings } = useSettings();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
-    const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
+    const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set<string>());
 
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -44,7 +44,7 @@ export default function Students() {
             const res = await client.deleteStudent(student.id);
             if (res.success) {
                 toast.success(`Studente "${student.firstName} ${student.lastName}" eliminato`);
-                refreshStudents();
+                setStudents((prev) => prev.filter((s) => s.id !== student.id));
             } else {
                 toast.error("Errore durante l'eliminazione");
             }
@@ -141,9 +141,13 @@ export default function Students() {
                 await client.deleteStudent(studentId);
             }
             toast.success(`${selectedStudents.size} studenti eliminati`);
-            setSelectedStudents(new Set());
+            
+            // Remove deleted students from local state
+            const deletedIds = new Set<string>(selectedStudents);
+            setStudents((prev: Student[]) => prev.filter((s: Student) => !deletedIds.has(s.id)));
+            
+            setSelectedStudents(new Set<string>());
             setDeleteDialogOpen(false);
-            refreshStudents();
         } catch {
             toast.error("Errore durante l'eliminazione");
         }

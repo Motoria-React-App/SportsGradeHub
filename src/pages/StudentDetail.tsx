@@ -495,6 +495,7 @@ interface JustificationsCardProps {
     formatDate: (date: string) => string;
     client: any;
     refreshStudents: () => Promise<void>;
+    setStudents?: React.Dispatch<React.SetStateAction<Student[]>>;
     justificationDialogOpen: boolean;
     setJustificationDialogOpen: (open: boolean) => void;
     newJustificationDate: string;
@@ -511,6 +512,7 @@ function JustificationsCard({
     formatDate,
     client,
     refreshStudents,
+    setStudents,
     justificationDialogOpen,
     setJustificationDialogOpen,
     newJustificationDate,
@@ -588,7 +590,16 @@ function JustificationsCard({
                 justifications: updatedJustifications
             } as any);
 
-            await refreshStudents();
+            if (setStudents) {
+                setStudents(prev => prev.map(s => 
+                    s.id === student.id 
+                        ? { ...s, justifications: updatedJustifications } 
+                        : s
+                ));
+            } else {
+                await refreshStudents();
+            }
+
             setJustificationDialogOpen(false);
 
             // Reset to today formatted as DD/MM/YYYY
@@ -616,7 +627,16 @@ function JustificationsCard({
                 justifications: updatedJustifications
             } as any);
 
-            await refreshStudents();
+            if (setStudents) {
+                setStudents(prev => prev.map(s => 
+                    s.id === student.id 
+                        ? { ...s, justifications: updatedJustifications } 
+                        : s
+                ));
+            } else {
+                await refreshStudents();
+            }
+
             toast.success('Giustifica rimossa');
         } catch (error) {
             toast.error('Errore durante la rimozione');

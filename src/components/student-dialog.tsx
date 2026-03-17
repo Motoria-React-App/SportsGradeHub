@@ -38,7 +38,7 @@ export function StudentDialog({
     onSuccess 
 }: StudentDialogProps) {
     const client = useClient()
-    const { classes, refreshStudents } = useSchoolData()
+    const { classes, setStudents } = useSchoolData()
     const [isLoading, setIsLoading] = React.useState(false)
 
     const isEditMode = !!student
@@ -116,8 +116,11 @@ export function StudentDialog({
                     currentClassId: formData.currentClassId,
                 })
 
-                if (res.success) {
+                if (res.success && res.data?.student) {
                     toast.success(`Studente "${formData.firstName} ${formData.lastName}" modificato con successo!`)
+                    setStudents(prev => prev.map(s => 
+                        s.id === student.id ? res.data!.student : s
+                    ))
                 } else {
                     throw new Error(res.error?.message || "Errore sconosciuto")
                 }
@@ -134,15 +137,13 @@ export function StudentDialog({
                     classHistory: [],
                 })
 
-                if (res.success) {
+                if (res.success && res.data?.student) {
                     toast.success(`Studente "${formData.firstName} ${formData.lastName}" aggiunto con successo!`)
+                    setStudents(prev => [...prev, res.data!.student])
                 } else {
                     throw new Error(res.error?.message || "Errore sconosciuto")
                 }
             }
-
-            // Refresh data
-            await refreshStudents()
             
             // Close dialog
             onOpenChange(false)

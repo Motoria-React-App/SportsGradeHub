@@ -95,7 +95,7 @@ export default function Valutazioni() {
         classes,
         exercises,
         evaluations,
-        refreshEvaluations,
+        setEvaluations,
         exerciseGroups,
     } = useSchoolData();
     const client = useClient();
@@ -311,10 +311,12 @@ export default function Valutazioni() {
             }
 
             if (evaluationsToCreate.length > 0) {
-                await client.createEvaluationsBatch(evaluationsToCreate);
+                const response = await client.createEvaluationsBatch(evaluationsToCreate);
+                if (response.success && response.data?.evaluations) {
+                    setEvaluations((prev: Evaluation[]) => [...prev, ...response.data!.evaluations]);
+                }
             }
 
-            await refreshEvaluations();
             setIsAssignModalOpen(false);
             setAssignExerciseId("");
             setAssignStudentIds([]);
@@ -437,7 +439,7 @@ export default function Valutazioni() {
 
             // Create new evaluation with updated values
             // The frontend deduplication will keep only the latest one
-            await client.createEvaluation({
+            const response = await client.createEvaluation({
                 studentId: selectedEvaluationForGrading.studentId,
                 exerciseId: selectedEvaluationForGrading.exerciseId,
                 performanceValue: isCriteriaBased ? JSON.stringify(criteriaScores) : isCriteriaRangesBased ? JSON.stringify(criteriaPerformances) : performanceInputValue,
@@ -447,7 +449,9 @@ export default function Valutazioni() {
                 criteriaPerformances: isCriteriaRangesBased ? criteriaPerformances : undefined,
             });
 
-            await refreshEvaluations();
+            if (response.success && response.data?.evaluation) {
+                setEvaluations((prev: Evaluation[]) => [...prev, response.data!.evaluation]);
+            }
 
             if (confirmed) {
                 setSelectedEvaluationForGrading(null);
@@ -494,7 +498,7 @@ export default function Valutazioni() {
         try {
             const response = await client.deleteEvaluation(selectedEvaluationForGrading.id);
             if (response.success) {
-                await refreshEvaluations();
+                setEvaluations((prev: Evaluation[]) => prev.filter((e: Evaluation) => e.id !== selectedEvaluationForGrading.id));
                 setSelectedEvaluationForGrading(null);
                 setIsDeleteDialogOpen(false);
             } else {
@@ -520,7 +524,7 @@ export default function Valutazioni() {
         }
     ) => {
         try {
-            await client.createEvaluation({
+            const response = await client.createEvaluation({
                 studentId,
                 exerciseId,
                 performanceValue: data.performanceValue,
@@ -529,7 +533,9 @@ export default function Valutazioni() {
                 criteriaPerformances: data.criteriaPerformances,
                 comments: data.comments || "",
             });
-            await refreshEvaluations();
+            if (response.success && response.data?.evaluation) {
+                setEvaluations(prev => [...prev, response.data!.evaluation]);
+            }
         } catch (error) {
             console.error("Error saving grid evaluation:", error);
         }

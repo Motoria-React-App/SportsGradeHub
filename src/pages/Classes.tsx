@@ -22,7 +22,7 @@ export default function Classes() {
     const navigate = useNavigate();
     const location = useLocation();
     const client = useClient();
-    const { evaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses, refreshEvaluations } = useSchoolData();
+    const { evaluations, setEvaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses } = useSchoolData();
     const { settings } = useSettings();
     const { formatGrade, getGradeColor } = useGradeFormatter();
 
@@ -194,8 +194,10 @@ export default function Classes() {
 
                     // Send batch request if there are evaluations to create
                     if (evaluationsToCreate.length > 0) {
-                        await client.createEvaluationsBatch(evaluationsToCreate);
-                        await refreshEvaluations(); // Refresh evaluations to show them immediately
+                        const batchRes = await client.createEvaluationsBatch(evaluationsToCreate);
+                        if (batchRes.success && batchRes.data?.evaluations) {
+                            setEvaluations((prev: Evaluation[]) => [...prev, ...batchRes.data!.evaluations]);
+                        }
                     }
                 }
 

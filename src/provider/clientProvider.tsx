@@ -234,11 +234,11 @@ class Client {
     }
 
     public async createStudent(data: Omit<Student, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) {
-        return await this.sendRequest<Student>("/api/students", "POST", data);
+        return await this.sendRequest<{ message: string, studentId: string, student: Student }>("/api/students", "POST", data);
     }
 
     public async updateStudent(id: string, data: Partial<Omit<Student, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>>) {
-        return await this.sendRequest<Student>(`/api/students/${id}`, "PUT", data);
+        return await this.sendRequest<{ message: string, student: Student }>(`/api/students/${id}`, "PUT", data);
     }
 
     public async deleteStudent(id: string) {
@@ -339,11 +339,11 @@ class Client {
     }
 
     public async createEvaluation(data: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) {
-        return await this.sendRequest<Evaluation>("/api/evaluations", "POST", data);
+        return await this.sendRequest<{ message: string; evaluation: Evaluation }>("/api/evaluations", "POST", data);
     }
 
     public async createEvaluationsBatch(evaluations: Omit<Evaluation, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>[]) {
-        return await this.sendRequest<{ message: string; count: number }>("/api/evaluations/batch", "POST", { evaluations });
+        return await this.sendRequest<{ message: string; count: number; evaluations: Evaluation[] }>("/api/evaluations/batch", "POST", { evaluations });
     }
 
     public async deleteEvaluation(id: string) {
@@ -713,18 +713,23 @@ interface ClientContextProps {
     // Classes
     classes: SchoolClass[];
     refreshClasses: () => Promise<void>;
+    setClasses: React.Dispatch<React.SetStateAction<SchoolClass[]>>;
     // Students
     students: Student[];
     refreshStudents: () => Promise<void>;
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     // Exercises
     exercises: Exercise[];
     refreshExercises: () => Promise<void>;
+    setExercises: React.Dispatch<React.SetStateAction<Exercise[]>>;
     // Exercise Groups
     exerciseGroups: ExerciseGroup[];
     refreshExerciseGroups: () => Promise<void>;
+    setExerciseGroups: React.Dispatch<React.SetStateAction<ExerciseGroup[]>>;
     // Evaluations
     evaluations: Evaluation[];
     refreshEvaluations: () => Promise<void>;
+    setEvaluations: React.Dispatch<React.SetStateAction<Evaluation[]>>;
     // Utility to refresh all data
     refreshAllData: () => Promise<void>;
 }
@@ -880,21 +885,26 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const value = useMemo(() => ({
         client,
         user,
-        isAuthenticated,
+        isAuthenticated: !!user,
         isLoading,
         logout,
         classes,
         refreshClasses,
+        setClasses,
         students,
         refreshStudents,
+        setStudents,
         exercises,
         refreshExercises,
+        setExercises,
         exerciseGroups,
         refreshExerciseGroups,
+        setExerciseGroups,
         evaluations,
         refreshEvaluations,
+        setEvaluations,
         refreshAllData,
-    }), [client, user, isAuthenticated, isLoading, logout, classes, refreshClasses, students, refreshStudents, exercises, refreshExercises, exerciseGroups, refreshExerciseGroups, evaluations, refreshEvaluations, refreshAllData]);
+    }), [client, user, isAuthenticated, isLoading, logout, classes, refreshClasses, setClasses, students, refreshStudents, setStudents, exercises, refreshExercises, setExercises, exerciseGroups, refreshExerciseGroups, setExerciseGroups, evaluations, refreshEvaluations, setEvaluations, refreshAllData]);
 
     return (
         <ClientContext.Provider value={value}>
@@ -962,17 +972,21 @@ export const useSchoolData = () => {
     }, [uiStudents, uiGrades]);
 
     return {
-        // Raw backend data
         classes: context.classes,
         refreshClasses: context.refreshClasses,
+        setClasses: context.setClasses,
         students: context.students,
         refreshStudents: context.refreshStudents,
+        setStudents: context.setStudents,
         exercises: context.exercises,
         refreshExercises: context.refreshExercises,
+        setExercises: context.setExercises,
         exerciseGroups: context.exerciseGroups,
         refreshExerciseGroups: context.refreshExerciseGroups,
+        setExerciseGroups: context.setExerciseGroups,
         evaluations: context.evaluations,
         refreshEvaluations: context.refreshEvaluations,
+        setEvaluations: context.setEvaluations,
         refreshAllData: context.refreshAllData,
         // UI-compatible data
         uiStudents,
