@@ -47,37 +47,31 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
         }
     });
 
-    // Load from API on mount or user change
+    // Load from localStorage when user changes.
+    // The settingsProvider already fetches settings from the API and syncs to localStorage,
+    // so we avoid a duplicate getSettings() call that would double our Firestore reads.
     useEffect(() => {
-        const loadSchedule = async () => {
-             if (user) {
-                setIsLoading(true);
-                // User logged in, fetch from DB
-                try {
-                    const res = await client.getSettings();
-                    if (res.success && res.data?.schedule) {
-                        setSchedule(res.data.schedule);
-                    } else {
-                        // If no schedule in DB, keep what we have (or valid defaults)
-                         // Maybe initializing empty is safer if we want to avoid leaking previous user data
-                         // But if we trust localStorage was cleared on logout, this is fine.
-                         // However, to be safe:
-                         if (schedule.length === 0) setSchedule(defaultSchedule); // Just a fallback
-                    }
-                } catch (e) {
-                    console.error("Failed to load schedule", e);
-                } finally {
-                    setIsLoading(false);
+        if (user) {
+            setIsLoading(true);
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    setSchedule(JSON.parse(stored));
+                } else {
+                    setSchedule(defaultSchedule);
                 }
-            } else {
-                // User logged out, clear schedule
+            } catch {
                 setSchedule(defaultSchedule);
-                localStorage.removeItem(STORAGE_KEY);
+            } finally {
                 setIsLoading(false);
             }
-        };
-        loadSchedule();
-    }, [client, user]); // Depend on user to re-trigger on login/logout
+        } else {
+            // User logged out, clear schedule
+            setSchedule(defaultSchedule);
+            localStorage.removeItem(STORAGE_KEY);
+            setIsLoading(false);
+        }
+    }, [user]); // Depend on user to re-trigger on login/logout
 
     // Persist to API and localStorage
     const saveSchedule = useCallback(async (newSchedule: ScheduleSlot[]) => {

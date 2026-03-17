@@ -21,8 +21,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import ScrollToTop from "@/components/ScrollToTop";
-import { useAuth, useClient } from "./provider/clientProvider";
-import { useEffect } from "react";
+import { useAuth } from "./provider/clientProvider";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { EasterEgg } from "@/components/EasterEgg";
 import LoadingPage from "./pages/Loading";
@@ -60,17 +59,6 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-
-  const client = useClient();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-
-      await client.isAuthenticated();
-
-    };
-    checkAuth();
-  }, []);
 
   const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === 'true';
 
