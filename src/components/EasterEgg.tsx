@@ -61,10 +61,20 @@ export function EasterEgg() {
                 return;
             }
 
-            // Only track letter keys
-            if (e.key.length === 1 && e.key.match(/[a-zA-Z]/)) {
+            // Track letters and numbers
+            if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9]/)) {
                 setTypedKeys((prev) => {
                     const newKeys = (prev + e.key).slice(-10); // Keep last 10 characters
+                    
+                    // Special 67 easter egg
+                    if (newKeys.endsWith("67")) {
+                        document.body.classList.add('google-67-shake');
+                        setTimeout(() => {
+                            document.body.classList.remove('google-67-shake');
+                        }, 2500);
+                        return ""; // Reset after triggering
+                    }
+
                     const egg = checkForEasterEgg(newKeys);
                     if (egg) {
                         setActiveEgg(egg);
