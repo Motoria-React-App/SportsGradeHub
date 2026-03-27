@@ -57,15 +57,17 @@ export interface UIClass {
 
 function toUIStudent(
     student: Student,
-    classes: SchoolClass[],
-    evaluations: Evaluation[]
+    classesMap: Map<string, SchoolClass>,
+    evaluationsByStudent: Map<string, Evaluation[]>
 ): UIStudent {
-    const studentClass = classes.find(c => c.id === student.currentClassId);
-    // Filter to only include confirmed evaluations (score > 0)
-    // Excludes NON VALUTATO and VALUTANDO which have score = 0
-    const studentEvals = evaluations.filter(e => e.studentId === student.id && e.score > 0);
-    const avgGrade = studentEvals.length > 0
-        ? studentEvals.reduce((sum, e) => sum + e.score, 0) / studentEvals.length
+    const studentClass = classesMap.get(student.currentClassId);
+    const studentEvals = evaluationsByStudent.get(student.id) || [];
+    
+    // Only confirmed evaluations
+    const confirmedEvals = studentEvals.filter(e => e.score > 0);
+    
+    const avgGrade = confirmedEvals.length > 0
+        ? confirmedEvals.reduce((sum, e) => sum + e.score, 0) / confirmedEvals.length
         : 0;
 
     let performanceLevel: UIStudent['performanceLevel'] = 'average';
@@ -84,13 +86,13 @@ function toUIStudent(
         gender: student.gender === 'M' ? 'M' : 'F',
         dateOfBirth: student.birthdate,
         averageGrade: Math.round(avgGrade * 10) / 10,
-        totalGrades: studentEvals.length,
-        lastActivityDate: studentEvals.length > 0
-            ? studentEvals.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0].createdAt
+        totalGrades: confirmedEvals.length,
+        lastActivityDate: confirmedEvals.length > 0
+            ? confirmedEvals[confirmedEvals.length - 1].createdAt // Assumes sorted or most recent
             : student.createdAt,
         performanceLevel,
         trends: {
-            improving: true, // Placeholder - would need historical data
+            improving: true,
             percentageChange: 0,
         },
     };
@@ -98,11 +100,11 @@ function toUIStudent(
 
 function toUIGrade(
     evaluation: Evaluation,
-    exercises: Exercise[],
-    exerciseGroups: ExerciseGroup[]
+    exercisesMap: Map<string, Exercise>,
+    groupsMap: Map<string, ExerciseGroup>
 ): UIGrade {
-    const exercise = exercises.find(e => e.id === evaluation.exerciseId);
-    const group = exercise ? exerciseGroups.find(g => g.id === exercise.exerciseGroupId) : null;
+    const exercise = exercisesMap.get(evaluation.exerciseId);
+    const group = exercise ? groupsMap.get(exercise.exerciseGroupId) : null;
 
     return {
         id: `${evaluation.studentId}-${evaluation.exerciseId}`,
@@ -122,17 +124,27 @@ function toUIGrade(
 
 function toUIClass(
     schoolClass: SchoolClass,
-    evaluations: Evaluation[],
-    students: Student[]
+    studentsByClass: Map<string, Student[]>,
+    evaluationsByStudent: Map<string, Evaluation[]>
 ): UIClass {
-    const classStudents = students.filter(s => s.currentClassId === schoolClass.id);
+    const classStudents = studentsByClass.get(schoolClass.id) || [];
     const classStudentIds = classStudents.map(s => s.id);
-    // Filter to only include confirmed evaluations (score > 0)
-    // Excludes NON VALUTATO and VALUTANDO which have score = 0
-    const classEvals = evaluations.filter(e => classStudentIds.includes(e.studentId) && e.score > 0);
-    const avgGrade = classEvals.length > 0
-        ? classEvals.reduce((sum, e) => sum + e.score, 0) / classEvals.length
-        : 0;
+    
+    // Collect all evaluations for all students in this class
+    let totalScore = 0;
+    let evalCount = 0;
+    
+    classStudentIds.forEach(id => {
+        const studentEvals = evaluationsByStudent.get(id) || [];
+        studentEvals.forEach(e => {
+            if (e.score > 0) {
+                totalScore += e.score;
+                evalCount++;
+            }
+        });
+    });
+
+    const avgGrade = evalCount > 0 ? totalScore / evalCount : 0;
 
     return {
         id: schoolClass.id,
@@ -364,7 +376,6 @@ class Client {
 
         if (res.success) {
             this.UserModel = res.data;
-            this.isAuthenticated()
         }
 
         return res;
@@ -376,8 +387,6 @@ class Client {
 
         if (res.success) {
             this.UserModel = res.data;
-
-            this.isAuthenticated()
         }
 
         return res;
@@ -508,8 +517,13 @@ class Client {
                 throw new ApiError("Method not supported", 405, "Method Not Allowed");
             }
 
-            // Se riceviamo 401 e non è già un retry, prova a refreshare il token
-            if (!result.success && result.error?.statusCode === 401 && !isRetry) {
+            // List of auth-related endpoints that should not trigger auto-refresh or auto-logout
+            // to avoid infinite loops specifically during login/logout/refresh cycles.
+            const authEndpoints = ["/auth/login", "/auth/register", "/auth/logout", "/auth/refresh-token"];
+            const isAuthEndpoint = authEndpoints.some(e => endpoint.includes(e));
+
+            // Se riceviamo 401 e non è già un retry e NON è un endpoint di auth, prova a refreshare il token
+            if (!result.success && result.error?.statusCode === 401 && !isRetry && !isAuthEndpoint) {
 
                 const refreshResult = await this.refreshAccessToken();
 
@@ -941,21 +955,37 @@ export const useSchoolData = () => {
         throw new Error("useSchoolData must be used within a ClientProvider");
     }
 
-    // Compute UI-compatible data
-    const uiStudents = useMemo(() =>
-        context.students.map(s => toUIStudent(s, context.classes, context.evaluations)),
-        [context.students, context.classes, context.evaluations]
-    );
+    // Compute UI-compatible data with optimized search maps
+    const uiData = useMemo(() => {
+        // Create lookup maps for O(1) performance
+        const classesMap = new Map(context.classes.map(c => [c.id, c]));
+        const exercisesMap = new Map(context.exercises.map(e => [e.id, e]));
+        const groupsMap = new Map(context.exerciseGroups.map(g => [g.id, g]));
+        
+        // Group students by class
+        const studentsByClass = new Map<string, Student[]>();
+        context.students.forEach(s => {
+            const list = studentsByClass.get(s.currentClassId) || [];
+            list.push(s);
+            studentsByClass.set(s.currentClassId, list);
+        });
 
-    const uiGrades = useMemo(() =>
-        context.evaluations.map(e => toUIGrade(e, context.exercises, context.exerciseGroups)),
-        [context.evaluations, context.exercises, context.exerciseGroups]
-    );
+        // Group evaluations by student
+        const evaluationsByStudent = new Map<string, Evaluation[]>();
+        context.evaluations.forEach(e => {
+            const list = evaluationsByStudent.get(e.studentId) || [];
+            list.push(e);
+            evaluationsByStudent.set(e.studentId, list);
+        });
 
-    const uiClasses = useMemo(() =>
-        context.classes.map(c => toUIClass(c, context.evaluations, context.students)),
-        [context.classes, context.evaluations, context.students]
-    );
+        const uiStudents = context.students.map(s => toUIStudent(s, classesMap, evaluationsByStudent));
+        const uiGrades = context.evaluations.map(e => toUIGrade(e, exercisesMap, groupsMap));
+        const uiClasses = context.classes.map(c => toUIClass(c, studentsByClass, evaluationsByStudent));
+
+        return { uiStudents, uiGrades, uiClasses };
+    }, [context.students, context.classes, context.evaluations, context.exercises, context.exerciseGroups]);
+
+    const { uiStudents, uiGrades, uiClasses } = uiData;
 
     // Helper to get UI students for a specific class
     const getUIStudentsByClass = useCallback((classId: string) =>

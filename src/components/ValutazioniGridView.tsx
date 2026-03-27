@@ -73,13 +73,12 @@ function formatNumber(val: number | null): string {
 interface InlineCellProps {
     value: number | null;
     onCommit: (value: number | null) => void;
-    maxValue?: number;
     unit?: string;
     isSaving?: boolean;
     justSaved?: boolean;
 }
 
-function InlineCell({ value, onCommit, maxValue, unit, isSaving, justSaved }: InlineCellProps) {
+function InlineCell({ value, onCommit, unit, isSaving, justSaved }: InlineCellProps) {
     const [editing, setEditing] = useState(false);
     const [localValue, setLocalValue] = useState(formatNumber(value));
     const inputRef = useRef<HTMLInputElement>(null);
@@ -99,9 +98,8 @@ function InlineCell({ value, onCommit, maxValue, unit, isSaving, justSaved }: In
     const handleBlur = () => {
         setEditing(false);
         const parsed = parseInputNumber(localValue);
-        const clamped = (parsed !== null && maxValue !== undefined) ? Math.min(parsed, maxValue) : parsed;
-        if (clamped !== value) {
-            onCommit(clamped);
+        if (parsed !== value) {
+            onCommit(parsed);
         } else {
             setLocalValue(formatNumber(value));
         }
@@ -751,7 +749,6 @@ export default function ValutazioniGridView({
                                                 >
                                                     <InlineCell
                                                         value={cellValue}
-                                                        maxValue={col.maxScore}
                                                         unit={col.unit}
                                                         isSaving={savingCells.has(cellKey)}
                                                         justSaved={savedCells.has(cellKey)}
