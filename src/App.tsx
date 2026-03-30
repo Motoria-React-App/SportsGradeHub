@@ -5,6 +5,7 @@ import Students from "@/pages/Students";
 import StudentDetail from "@/pages/StudentDetail";
 import Analytics from "@/pages/Analytics";
 import Valutazioni from "@/pages/Valutazioni";
+import Leaderboards from "@/pages/Leaderboards";
 import { CommandDialogDemo } from "@/components/commandDialog";
 import Exercises from "@/pages/Exercises";
 import LoginPage from "@/pages/LoginPage";
@@ -89,6 +90,7 @@ function App() {
         <Route path="/students" element={<AuthenticatedLayout><Students /></AuthenticatedLayout>} />
         <Route path="/students/:id" element={<AuthenticatedLayout><StudentDetail /></AuthenticatedLayout>} />
         <Route path="/analytics" element={<AuthenticatedLayout><Analytics /></AuthenticatedLayout>} />
+        <Route path="/leaderboards" element={<AuthenticatedLayout><Leaderboards /></AuthenticatedLayout>} />
         <Route path="/settings" element={<AuthenticatedLayout><Settings /></AuthenticatedLayout>} />
       </Routes>
     </Router>

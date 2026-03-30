@@ -40,6 +40,7 @@ import {
   Users,
   ClipboardCheck,
   ChevronRight,
+  Trophy,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
@@ -90,6 +91,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: "Valutazioni",
         url: "/valutazioni/all/all",
         icon: ClipboardCheck,
+      },
+      {
+        title: "Leaderboards",
+        url: "/leaderboards",
+        icon: Trophy,
       },
     ],
     classes: classes.map((item: SchoolClass) => ({
