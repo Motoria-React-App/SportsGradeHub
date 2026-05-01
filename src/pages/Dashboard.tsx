@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { ClassSelector } from "@/components/dashboard/ClassSelector";
 import { WeeklySchedule } from "@/components/dashboard/WeeklySchedule";
@@ -7,6 +8,7 @@ import { ClassPerformanceRadar } from "@/components/dashboard/ClassPerformanceRa
 import { ClassStatsSummary } from "@/components/dashboard/ClassStatsSummary";
 import { RecentActivityCompact } from "@/components/dashboard/RecentActivityCompact";
 import { useSchoolData } from "@/provider/clientProvider";
+import { pageTransition, staggerContainer, staggerItem, slideUp } from "@/lib/motion";
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
@@ -35,44 +37,70 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background/50">
+        <motion.div
+            className="flex flex-col h-full bg-background/50"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+        >
             <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto w-full max-w-[1600px] mx-auto">
-                {/* Header Section with Selector */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                            Dashboard
-                        </h1>
-                        <p className="text-muted-foreground text-sm md:text-base">
-                            Panoramica e gestione delle lezioni
-                        </p>
-                    </div>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={selectedClassId}
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <motion.div
+                            className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
+                            variants={slideUp}
+                        >
+                            <div className="space-y-1">
+                                <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                                    Dashboard
+                                </h1>
+                                <p className="text-muted-foreground text-sm md:text-base">
+                                    Panoramica e gestione delle lezioni
+                                </p>
+                            </div>
 
-                    <div className="flex items-center gap-4">
-                        <ClassSelector
-                            classes={classes}
-                            selectedClassId={selectedClassId}
-                            onSelectClass={handleClassChange}
-                        />
-                    </div>
-                </div>
+                            <motion.div
+                                className="flex items-center gap-4"
+                                variants={slideUp}
+                            >
+                                <ClassSelector
+                                    classes={classes}
+                                    selectedClassId={selectedClassId}
+                                    onSelectClass={handleClassChange}
+                                />
+                            </motion.div>
+                        </motion.div>
 
-                {/* Main Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-                    {/* Weekly Schedule - Main Content (2 columns on large screens) */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <WeeklySchedule />
-                        <ClassPerformanceRadar selectedClassId={selectedClassId} />
-                    </div>
+                        <motion.div
+                            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+                            variants={staggerContainer}
+                        >
+                            <motion.div
+                                className="lg:col-span-2 space-y-6"
+                                variants={staggerItem}
+                            >
+                                <WeeklySchedule />
+                                <ClassPerformanceRadar selectedClassId={selectedClassId} />
+                            </motion.div>
 
-                    {/* Right Sidebar (1 column on large screens) */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <QuickActionsPanel selectedClassId={selectedClassId} />
-                        <ClassStatsSummary selectedClassId={selectedClassId} />
-                        <RecentActivityCompact selectedClassId={selectedClassId} />
-                    </div>
-                </div>
+                            <motion.div
+                                className="lg:col-span-1 space-y-6"
+                                variants={staggerItem}
+                            >
+                                <QuickActionsPanel selectedClassId={selectedClassId} />
+                                <ClassStatsSummary selectedClassId={selectedClassId} />
+                                <RecentActivityCompact selectedClassId={selectedClassId} />
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                </AnimatePresence>
             </main>
-        </div>
+        </motion.div>
     );
 }

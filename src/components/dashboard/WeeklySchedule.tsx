@@ -18,6 +18,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { motion, AnimatePresence } from "framer-motion";
+import { scaleIn, cardHover, modalVariants, overlayVariants } from "@/lib/motion";
 
 // Color palette for classes (will cycle through)
 // Color palette for classes (Shadcn-integrated aesthetic)
@@ -182,64 +184,103 @@ export function WeeklySchedule() {
 
     if (schedule.length === 0) {
         return (
-            <Card className="flex-1">
-                <CardHeader>
-                    <CardTitle>Orario Settimanale</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                        <div className="text-center">
-                            <p>Nessun orario configurato.</p>
-                            <p className="text-sm mt-1 mb-4">Configura l'orario nelle Impostazioni.</p>
-                            <Button asChild variant="outline">
+            <motion.div
+                className="flex-1"
+                variants={scaleIn}
+                initial="hidden"
+                animate="visible"
+            >
+                <Card className="flex-1">
+                    <CardHeader>
+                        <CardTitle>Orario Settimanale</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                            <div className="text-center">
+                                <p>Nessun orario configurato.</p>
+                                <p className="text-sm mt-1 mb-4">Configura l'orario nelle Impostazioni.</p>
+                                <Button asChild variant="outline">
+                                    <Link to="/settings">
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        Configura Orario
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </motion.div>
+        );
+    }
+
+    return (
+        <motion.div
+            className="flex-1"
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div {...cardHover}>
+                <Card className="flex-1">
+                    <CardHeader className="pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    Orario Settimanale
+                                    <motion.span
+                                        className="text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full"
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        {now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                    </motion.span>
+                                </CardTitle>
+                                <AnimatePresence>
+                                    {(currentSlot || nextSlot) && (
+                                        <motion.div
+                                            className="flex items-center gap-3 mt-2"
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.3 }}
+                                        >
+                                            {currentSlot && (
+                                                <motion.div
+                                                    className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20"
+                                                    initial={{ scale: 0.9 }}
+                                                    animate={{ scale: 1 }}
+                                                >
+                                                    <motion.div
+                                                        className="w-1.5 h-1.5 rounded-full bg-emerald-500"
+                                                        animate={{ scale: [1, 1.2, 1] }}
+                                                        transition={{ duration: 1, repeat: Infinity }}
+                                                    />
+                                                    In corso: <span className="font-semibold">{getClassName(currentSlot.classId)}</span>
+                                                </motion.div>
+                                            )}
+                                            {!currentSlot && nextSlot && (
+                                                <motion.div
+                                                    className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20"
+                                                    initial={{ scale: 0.9 }}
+                                                    animate={{ scale: 1 }}
+                                                >
+                                                    <Clock className="w-3 h-3" />
+                                                    Prossima: <span className="font-semibold">{getClassName(nextSlot.classId)}</span> ({nextSlot.startTime})
+                                                </motion.div>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                            <Button asChild variant="outline" size="sm">
                                 <Link to="/settings">
                                     <Settings className="mr-2 h-4 w-4" />
                                     Configura Orario
                                 </Link>
                             </Button>
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="flex-1">
-            <CardHeader className="pb-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <CardTitle className="flex items-center gap-2">
-                            Orario Settimanale
-                            <span className="text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full">
-                                {now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
-                            </span>
-                        </CardTitle>
-                        {(currentSlot || nextSlot) && (
-                            <div className="flex items-center gap-3 mt-2">
-                                {currentSlot && (
-                                    <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        In corso: <span className="font-semibold">{getClassName(currentSlot.classId)}</span>
-                                    </div>
-                                )}
-                                {!currentSlot && nextSlot && (
-                                    <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">
-                                        <Clock className="w-3 h-3" />
-                                        Prossima: <span className="font-semibold">{getClassName(nextSlot.classId)}</span> ({nextSlot.startTime})
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                        <Link to="/settings">
-                            <Settings className="mr-2 h-4 w-4" />
-                            Configura Orario
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
+                    </CardHeader>
             <CardContent>
                 <div className="flex gap-1">
                     {/* Time labels column */}
@@ -427,41 +468,59 @@ export function WeeklySchedule() {
                 </div>
             </CardContent>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent
-                    onOpenAutoFocus={(e) => {
-                        e.preventDefault();
-                        setTimeout(() => {
-                            if (textareaRef.current) {
-                                textareaRef.current.focus();
-                                const length = textareaRef.current.value.length;
-                                textareaRef.current.setSelectionRange(length, length);
-                            }
-                        }, 50);
-                    }}
-                >
-                    <DialogHeader>
-                        <DialogTitle>Nota Lezione: {selectedSlot ? getClassName(selectedSlot.classId) : ''}</DialogTitle>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="note">Nota</Label>
-                            <Textarea
-                                id="note"
-                                ref={textareaRef}
-                                className="min-h-[200px]"
-                                placeholder="Scrivi una nota per questa lezione..."
-                                value={noteText}
-                                onChange={(e) => setNoteText(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annulla</Button>
-                        <Button onClick={handleSaveNote}>Salva</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </Card>
+            <AnimatePresence>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <motion.div
+                        variants={overlayVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        <DialogContent
+                            onOpenAutoFocus={(e) => {
+                                e.preventDefault();
+                                setTimeout(() => {
+                                    if (textareaRef.current) {
+                                        textareaRef.current.focus();
+                                        const length = textareaRef.current.value.length;
+                                        textareaRef.current.setSelectionRange(length, length);
+                                    }
+                                }, 50);
+                            }}
+                        >
+                            <motion.div
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                            >
+                                <DialogHeader>
+                                    <DialogTitle>Nota Lezione: {selectedSlot ? getClassName(selectedSlot.classId) : ''}</DialogTitle>
+                                </DialogHeader>
+                                <div className="grid gap-4 py-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="note">Nota</Label>
+                                        <Textarea
+                                            id="note"
+                                            ref={textareaRef}
+                                            className="min-h-[200px]"
+                                            placeholder="Scrivi una nota per questa lezione..."
+                                            value={noteText}
+                                            onChange={(e) => setNoteText(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annulla</Button>
+                                    <Button onClick={handleSaveNote}>Salva</Button>
+                                </DialogFooter>
+                            </motion.div>
+                        </DialogContent>
+                    </motion.div>
+                </Dialog>
+            </AnimatePresence>
+                </Card>
+            </motion.div>
+        </motion.div>
     );
 }
