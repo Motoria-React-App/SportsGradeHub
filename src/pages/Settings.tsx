@@ -57,8 +57,10 @@ import { useState, useRef } from "react";
 import * as XLSX from 'xlsx';
 
 import { toast } from "sonner";
-import { IconInnerShadowTop } from "@tabler/icons-react";
+
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { motion } from "framer-motion";
+import { pageTransition, slideUp } from "@/lib/motion";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
@@ -384,8 +386,16 @@ export default function Settings() {
 
 
     return (
-        <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10 max-w-6xl mx-auto w-full">
-            <div className="flex items-center gap-4">
+        <motion.div
+            className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-10 max-w-6xl mx-auto w-full"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div
+                className="flex items-center gap-4"
+                variants={slideUp}
+            >
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
@@ -395,7 +405,7 @@ export default function Settings() {
                         Gestisci le preferenze dell'applicazione, l'aspetto e l'account.
                     </p>
                 </div>
-            </div>
+            </motion.div>
 
             <Tabs defaultValue="grading" className="flex flex-col md:flex-row gap-8 items-start">
                 <aside className="w-full md:w-[250px] shrink-0">
@@ -1355,8 +1365,8 @@ export default function Settings() {
                         <Card>
                             <CardContent className="p-6 space-y-4">
                                 <div className="flex flex-col items-center text-center space-y-2 py-4">
-                                    <div className="h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center mb-2">
-                                        <IconInnerShadowTop className="h-8 w-8 text-primary" />
+                                    <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-sm">
+                                        <img src="/logoSGH.png" alt="SportsGradeHub Logo" className="h-full w-full object-cover" />
                                     </div>
                                     <h3 className="text-2xl font-bold">SportsGradeHub</h3>
                                     <p className="text-muted-foreground">Versione 1.0.0</p>
@@ -1385,6 +1395,6 @@ export default function Settings() {
                     </TabsContent>
                 </div>
             </Tabs>
-        </div>
+        </motion.div>
     );
 }

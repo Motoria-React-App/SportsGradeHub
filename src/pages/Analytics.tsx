@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart, CartesianGrid } from "recharts";
 import { useSchoolData } from "@/provider/clientProvider";
 import { SiteHeader } from "@/components/site-header";
+import { motion } from "framer-motion";
+import { pageTransition, slideUp, staggerContainer, staggerItem, cardHover } from "@/lib/motion";
 
 export default function Analytics() {
     const { classes, students, evaluations } = useSchoolData();
@@ -28,12 +30,17 @@ export default function Analytics() {
     ];
 
     return (
-        <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+        <motion.div
+            className="flex flex-1 flex-col p-4 md:p-6 space-y-6"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+        >
             <SiteHeader />
-            <div>
+            <motion.div variants={slideUp}>
                 <h1 className="text-3xl font-bold tracking-tight">Analisi Dati</h1>
                 <p className="text-muted-foreground">Statistiche basate sui dati reali dal backend</p>
-            </div>
+            </motion.div>
 
             <Tabs defaultValue="generale" className="space-y-6">
                 <TabsList>
@@ -43,50 +50,99 @@ export default function Analytics() {
                 </TabsList>
 
                 <TabsContent value="generale" className="space-y-6">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Totale Classi</CardTitle>
-                                <CardDescription>Classi attive</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">{classes.length}</div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {classes.filter(c => !c.isArchived).length} attive, {classes.filter(c => c.isArchived).length} archiviate
-                                </p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Totale Studenti</CardTitle>
-                                <CardDescription>Studenti registrati</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">{students.length}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Dal backend</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Valutazioni</CardTitle>
-                                <CardDescription>Totale valutazioni</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold">{evaluations.length}</div>
-                                <p className="text-xs text-muted-foreground mt-1">Registrate</p>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Connessione</CardTitle>
-                                <CardDescription>Stato backend</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-4xl font-bold text-green-600">✓</div>
-                                <p className="text-xs text-muted-foreground mt-1">Online</p>
-                            </CardContent>
-                        </Card>
-                    </div>
+                    <motion.div
+                        className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <motion.div variants={staggerItem}>
+                            <motion.div {...cardHover}>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Totale Classi</CardTitle>
+                                        <CardDescription>Classi attive</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <motion.div
+                                            className="text-4xl font-bold"
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                        >
+                                            {classes.length}
+                                        </motion.div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {classes.filter(c => !c.isArchived).length} attive, {classes.filter(c => c.isArchived).length} archiviate
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </motion.div>
+                        <motion.div variants={staggerItem}>
+                            <motion.div {...cardHover}>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Totale Studenti</CardTitle>
+                                        <CardDescription>Studenti registrati</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <motion.div
+                                            className="text-4xl font-bold"
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                                        >
+                                            {students.length}
+                                        </motion.div>
+                                        <p className="text-xs text-muted-foreground mt-1">Dal backend</p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </motion.div>
+                        <motion.div variants={staggerItem}>
+                            <motion.div {...cardHover}>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Valutazioni</CardTitle>
+                                        <CardDescription>Totale valutazioni</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <motion.div
+                                            className="text-4xl font-bold"
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                                        >
+                                            {evaluations.length}
+                                        </motion.div>
+                                        <p className="text-xs text-muted-foreground mt-1">Registrate</p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </motion.div>
+                        <motion.div variants={staggerItem}>
+                            <motion.div {...cardHover}>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Connessione</CardTitle>
+                                        <CardDescription>Stato backend</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <motion.div
+                                            className="text-4xl font-bold text-green-600"
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                                        >
+                                            ✓
+                                        </motion.div>
+                                        <p className="text-xs text-muted-foreground mt-1">Online</p>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
                 </TabsContent>
 
                 <TabsContent value="classi">
@@ -149,15 +205,14 @@ export default function Analytics() {
                                             stroke="hsl(var(--primary))"
                                             strokeWidth={2}
                                             dot={{ r: 4 }}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
-
-    );
+                                         />
+                                     </LineChart>
+                                 </ResponsiveContainer>
+                             </div>
+                         </CardContent>
+                     </Card>
+                 </TabsContent>
+             </Tabs>
+         </motion.div>
+     );
 }

@@ -30,7 +30,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
             .filter(e => e.score > 0 && classStudentIds.includes(e.studentId))
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 4)
-            .map(evaluation => {
+            .map((evaluation, index) => {
                 const student = students.find(s => s.id === evaluation.studentId);
                 const exercise = exercises.find(e => e.id === evaluation.exerciseId);
                 const group = exercise
@@ -38,7 +38,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
                     : null;
 
                 return {
-                    id: `${evaluation.studentId}-${evaluation.exerciseId}`,
+                    id: evaluation.id || `${evaluation.studentId}-${evaluation.exerciseId}-${index}`,
                     studentName: student ? `${student.firstName} ${student.lastName}` : "Studente",
                     studentInitials: student ? `${student.firstName[0]}${student.lastName[0]}` : "??",
                     exerciseName: exercise?.name || "Esercizio",

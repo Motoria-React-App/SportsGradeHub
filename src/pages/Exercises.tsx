@@ -41,6 +41,8 @@ import {
 import { IconGenderMale, IconGenderFemale } from "@tabler/icons-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DecimalInput } from "@/components/ui/decimal-input";
+import { motion } from "framer-motion";
+import { pageTransition, slideUp, buttonPress } from "@/lib/motion";
 
 // Unit display names in Italian
 const unitDisplayNames: Record<string, string> = {
@@ -603,9 +605,17 @@ export default function Exercises() {
   );
 
   return (
-    <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+    <motion.div
+      className="flex flex-1 flex-col p-4 md:p-6 space-y-6"
+      variants={pageTransition}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header with decorative background */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+      <motion.div
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10"
+        variants={slideUp}
+      >
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
             Catalogo Esercizi
@@ -616,17 +626,21 @@ export default function Exercises() {
         </div>
         <div className="flex gap-3">
           {settings.enableExerciseGroups && (
-            <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
-              <FolderPlus className="h-4 w-4" />
-              Nuovo Gruppo
-            </Button>
+            <motion.div {...buttonPress}>
+              <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
+                <FolderPlus className="h-4 w-4" />
+                Nuovo Gruppo
+              </Button>
+            </motion.div>
           )}
-          <Button className="gap-2 shadow-md hover:shadow-lg transition-all bg-linear-to-r from-primary to-primary/90" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Nuovo Esercizio
-          </Button>
+          <motion.div {...buttonPress}>
+            <Button className="gap-2 shadow-md hover:shadow-lg transition-all bg-linear-to-r from-primary to-primary/90" onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Nuovo Esercizio
+            </Button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Decorative background element */}
       <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
@@ -2533,17 +2547,17 @@ export default function Exercises() {
                 <Button onClick={handleUpdateExercise} disabled={isUpdating}>
                   {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Save className="mr-2 h-4 w-4" />
-                  Salva Modifiche
-                </Button>
-              </>
-            ) : (
-              <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
-                Chiudi
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+                   Salva Modifiche
+                 </Button>
+               </>
+             ) : (
+               <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+                 Chiudi
+               </Button>
+             )}
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+     </motion.div>
+   );
 }

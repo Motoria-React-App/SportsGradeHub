@@ -20,6 +20,9 @@ import { Student, Justification, Evaluation } from "@/types/types";
 import { StudentDialog } from "@/components/student-dialog";
 import { StudentsTable } from "@/components/students-table";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import { pageTransition, staggerContainer, staggerItem, slideUp, buttonPress, cardHover } from "@/lib/motion";
+
 
 
 export default function Students() {
@@ -141,11 +144,11 @@ export default function Students() {
                 await client.deleteStudent(studentId);
             }
             toast.success(`${selectedStudents.size} studenti eliminati`);
-            
+
             // Remove deleted students from local state
             const deletedIds = new Set<string>(selectedStudents);
             setStudents((prev: Student[]) => prev.filter((s: Student) => !deletedIds.has(s.id)));
-            
+
             setSelectedStudents(new Set<string>());
             setDeleteDialogOpen(false);
         } catch {
@@ -154,53 +157,108 @@ export default function Students() {
     };
 
     return (
-        <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+        <motion.div
+            className="flex flex-1 flex-col p-4 md:p-6 space-y-6"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+        >
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <motion.div
+                className="flex items-center justify-between"
+                variants={slideUp}
+            >
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Studenti</h1>
                     <p className="text-muted-foreground">Gestione anagrafica studenti</p>
                 </div>
-                <Button className="gap-2" onClick={() => { setSelectedStudent(null); setDialogOpen(true); }}>
-                    <Plus className="h-4 w-4" />
-                    Nuovo Studente
-                </Button>
-            </div>
+                <motion.div {...buttonPress}>
+                    <Button className="gap-2" onClick={() => { setSelectedStudent(null); setDialogOpen(true); }}>
+                        <Plus className="h-4 w-4" />
+                        Nuovo Studente
+                    </Button>
+                </motion.div>
+            </motion.div>
 
             {/* Statistics Cards */}
-            <div className="grid gap-3 md:grid-cols-4">
-                <Card className="overflow-hidden">
-                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Totale Studenti</p>
-                        <p className="text-2xl font-bold leading-none mt-1.5">{filteredStudents.length}</p>
-                    </CardContent>
-                </Card>
-                <Card className="overflow-hidden">
-                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                        <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Media Insufficiente</p>
-                        <p className="text-2xl font-bold leading-none mt-1.5 text-orange-600 dark:text-orange-400">{studentsWithFailingAverage}</p>
-                    </CardContent>
-                </Card>
-                <Card className="overflow-hidden">
-                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                        <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Media Sufficiente</p>
-                        <p className="text-2xl font-bold leading-none mt-1.5 text-green-600 dark:text-green-400">
-                            {filteredStudents.filter(s => {
-                                const avg = getStudentYearAverage(s.id);
-                                return avg !== null && avg >= 6;
-                            }).length}
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card className="overflow-hidden">
-                    <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                        <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Giustifiche Eccessive</p>
-                        <p className="text-2xl font-bold leading-none mt-1.5 text-red-600 dark:text-red-400">
-                            {filteredStudents.filter(isOverLimit).length}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+            <motion.div
+                className="grid gap-3 md:grid-cols-4"
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div variants={staggerItem}>
+                    <motion.div {...cardHover}>
+                        <Card className="overflow-hidden">
+                            <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Totale Studenti</p>
+                                <motion.p
+                                    className="text-2xl font-bold leading-none mt-1.5"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                >
+                                    {filteredStudents.length}
+                                </motion.p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+                <motion.div variants={staggerItem}>
+                    <motion.div {...cardHover}>
+                        <Card className="overflow-hidden">
+                            <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                                <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Media Insufficiente</p>
+                                <motion.p
+                                    className="text-2xl font-bold leading-none mt-1.5 text-orange-600 dark:text-orange-400"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                                >
+                                    {studentsWithFailingAverage}
+                                </motion.p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+                <motion.div variants={staggerItem}>
+                    <motion.div {...cardHover}>
+                        <Card className="overflow-hidden">
+                            <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                                <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Media Sufficiente</p>
+                                <motion.p
+                                    className="text-2xl font-bold leading-none mt-1.5 text-green-600 dark:text-green-400"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                                >
+                                    {filteredStudents.filter(s => {
+                                        const avg = getStudentYearAverage(s.id);
+                                        return avg !== null && avg >= 6;
+                                    }).length}
+                                </motion.p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+                <motion.div variants={staggerItem}>
+                    <motion.div {...cardHover}>
+                        <Card className="overflow-hidden">
+                            <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
+                                <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Giustifiche Eccessive</p>
+                                <motion.p
+                                    className="text-2xl font-bold leading-none mt-1.5 text-red-600 dark:text-red-400"
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                                >
+                                    {filteredStudents.filter(isOverLimit).length}
+                                </motion.p>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+            </motion.div>
 
             {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -255,42 +313,58 @@ export default function Students() {
             </Card>
 
             {/* Bulk Actions Bar */}
-            {selectedStudents.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 duration-300">
-                    <Card className="shadow-lg border-2">
-                        <CardContent className="px-4">
-                            <div className="flex items-center gap-4">
-                                <span className="text-sm font-medium">
-                                    {selectedStudents.size} Selezionat{selectedStudents.size === 1 ? 'o' : 'i'}
-                                </span>
-                                <div className="h-4 w-px bg-border" />
-                                <div className="flex items-center gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Duplica
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        Esporta
-                                    </Button>
-                                    <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Elimina
-                                    </Button>
+            <AnimatePresence>
+                {selectedStudents.size > 0 && (
+                    <motion.div
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+                        initial={{ y: 100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 100, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    >
+                        <Card className="shadow-lg border-2">
+                            <CardContent className="px-4">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm font-medium">
+                                        {selectedStudents.size} Selezionat{selectedStudents.size === 1 ? 'o' : 'i'}
+                                    </span>
+                                    <div className="h-4 w-px bg-border" />
+                                    <div className="flex items-center gap-2">
+                                        <motion.div {...buttonPress}>
+                                            <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                                <Copy className="h-4 w-4 mr-2" />
+                                                Duplica
+                                            </Button>
+                                        </motion.div>
+                                        <motion.div {...buttonPress}>
+                                            <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                                <FileText className="h-4 w-4 mr-2" />
+                                                Esporta
+                                            </Button>
+                                        </motion.div>
+                                        <motion.div {...buttonPress}>
+                                            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Elimina
+                                            </Button>
+                                        </motion.div>
+                                    </div>
+                                    <div className="h-4 w-px bg-border" />
+                                    <motion.div {...buttonPress}>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setSelectedStudents(new Set())}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </motion.div>
                                 </div>
-                                <div className="h-4 w-px bg-border" />
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setSelectedStudents(new Set())}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Student Dialog */}
             <StudentDialog
@@ -318,6 +392,6 @@ export default function Students() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </motion.div>
     );
 }

@@ -47,6 +47,8 @@ import { useGradeFormatter } from '@/hooks/useGradeFormatter';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
 import type { Student, Evaluation, Exercise, SchoolClass, Justification } from '@/types/types';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { pageTransition, slideUp, modalVariants, overlayVariants } from '@/lib/motion';
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -194,26 +196,44 @@ export default function StudentDetail() {
     }
 
     return (
-        <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+        <motion.div
+            className="flex flex-1 flex-col p-4 md:p-6 space-y-6"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+        >
             {/* Header */}
-            <div className="flex items-center gap-4">
+            <motion.div
+                className="flex items-center gap-4"
+                variants={slideUp}
+            >
                 <Button asChild variant="ghost" size="icon">
                     <Link to="/students">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
                 </Button>
                 <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
+                    <motion.div
+                        className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold"
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                    >
                         {student.firstName[0]}{student.lastName[0]}
-                    </div>
+                    </motion.div>
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
                             {student.firstName} {student.lastName}
                         </h1>
                         <div className="flex items-center gap-3 mt-1">
-                            <Badge variant="outline" className="text-sm">
-                                {studentClass?.className || 'Nessuna classe'}
-                            </Badge>
+                            <motion.div
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                            >
+                                <Badge variant="outline" className="text-sm">
+                                    {studentClass?.className || 'Nessuna classe'}
+                                </Badge>
+                            </motion.div>
                             <span className="text-sm text-muted-foreground flex items-center gap-1">
                                 {student.gender === 'M' ? 'Maschio' : student.gender === 'F' ? 'Femmina' : 'N/D'}
                             </span>
@@ -226,7 +246,7 @@ export default function StudentDetail() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
@@ -484,7 +504,7 @@ export default function StudentDetail() {
                     )}
                 </CardContent>
             </Card>
-        </div>
+        </motion.div>
     );
 }
 
@@ -735,45 +755,61 @@ function JustificationsCard({
             </Card>
 
             {/* Add Justification Dialog */}
-            <Dialog open={justificationDialogOpen} onOpenChange={setJustificationDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Aggiungi Giustifica</DialogTitle>
-                        <DialogDescription>
-                            Registra una nuova giustifica per {student.firstName} {student.lastName}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Data</Label>
-                            <Input
-                                type="text"
-                                placeholder="GG/MM/AAAA"
-                                value={newJustificationDate}
-                                onChange={(e) => handleDateChange(e.target.value, setNewJustificationDate)}
-                                maxLength={10}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Nota (opzionale)</Label>
-                            <Textarea
-                                placeholder="Motivo della giustifica..."
-                                value={newJustificationNote}
-                                onChange={(e) => setNewJustificationNote(e.target.value)}
-                                rows={3}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setJustificationDialogOpen(false)}>
-                            Annulla
-                        </Button>
-                        <Button onClick={handleAddJustification} disabled={isAddingJustification}>
-                            {isAddingJustification ? 'Aggiunta...' : 'Aggiungi'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </>
-    );
+            <AnimatePresence>
+                <Dialog open={justificationDialogOpen} onOpenChange={setJustificationDialogOpen}>
+                    <motion.div
+                        variants={overlayVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                    >
+                        <DialogContent>
+                            <motion.div
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                            >
+                                <DialogHeader>
+                                    <DialogTitle>Aggiungi Giustifica</DialogTitle>
+                                    <DialogDescription>
+                                        Registra una nuova giustifica per {student.firstName} {student.lastName}
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                        <Label>Data</Label>
+                                        <Input
+                                            type="text"
+                                            placeholder="GG/MM/AAAA"
+                                            value={newJustificationDate}
+                                            onChange={(e) => handleDateChange(e.target.value, setNewJustificationDate)}
+                                            maxLength={10}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Nota (opzionale)</Label>
+                                        <Textarea
+                                            placeholder="Motivo della giustifica..."
+                                            value={newJustificationNote}
+                                            onChange={(e) => setNewJustificationNote(e.target.value)}
+                                            rows={3}
+                                        />
+                                    </div>
+                                </div>
+                                  <DialogFooter>
+                                      <Button variant="outline" onClick={() => setJustificationDialogOpen(false)}>
+                                          Annulla
+                                      </Button>
+                                      <Button onClick={handleAddJustification} disabled={isAddingJustification}>
+                                          {isAddingJustification ? 'Aggiunta...' : 'Aggiungi'}
+                                      </Button>
+                                  </DialogFooter>
+                              </motion.div>
+                          </DialogContent>
+                      </motion.div>
+                  </Dialog>
+              </AnimatePresence>
+          </>
+      );
 }

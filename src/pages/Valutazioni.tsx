@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import ValutazioniGridView from "@/components/ValutazioniGridView";
+import { pageTransition, slideUp, buttonPress, modalVariants } from "@/lib/motion";
 
 
 // Helper to determine status based on evaluation value
@@ -692,9 +693,17 @@ export default function Valutazioni() {
 
     return (
         <>
-            <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-1rem)] p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
+            <motion.div
+                className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-1rem)] p-4 md:p-6 gap-6 overflow-hidden"
+                variants={pageTransition}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <motion.div
+                    className="flex items-center justify-between"
+                    variants={slideUp}
+                >
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Valutazioni</h1>
                         <p className="text-muted-foreground">
@@ -729,21 +738,25 @@ export default function Valutazioni() {
                         </ToggleGroup>
 
                         {selectedExerciseId !== "all" && filteredEvaluations.length > 0 && (
-                            <Button
-                                variant="outline"
-                                className="gap-2 text-destructive hover:text-destructive"
-                                onClick={() => setIsResetDialogOpen(true)}
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                                Nuova Sessione
-                            </Button>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 text-destructive hover:text-destructive"
+                                    onClick={() => setIsResetDialogOpen(true)}
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                    Nuova Sessione
+                                </Button>
+                            </motion.div>
                         )}
-                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
-                            <Plus className="h-4 w-4" />
-                            Assegna Esercizio
-                        </Button>
+                        <motion.div {...buttonPress}>
+                            <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
+                                <Plus className="h-4 w-4" />
+                                Assegna Esercizio
+                            </Button>
+                        </motion.div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Filters and stats */}
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -868,10 +881,10 @@ export default function Valutazioni() {
                         {viewMode === "kanban" && selectedEvaluationForGrading && gradingStudent && gradingExercise && (
                             <motion.div
                                 key="grading-panel"
-                                initial={{ opacity: 0, x: 50 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 50 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 className="fixed right-6 top-24 z-50"
                             >
                                 <Card className="w-[400px] shadow-xl border-2 flex flex-col max-h-[calc(100vh-120px)] p-0 gap-0 overflow-hidden">
@@ -887,9 +900,13 @@ export default function Valutazioni() {
                                             </Button>
                                         </div>
                                         <div className="flex items-center gap-3 mt-2">
-                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                            <motion.div
+                                                className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center"
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                transition={{ type: "spring", stiffness: 300 }}
+                                            >
                                                 <User className="h-6 w-6 text-primary" />
-                                            </div>
+                                            </motion.div>
                                             <div>
                                                 <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
                                                 <p className="text-sm text-muted-foreground">
@@ -1204,7 +1221,7 @@ export default function Valutazioni() {
                         </Button>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* Assign Exercise Modal */}
             <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
@@ -1330,18 +1347,18 @@ export default function Valutazioni() {
                                 handleDeleteEvaluation();
                             }}
                         >
-                            {isDeleting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Eliminazione...
-                                </>
-                            ) : (
-                                "Elimina"
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
+                               {isDeleting ? (
+                                   <>
+                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                       Eliminazione...
+                                   </>
+                               ) : (
+                                   "Elimina"
+                               )}
+                           </AlertDialogAction>
+                       </AlertDialogFooter>
+                   </AlertDialogContent>
+               </AlertDialog>
+           </>
     );
 }
