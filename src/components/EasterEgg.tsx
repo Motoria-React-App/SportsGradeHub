@@ -11,25 +11,25 @@ interface EasterEggData {
 const EASTER_EGGS: Record<string, EasterEggData> = {
     sagal: {
         name: "Sagal",
-        title: "🎉 Sagal [Placeholder]",
+        title: "🎉 Sagal: \"Mettiamo 67 come Logo\"",
         message: "Sagalini Skibidini!",
         emoji: "⚡",
     },
-    ricky: {
-        name: "Ricky",
-        title: "🚀 Riccardo [Placeholder]",
+    borri: {
+        name: "Borri",
+        title: "🚀 Riccardo \"Stai fermo Sagal\" ",
         message: "Borronini Skibidini!",
         emoji: "🔥",
     },
     amrit: {
         name: "Amrit",
-        title: "✨ Amrit [Placeholder]",
+        title: "✨ Amrit \"Aggiungiamo il 67 easter egg\"",
         message: "Amritini Skibidini!",
         emoji: "💎",
     },
     turrina: {
         name: "Turrina",
-        title: "✨ Turrina [Placeholder]",
+        title: "✨ Turrina \"Mettete dei grafici?\"",
         message: "Professorini Skibidini!",
         emoji: "🎓",
     },
@@ -65,7 +65,7 @@ export function EasterEgg() {
             if (e.key.length === 1 && e.key.match(/[a-zA-Z0-9]/)) {
                 setTypedKeys((prev) => {
                     const newKeys = (prev + e.key).slice(-10); // Keep last 10 characters
-                    
+
                     // Special 67 easter egg
                     if (newKeys.endsWith("67")) {
                         document.body.classList.add('google-67-shake');
