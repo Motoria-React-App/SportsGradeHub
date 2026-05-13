@@ -203,17 +203,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <>
                   <SidebarGroupLabel className="px-2 flex items-center w-full transition-colors group/label relative">
                     <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
-                    <motion.div
-                      className="opacity-0 group-hover/label:opacity-100 transition-opacity relative top-0 right-0"
-                      whileHover={{ scale: 1.1, rotate: 90 }}
-                      transition={{ type: "spring", stiffness: 300 }}
+                    <SidebarGroupAction
+                      onClick={() => setAddClassDialogOpen(true)}
                     >
-                      <SidebarGroupAction
-                        onClick={() => setAddClassDialogOpen(true)}
-                      >
-                        <Plus className="size-3.5" />
-                      </SidebarGroupAction>
-                    </motion.div>
+                      <Plus className="size-3.5" />
+                    </SidebarGroupAction>
                   </SidebarGroupLabel>
                   <SidebarGroupContent>
                     <SidebarMenu className="gap-0.5 pt-1">
@@ -276,17 +270,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
                     </CollapsibleTrigger>
                   </SidebarGroupLabel>
-                  <motion.div
-                    className="opacity-0 group-hover/collapsible:opacity-100 transition-opacity"
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                  <SidebarGroupAction
+                    onClick={() => setAddClassDialogOpen(true)}
                   >
-                    <SidebarGroupAction
-                      onClick={() => setAddClassDialogOpen(true)}
-                    >
-                      <Plus className="size-3.5" />
-                    </SidebarGroupAction>
-                  </motion.div>
+                    <Plus className="size-3.5" />
+                  </SidebarGroupAction>
                   <CollapsibleContent>
                     <SidebarGroupContent>
                       <SidebarMenuSub className="gap-0.5 pt-1 pr-1">
