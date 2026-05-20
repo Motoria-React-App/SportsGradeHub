@@ -12,7 +12,7 @@ const LoadingPage = () => {
                 delayChildren: 0.1,
             }
         }
-    };
+    } as const;
 
     const letterVariants = {
         hidden: { opacity: 0, y: 15 },
@@ -25,7 +25,7 @@ const LoadingPage = () => {
                 stiffness: 200,
             }
         }
-    };
+    } as const;
 
     return (
         <div className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background">

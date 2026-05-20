@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { GraduationCap, Users, ArrowRight, AlertTriangle } from "lucide-react";
 import type { Student, Justification } from "@/types/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { pageTransition, slideUp, scaleIn, buttonPress } from "@/lib/motion";
+import { pageTransition, slideUp, scaleIn } from "@/lib/motion";
 import LoadingPage from "./Loading";
 
 

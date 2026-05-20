@@ -20,14 +20,14 @@ import { Input } from "./ui/input"
 import { useClient } from "@/provider/clientProvider"
 import { useSettings } from "@/provider/settingsProvider"
 import { toast } from "sonner"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion"
 
 
 export function LoginForm({
 
     className,
     ...props
-}: React.ComponentProps<"div">) {
+}: HTMLMotionProps<"div">) {
     const navigate = useNavigate()
     const [isLoading, setIsLoading] = useState(false)
     const [email, setEmail] = useState("")
