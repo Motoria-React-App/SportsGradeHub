@@ -599,64 +599,73 @@ export default function Valutazioni() {
                                 Nessuno studente
                             </div>
                         ) : (
-                            items.map((ev) => {
-                                const student = getStudent(ev.studentId);
-                                const exercise = getExercise(ev.exerciseId);
-                                if (!student || !exercise) return null;
+                            <AnimatePresence mode="popLayout">
+                                {items.map((ev) => {
+                                    const student = getStudent(ev.studentId);
+                                    const exercise = getExercise(ev.exerciseId);
+                                    if (!student || !exercise) return null;
 
-                                const isSelected = selectedEvaluationForGrading?.studentId === ev.studentId &&
-                                    selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
+                                    const isSelected = selectedEvaluationForGrading?.studentId === ev.studentId &&
+                                        selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
 
-                                return (
-                                    <div
-                                        key={`${ev.studentId}-${ev.exerciseId}`}
-                                        className={cn(
-                                            "group p-3 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-all duration-300",
-                                            "hover:shadow-lg hover:bg-card",
-                                            isSelected
-                                                ? "ring-2 ring-primary border-primary bg-card"
-                                                : "border-border/50 hover:border-primary/20",
-                                            status === "valutato" && "hover:border-green-500/30",
-                                            status === "valutando" && "border-yellow-500/20 shadow-sm shadow-yellow-500/5"
-                                        )}
-                                        onClick={() => selectEvaluationForGrading(ev)}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            {/* Status specific avatar/icon */}
-                                            <div className={cn(
-                                                "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
-                                                status === "non-valutato" && "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary",
-                                                status === "valutando" && "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60",
-                                                status === "valutato" && "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-900/60"
-                                            )}>
-                                                {status === "valutato" ? <Check className="h-5 w-5" /> :
-                                                    status === "valutando" ? <Clock className="h-5 w-5 animate-pulse" /> :
-                                                        <User className="h-5 w-5" />}
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-sm leading-tight transition-colors truncate">
-                                                    {student.firstName} {student.lastName}
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
-                                                    Classe {getClassName(student.currentClassId)}
-                                                </p>
-                                            </div>
-
-                                            {ev.score > 0 && (
-                                                <div className={cn(
-                                                    "h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold shadow-xs shrink-0",
-                                                    getGradeBgColor(ev.score),
-                                                    getGradeColor(ev.score),
-                                                    "border border-current/20"
-                                                )}>
-                                                    {formatGrade(ev.score)}
-                                                </div>
+                                    return (
+                                        <motion.div
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                            key={`${ev.studentId}-${ev.exerciseId}`}
+                                            className={cn(
+                                                "group p-3 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-all duration-300",
+                                                "hover:shadow-lg hover:bg-card",
+                                                isSelected
+                                                    ? "ring-2 ring-primary border-primary bg-card"
+                                                    : "border-border/50 hover:border-primary/20",
+                                                status === "valutato" && "hover:border-green-500/30",
+                                                status === "valutando" && "border-yellow-500/20 shadow-sm shadow-yellow-500/5"
                                             )}
-                                        </div>
-                                    </div>
-                                );
-                            })
+                                            onClick={() => selectEvaluationForGrading(ev)}
+                                            whileHover={{ y: -2 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {/* Status specific avatar/icon */}
+                                                <div className={cn(
+                                                    "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
+                                                    status === "non-valutato" && "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary",
+                                                    status === "valutando" && "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60",
+                                                    status === "valutato" && "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-900/60"
+                                                )}>
+                                                    {status === "valutato" ? <Check className="h-5 w-5" /> :
+                                                        status === "valutando" ? <Clock className="h-5 w-5 animate-pulse" /> :
+                                                            <User className="h-5 w-5" />}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm leading-tight transition-colors truncate">
+                                                        {student.firstName} {student.lastName}
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
+                                                        Classe {getClassName(student.currentClassId)}
+                                                    </p>
+                                                </div>
+
+                                                {ev.score > 0 && (
+                                                    <div className={cn(
+                                                        "h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold shadow-xs shrink-0",
+                                                        getGradeBgColor(ev.score),
+                                                        getGradeColor(ev.score),
+                                                        "border border-current/20"
+                                                    )}>
+                                                        {formatGrade(ev.score)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
                         )}
                     </div>
                 </ScrollArea>

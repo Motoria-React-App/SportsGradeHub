@@ -16,6 +16,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, slideUp, staggerContainer, staggerItem, buttonPress, cardHover, modalVariants, overlayVariants } from "@/lib/motion";
+import LoadingPage from "./Loading";
+
 
 
 export default function Classes() {
@@ -248,27 +250,7 @@ export default function Classes() {
     };
 
     if (loading) {
-        return (
-            <motion.div
-                className="flex items-center justify-center h-full"
-                variants={pageTransition}
-                initial="hidden"
-                animate="visible"
-            >
-                <div className="space-y-4">
-                    <motion.div
-                        className="h-8 w-64 bg-muted rounded"
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                    <motion.div
-                        className="h-4 w-48 bg-muted rounded"
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                    />
-                </div>
-            </motion.div>
-        );
+        return <LoadingPage />;
     }
 
     if (!schoolClass) {
@@ -354,178 +336,194 @@ export default function Classes() {
                 </TabsList>
 
                 <div className="mt-6">
-                    <TabsContent value="students" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Elenco Studenti</CardTitle>
-                                <CardDescription>
-                                    Gestisci l'anagrafica degli studenti della classe {schoolClass.className}.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <StudentsTable
-                                    students={[...schoolClass.students].sort((a, b) => a.lastName.localeCompare(b.lastName))}
-                                    onEdit={(student) => {
-                                        setSelectedStudent(student);
-                                        setStudentDialogOpen(true);
-                                    }}
-                                    showCheckboxes={false}
-                                    showNotes={true}
-                                    showYearAverage={true}
-                                    getYearAverage={getStudentYearAverage}
-                                    getClassName={getClassName}
-                                    isOverLimit={isOverLimit}
-                                    getJustificationsCount={(student) => getJustificationsInPeriod(student.justifications || [])}
-                                    maxJustifications={settings.maxJustifications}
-                                    selectedStudents={selectedStudents}
-                                    onToggleSelect={toggleSelectStudent}
-                                    onToggleSelectAll={toggleSelectAll}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="exercises">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-medium">Esercizi Assegnati</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Esercizi collegati a questa classe per le valutazioni.
-                                    </p>
-                                </div>
-                                <Button
-                                    className="gap-2"
-                                    onClick={() => {
-                                        setSelectedExerciseIds(schoolClass.assignedExercises || []);
-                                        setExerciseDialogOpen(true);
-                                    }}
-                                >
-                                    <Link2 className="w-4 h-4" />
-                                    Collega Esercizi
-                                </Button>
-                            </div>
-
-                            {assignedExercises.length > 0 ? (
-                                <motion.div
-                                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                                    variants={staggerContainer}
-                                    initial="hidden"
-                                    animate="visible"
-                                >
-                                    {assignedExercises.map((exercise, index) => {
-                                        const stats = getExerciseStats(exercise.id);
-                                        const group = exerciseGroups.find(g => g.id === exercise.exerciseGroupId);
-
-                                        return (
-                                            <motion.div key={exercise.id} variants={staggerItem} custom={index}>
-                                                <motion.div {...cardHover}>
-                                                    <Card
-                                                        className={cn(
-                                                            "flex flex-col h-full cursor-pointer group/card",
-                                                            selectedExerciseForPreview?.id === exercise.id && "ring-2 ring-primary"
-                                                        )}
-                                                        onClick={() => setSelectedExerciseForPreview(exercise)}
-                                                    >
-                                                        <CardHeader className="pb-3">
-                                                            <div className="flex justify-between items-start gap-2">
-                                                                <div className="space-y-1">
-                                                                    <CardTitle className="text-base font-bold leading-tight group-hover/card:text-primary transition-colors">
-                                                                        {exercise.name}
-                                                                    </CardTitle>
-                                                                    {group && (
-                                                                        <p className="text-xs text-muted-foreground">{group.groupName}</p>
-                                                                    )}
-                                                                </div>
-                                                                {exercise.unit && (
-                                                                    <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
-                                                                        {exercise.unit}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </CardHeader>
-                                                        <CardContent className="flex-1 pb-3 space-y-3">
-                                                            {/* Stats */}
-                                                            <div className="flex items-center gap-3 text-xs">
-                                                                <div className="flex items-center gap-1">
-                                                                    <Check className="w-3 h-3 text-green-500" />
-                                                                    <span>{stats.completed}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <Clock className="w-3 h-3 text-yellow-500" />
-                                                                    <span>{stats.inProgress}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <AlertCircle className="w-3 h-3 text-slate-400" />
-                                                                    <span>{stats.notStarted}</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Progress bar */}
-                                                            {stats.total > 0 && (
-                                                                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                                                                    <motion.div
-                                                                        className="h-full bg-green-500"
-                                                                        initial={{ width: 0 }}
-                                                                        animate={{ width: `${(stats.completed / stats.total) * 100}%` }}
-                                                                        transition={{ duration: 0.8, ease: "easeOut" }}
-                                                                    />
-                                                                </div>
-                                                            )}
-
-                                                            {/* Average score */}
-                                                            {stats.completed > 0 && (
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className="text-xs text-muted-foreground">Media</span>
-                                                                    <span className={cn("font-bold", getGradeColor(stats.avgScore))}>
-                                                                        {formatGrade(stats.avgScore)}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </CardContent>
-                                                    </Card>
-                                                </motion.div>
-                                            </motion.div>
-                                        );
-                                    })}
-                                </motion.div>
-                            ) : (
-                                <Card>
-                                    <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                                        <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                                        <h3 className="text-lg font-medium">Nessun esercizio collegato</h3>
-                                        <p className="text-muted-foreground max-w-sm mt-1 mb-4">
-                                            Collega degli esercizi a questa classe per iniziare le valutazioni.
-                                        </p>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                setSelectedExerciseIds([]);
-                                                setExerciseDialogOpen(true);
-                                            }}
-                                        >
-                                            <Link2 className="w-4 h-4 mr-2" />
-                                            Collega Esercizi
-                                        </Button>
-                                    </CardContent>
-                                </Card>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                        >
+                            {activeTab === "students" && (
+                                <TabsContent value="students" forceMount className="space-y-4 mt-0">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Elenco Studenti</CardTitle>
+                                            <CardDescription>
+                                                Gestisci l'anagrafica degli studenti della classe {schoolClass.className}.
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
+                                            <StudentsTable
+                                                students={[...schoolClass.students].sort((a, b) => a.lastName.localeCompare(b.lastName))}
+                                                onEdit={(student) => {
+                                                    setSelectedStudent(student);
+                                                    setStudentDialogOpen(true);
+                                                }}
+                                                showCheckboxes={false}
+                                                showNotes={true}
+                                                showYearAverage={true}
+                                                getYearAverage={getStudentYearAverage}
+                                                getClassName={getClassName}
+                                                isOverLimit={isOverLimit}
+                                                getJustificationsCount={(student) => getJustificationsInPeriod(student.justifications || [])}
+                                                maxJustifications={settings.maxJustifications}
+                                                selectedStudents={selectedStudents}
+                                                onToggleSelect={toggleSelectStudent}
+                                                onToggleSelectAll={toggleSelectAll}
+                                            />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
                             )}
-                        </div>
-                    </TabsContent>
 
-                    <TabsContent value="analytics">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Analisi Classe</CardTitle>
-                                <CardDescription>Stats e andamento generale.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-lg">
-                                    <p className="text-muted-foreground">Grafici in arrivo...</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
+                            {activeTab === "exercises" && (
+                                <TabsContent value="exercises" forceMount className="mt-0">
+                                    <div className="space-y-6">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-lg font-medium">Esercizi Assegnati</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Esercizi collegati a questa classe per le valutazioni.
+                                                </p>
+                                            </div>
+                                            <Button
+                                                className="gap-2"
+                                                onClick={() => {
+                                                    setSelectedExerciseIds(schoolClass.assignedExercises || []);
+                                                    setExerciseDialogOpen(true);
+                                                }}
+                                            >
+                                                <Link2 className="w-4 h-4" />
+                                                Collega Esercizi
+                                            </Button>
+                                        </div>
+
+                                        {assignedExercises.length > 0 ? (
+                                            <motion.div
+                                                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                                variants={staggerContainer}
+                                                initial="hidden"
+                                                animate="visible"
+                                            >
+                                                {assignedExercises.map((exercise, index) => {
+                                                    const stats = getExerciseStats(exercise.id);
+                                                    const group = exerciseGroups.find(g => g.id === exercise.exerciseGroupId);
+
+                                                    return (
+                                                        <motion.div key={exercise.id} variants={staggerItem} custom={index}>
+                                                            <motion.div {...cardHover}>
+                                                                <Card
+                                                                    className={cn(
+                                                                        "flex flex-col h-full cursor-pointer group/card",
+                                                                        selectedExerciseForPreview?.id === exercise.id && "ring-2 ring-primary"
+                                                                    )}
+                                                                    onClick={() => setSelectedExerciseForPreview(exercise)}
+                                                                >
+                                                                    <CardHeader className="pb-3">
+                                                                        <div className="flex justify-between items-start gap-2">
+                                                                            <div className="space-y-1">
+                                                                                <CardTitle className="text-base font-bold leading-tight group-hover/card:text-primary transition-colors">
+                                                                                    {exercise.name}
+                                                                                </CardTitle>
+                                                                                {group && (
+                                                                                    <p className="text-xs text-muted-foreground">{group.groupName}</p>
+                                                                                )}
+                                                                            </div>
+                                                                            {exercise.unit && (
+                                                                                <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+                                                                                    {exercise.unit}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </CardHeader>
+                                                                    <CardContent className="flex-1 pb-3 space-y-3">
+                                                                        {/* Stats */}
+                                                                        <div className="flex items-center gap-3 text-xs">
+                                                                            <div className="flex items-center gap-1">
+                                                                                <Check className="w-3 h-3 text-green-500" />
+                                                                                <span>{stats.completed}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <Clock className="w-3 h-3 text-yellow-500" />
+                                                                                <span>{stats.inProgress}</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <AlertCircle className="w-3 h-3 text-slate-400" />
+                                                                                <span>{stats.notStarted}</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Progress bar */}
+                                                                        {stats.total > 0 && (
+                                                                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                                                                <motion.div
+                                                                                    className="h-full bg-green-500"
+                                                                                    initial={{ width: 0 }}
+                                                                                    animate={{ width: `${(stats.completed / stats.total) * 100}%` }}
+                                                                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Average score */}
+                                                                        {stats.completed > 0 && (
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span className="text-xs text-muted-foreground">Media</span>
+                                                                                <span className={cn("font-bold", getGradeColor(stats.avgScore))}>
+                                                                                    {formatGrade(stats.avgScore)}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                    </CardContent>
+                                                                </Card>
+                                                            </motion.div>
+                                                        </motion.div>
+                                                    );
+                                                })}
+                                            </motion.div>
+                                        ) : (
+                                            <Card>
+                                                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                                                    <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
+                                                    <h3 className="text-lg font-medium">Nessun esercizio collegato</h3>
+                                                    <p className="text-muted-foreground max-w-sm mt-1 mb-4">
+                                                        Collega degli esercizi a questa classe per iniziare le valutazioni.
+                                                    </p>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setSelectedExerciseIds([]);
+                                                            setExerciseDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <Link2 className="w-4 h-4 mr-2" />
+                                                        Collega Esercizi
+                                                    </Button>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+                                    </div>
+                                </TabsContent>
+                            )}
+
+                            {activeTab === "analytics" && (
+                                <TabsContent value="analytics" forceMount className="mt-0">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Analisi Classe</CardTitle>
+                                            <CardDescription>Stats e andamento generale.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-lg">
+                                                <p className="text-muted-foreground">Grafici in arrivo...</p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </Tabs>
 

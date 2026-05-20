@@ -20,9 +20,11 @@ import { Input } from "./ui/input"
 import { useClient } from "@/provider/clientProvider"
 import { useSettings } from "@/provider/settingsProvider"
 import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
 
 
 export function LoginForm({
+
     className,
     ...props
 }: React.ComponentProps<"div">) {
@@ -87,127 +89,170 @@ export function LoginForm({
     }
 
     return (
-        <div className={cn("flex flex-col gap-6", className)} {...props}>
-            <Card>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-xl">{isLogin ? "Login" : "Register"}</CardTitle>
-                    <CardDescription>
-                        {isLogin ? "Login with your Google account" : "Register with your Google account"}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit}>
-                        <FieldGroup>
-                            <Field>
-                                {/* <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => handleSocialLogin('apple')}
-                                    disabled={isLoading}
+        <motion.div 
+            layout
+            className={cn("flex flex-col gap-6", className)} 
+            {...props}
+        >
+            <Card className="overflow-hidden shadow-xl border-muted-foreground/15">
+                <motion.div layout="position">
+                    <CardHeader className="text-center pb-2">
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={isLogin ? "login-header" : "register-header"}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <CardTitle className="text-2xl font-bold tracking-tight">
+                                    {isLogin ? "Login" : "Registrati"}
+                                </CardTitle>
+                                <CardDescription className="mt-1.5">
+                                    {isLogin ? "Accedi con il tuo account Google" : "Registrati con il tuo account Google"}
+                                </CardDescription>
+                            </motion.div>
+                        </AnimatePresence>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleSubmit}>
+                            <FieldGroup>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.1 }}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                                        <path
-                                            d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
-                                            fill="currentColor"
-                                        />
-                                    </svg>
-                                    {isLogin ? "Login with Apple" : "Register with Apple"}
-                                </Button> */}
-                                <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => handleSocialLogin()}
-                                    disabled={true}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 48 48">
-                                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
-                                    </svg>
-                                    {isLogin ? "Login with Google" : "Register with Google"}
-                                </Button>
-                            </Field>
-                            <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
-                                Or continue with
-                            </FieldSeparator>
-                            {!isLogin && (
-                                <div className="grid grid-cols-2 gap-4">
                                     <Field>
-                                        <FieldLabel htmlFor="firstName">Nome</FieldLabel>
-                                        <Input
-                                            id="firstName"
-                                            type="text"
-                                            placeholder="nome"
-                                            value={firstName}
-                                            onChange={(e) => setFirstName(e.target.value)}
-                                            required
-                                            disabled={isLoading}
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel htmlFor="lastName">Cognome</FieldLabel>
-                                        <Input
-                                            id="lastName"
-                                            type="text"
-                                            placeholder="cognome"
-                                            value={lastName}
-                                            onChange={(e) => setLastName(e.target.value)}
-                                            required
-                                            disabled={isLoading}
-                                        />
-                                    </Field>
-                                </div>
-                            )}
-                            <Field>
-                                <FieldLabel htmlFor="email">Email</FieldLabel>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="m@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </Field>
-                            <Field>
-                                {isLogin ? (
-                                    <div className="flex items-center">
-                                        <FieldLabel htmlFor="password">Password</FieldLabel>
-                                        <a
-                                            href="#"
-                                            className="ml-auto text-sm underline-offset-4 hover:underline"
+                                        <Button
+                                            variant="outline"
+                                            type="button"
+                                            onClick={() => handleSocialLogin()}
+                                            disabled={true}
+                                            className="w-full relative overflow-hidden transition-all duration-300 hover:bg-muted/80 active:scale-98"
                                         >
-                                            Forgot your password?
-                                        </a>
-                                    </div>
-                                ) : (
-                                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                                )}
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                            </Field>
-                            <Field>
-                                <Button type="submit" disabled={isLoading}>
-                                    {isLoading ? "Logging in..." : "Login"}
-                                </Button>
-                                <FieldDescription className="text-center">
-                                    {isLogin ? "Don't have an account?" : "Already have an account?"} <a className="cursor-pointer" onClick={() => setIsLogin(!isLogin)}>{isLogin ? "Sign up" : "Login"}</a>
-                                </FieldDescription>
-                            </Field>
-                        </FieldGroup>
-                    </form>
-                </CardContent>
+                                            <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="100" height="100" viewBox="0 0 48 48">
+                                                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path>
+                                            </svg>
+                                            {isLogin ? "Accedi con Google" : "Registrati con Google"}
+                                        </Button>
+                                    </Field>
+                                </motion.div>
+                                
+                                <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
+                                    Oppure continua con
+                                </FieldSeparator>
+
+                                <AnimatePresence initial={false} mode="popLayout">
+                                    {!isLogin && (
+                                        <motion.div
+                                            key="register-fields"
+                                            initial={{ opacity: 0, height: 0, y: -15 }}
+                                            animate={{ opacity: 1, height: "auto", y: 0 }}
+                                            exit={{ opacity: 0, height: 0, y: -15 }}
+                                            transition={{ duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="grid grid-cols-2 gap-4 pb-2">
+                                                <Field>
+                                                    <FieldLabel htmlFor="firstName">Nome</FieldLabel>
+                                                    <Input
+                                                        id="firstName"
+                                                        type="text"
+                                                        placeholder="nome"
+                                                        value={firstName}
+                                                        onChange={(e) => setFirstName(e.target.value)}
+                                                        required
+                                                        disabled={isLoading}
+                                                        className="focus:border-primary/50 transition-colors"
+                                                    />
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="lastName">Cognome</FieldLabel>
+                                                    <Input
+                                                        id="lastName"
+                                                        type="text"
+                                                        placeholder="cognome"
+                                                        value={lastName}
+                                                        onChange={(e) => setLastName(e.target.value)}
+                                                        required
+                                                        disabled={isLoading}
+                                                        className="focus:border-primary/50 transition-colors"
+                                                    />
+                                                </Field>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                <motion.div layout="position" className="space-y-4">
+                                    <Field>
+                                        <FieldLabel htmlFor="email">Email</FieldLabel>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="m@example.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                            className="focus:border-primary/50 transition-colors"
+                                        />
+                                    </Field>
+                                    <Field>
+                                        {isLogin ? (
+                                            <div className="flex items-center">
+                                                <FieldLabel htmlFor="password">Password</FieldLabel>
+                                                <a
+                                                    href="#"
+                                                    className="ml-auto text-sm text-primary hover:underline underline-offset-4"
+                                                >
+                                                    Password dimenticata?
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <FieldLabel htmlFor="password">Password</FieldLabel>
+                                        )}
+                                        <Input
+                                            id="password"
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            required
+                                            disabled={isLoading}
+                                            className="focus:border-primary/50 transition-colors"
+                                        />
+                                    </Field>
+                                    <Field className="pt-2">
+                                        <Button 
+                                            type="submit" 
+                                            disabled={isLoading}
+                                            className="w-full relative overflow-hidden transition-all duration-300 hover:shadow-md active:scale-98"
+                                        >
+                                            {isLoading ? (isLogin ? "Accesso in corso..." : "Registrazione...") : (isLogin ? "Accedi" : "Registrati")}
+                                        </Button>
+                                        <FieldDescription className="text-center mt-3">
+                                            {isLogin ? "Non hai un account?" : "Hai già un account?"}{" "}
+                                            <a 
+                                                className="cursor-pointer font-semibold text-primary hover:underline" 
+                                                onClick={() => setIsLogin(!isLogin)}
+                                            >
+                                                {isLogin ? "Registrati" : "Accedi"}
+                                            </a>
+                                        </FieldDescription>
+                                    </Field>
+                                </motion.div>
+                            </FieldGroup>
+                        </form>
+                    </CardContent>
+                </motion.div>
             </Card>
-            <FieldDescription className="px-6 text-center">
-                By clicking continue, you agree to our <Link className="hover:underline" to="/terms">Terms of Service</Link>{" "}
-                and <Link className="hover:underline" to="/privacy">Privacy Policy</Link>.
+            <FieldDescription className="px-6 text-center text-xs">
+                Facendo clic su continua, accetti i nostri{" "}
+                <Link className="text-primary hover:underline" to="/terms">Termini di servizio</Link> e la{" "}
+                <Link className="text-primary hover:underline" to="/privacy">Informativa sulla privacy</Link>.
             </FieldDescription>
-        </div>
+        </motion.div>
     )
 }
+
 

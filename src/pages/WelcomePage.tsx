@@ -8,6 +8,8 @@ import { GraduationCap, Users, ArrowRight, AlertTriangle } from "lucide-react";
 import type { Student, Justification } from "@/types/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, slideUp, scaleIn, buttonPress } from "@/lib/motion";
+import LoadingPage from "./Loading";
+
 
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
@@ -56,32 +58,7 @@ export default function WelcomePage() {
 
     // Loading state while fetching schedule
     if (isLoading) {
-        return (
-            <motion.div
-                className="flex flex-col items-center justify-center min-h-screen bg-background p-6"
-                variants={pageTransition}
-                initial="hidden"
-                animate="visible"
-            >
-                <div className="w-full max-w-lg flex flex-col items-center justify-center gap-4">
-                    <motion.div
-                        className="h-4 w-32 bg-muted rounded"
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                    />
-                    <motion.div
-                        className="h-16 w-16 bg-muted rounded-2xl"
-                        animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    <motion.div
-                        className="h-8 w-48 bg-muted rounded"
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                    />
-                </div>
-            </motion.div>
-        );
+        return <LoadingPage />;
     }
 
     const handleStartEvaluation = (classId: string) => {
@@ -98,51 +75,87 @@ export default function WelcomePage() {
     if (scheduledClass) {
         return (
             <motion.div
-                className="flex flex-col items-center justify-center min-h-screen bg-background p-6"
+                className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 overflow-hidden"
                 variants={pageTransition}
                 initial="hidden"
                 animate="visible"
+                exit="exit"
             >
-                <div className="w-full max-w-lg">
+                {/* Background ambient glows */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <motion.div 
+                        className="absolute -top-12 -left-12 w-[350px] h-[350px] rounded-full bg-primary/5 blur-[120px]"
+                        animate={{
+                            x: [0, 20, 0],
+                            y: [0, -20, 0],
+                        }}
+                        transition={{
+                            duration: 10,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                        }}
+                    />
+                    <motion.div 
+                        className="absolute -bottom-12 -right-12 w-[350px] h-[350px] rounded-full bg-primary/5 blur-[120px]"
+                        animate={{
+                            x: [0, -20, 0],
+                            y: [0, 20, 0],
+                        }}
+                        transition={{
+                            duration: 8,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: 1,
+                        }}
+                    />
+                </div>
+
+                <motion.div 
+                    className="w-full max-w-lg p-8 md:p-12 rounded-3xl bg-card/50 backdrop-blur-xl border border-muted-foreground/15 shadow-2xl relative z-10 flex flex-col items-center"
+                    initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ type: "spring", damping: 15, stiffness: 100 }}
+                >
                     {/* Welcome greeting */}
                     <motion.div
-                        className="text-center mb-12"
+                        className="text-center mb-10 w-full"
                         variants={slideUp}
                     >
-                        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-2">
-                            Benvenuto, <span className="text-primary">{displayName}</span>
+                        <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">Benvenuto</p>
+                        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
+                            Prof. <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{displayName}</span>
                         </h1>
                     </motion.div>
 
-                    {/* Class display */}
+                    {/* Class display Card */}
                     <motion.div
-                        className="text-center mb-10"
+                        className="w-full text-center mb-8 p-6 rounded-2xl bg-muted/40 border border-muted-foreground/10"
                         variants={slideUp}
                         transition={{ delay: 0.1 }}
                     >
-                        <p className="text-lg text-muted-foreground mb-3">
-                            Ecco la
+                        <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-4">
+                            Classe In Corso
                         </p>
-                        <div className="flex items-center justify-center gap-4">
+                        <div className="flex flex-col items-center gap-3">
                             <motion.div
-                                className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary"
+                                className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary shadow-inner"
                                 whileHover={{ scale: 1.1, rotate: 5 }}
                                 transition={{ type: "spring", stiffness: 300 }}
                             >
-                                <GraduationCap className="w-8 h-8" />
+                                <GraduationCap className="w-7 h-7" />
                             </motion.div>
-                            <div>
+                            <div className="space-y-1">
                                 <motion.h2
-                                    className="text-5xl md:text-6xl font-bold tracking-tight"
-                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    className="text-4xl md:text-5xl font-extrabold tracking-tight"
+                                    initial={{ scale: 0.9, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                                 >
                                     {scheduledClass.name}
                                 </motion.h2>
-                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                                    <Users className="w-4 h-4" />
-                                    {scheduledClass.studentCount} studenti
+                                <p className="text-xs font-medium text-muted-foreground flex items-center justify-center gap-1">
+                                    <Users className="w-3.5 h-3.5" />
+                                    {scheduledClass.studentCount} studenti registrati
                                 </p>
                             </div>
                         </div>
@@ -152,46 +165,46 @@ export default function WelcomePage() {
                     <AnimatePresence>
                         {studentsOverLimit.length > 0 && (
                             <motion.div
-                                className="mb-6"
+                                className="mb-6 w-full"
                                 variants={scaleIn}
                                 initial="hidden"
                                 animate="visible"
                                 exit="hidden"
                             >
-                                <Card className="border-destructive bg-destructive/5">
+                                <Card className="border-destructive/30 bg-destructive/5 overflow-hidden">
                                     <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
+                                        <CardTitle className="text-sm font-bold flex items-center gap-2 text-destructive">
                                             <motion.div
                                                 animate={{ rotate: [0, -10, 10, 0] }}
-                                                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
+                                                transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2.5 }}
                                             >
                                                 <AlertTriangle className="h-4 w-4" />
                                             </motion.div>
                                             Attenzione Giustifiche
                                         </CardTitle>
-                                        <CardDescription>
-                                            {studentsOverLimit.length} student{studentsOverLimit.length > 1 ? 'i' : 'e'} ha{studentsOverLimit.length > 1 ? 'nno' : ''} superato la soglia
+                                        <CardDescription className="text-xs text-destructive/80 font-medium">
+                                            {studentsOverLimit.length} student{studentsOverLimit.length > 1 ? 'i' : 'e'} ha{studentsOverLimit.length > 1 ? 'nno' : ''} superato la soglia di giustifiche:
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="pt-0">
-                                        <div className="flex flex-wrap gap-2">
+                                        <div className="flex flex-wrap gap-1.5 mt-1">
                                             {studentsOverLimit.slice(0, 5).map((s: Student, index) => (
                                                 <motion.div
                                                     key={s.id}
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    transition={{ delay: index * 0.1 }}
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    transition={{ delay: index * 0.05 }}
                                                 >
                                                     <Link
                                                         to={`/students/${s.id}`}
-                                                        className="text-xs bg-destructive/10 text-destructive px-2 py-1 rounded-full hover:bg-destructive/20 transition-colors"
+                                                        className="text-xs bg-destructive/10 text-destructive font-semibold px-2.5 py-1 rounded-full hover:bg-destructive/20 transition-all border border-destructive/10"
                                                     >
                                                         {s.firstName} {s.lastName}
                                                     </Link>
                                                 </motion.div>
                                             ))}
                                             {studentsOverLimit.length > 5 && (
-                                                <span className="text-xs text-muted-foreground px-2 py-1">
+                                                <span className="text-xs text-muted-foreground px-2 py-1 font-medium bg-muted/50 rounded-full border border-muted-foreground/5">
                                                     +{studentsOverLimit.length - 5} altri
                                                 </span>
                                             )}
@@ -204,42 +217,39 @@ export default function WelcomePage() {
 
                     {/* CTA Button */}
                     <motion.div
-                        className="flex justify-center"
+                        className="w-full flex justify-center mt-2"
+                        variants={slideUp}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <Button
+                            size="lg"
+                            onClick={() => handleStartEvaluation(scheduledClass.id)}
+                            className="w-full py-6 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group flex items-center justify-center gap-2"
+                        >
+                            Cominciamo a valutare!
+                            <motion.div
+                                animate={{ x: [0, 4, 0] }}
+                                transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                            >
+                                <ArrowRight className="w-4 h-4" />
+                            </motion.div>
+                        </Button>
+                    </motion.div>
+
+                    {/* Link to dashboard */}
+                    <motion.div
+                        className="text-center mt-6"
                         variants={slideUp}
                         transition={{ delay: 0.3 }}
                     >
-                        <motion.div {...buttonPress}>
-                            <Button
-                                size="lg"
-                                onClick={() => handleStartEvaluation(scheduledClass.id)}
-                                className="px-8 py-6 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-                            >
-                                Cominciamo a valutare!
-                                <motion.div
-                                    className="ml-2"
-                                    whileHover={{ x: 5 }}
-                                    transition={{ type: "spring", stiffness: 300 }}
-                                >
-                                    <ArrowRight className="w-5 h-5" />
-                                </motion.div>
-                            </Button>
-                        </motion.div>
-                    </motion.div>
-
-                    {/* Link to all classes */}
-                    <motion.div
-                        className="text-center mt-8"
-                        variants={slideUp}
-                        transition={{ delay: 0.4 }}
-                    >
                         <button
                             onClick={handleGoToDashboard}
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            className="text-xs font-semibold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-all"
                         >
                             Oppure vai al dashboard →
                         </button>
                     </motion.div>
-                </div>
+                </motion.div>
             </motion.div>
         );
     }

@@ -9,6 +9,8 @@ import {
   filterEvaluationsByExerciseAndClass,
 } from '@/utils/leaderboard-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { motion, AnimatePresence } from 'framer-motion';
+import { pageTransition, slideUp, staggerContainer, staggerItem } from '@/lib/motion';
 
 export default function Leaderboards() {
   const { classes, students, exercises, evaluations, exerciseGroups } = useSchoolData();
@@ -126,52 +128,88 @@ export default function Leaderboards() {
   }, [selectedClassId, selectedExerciseId, selectedExercise, evaluations, students, studentsInClass, classes]);
 
   return (
-    <div className="flex flex-1 flex-col p-4 md:p-6 space-y-6 animate-in fade-in duration-700">
+    <motion.div
+      className="flex flex-1 flex-col p-4 md:p-6 space-y-6"
+      variants={pageTransition}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+    >
       {/* Header */}
-      <div>
+      <motion.div variants={slideUp}>
         <h1 className="text-3xl font-bold tracking-tight">Leaderboards</h1>
         <p className="text-muted-foreground mt-2">
           Visualizza la classifica degli studenti per criteri di valutazione per ogni esercizio
         </p>
-      </div>
+      </motion.div>
 
-      {/* Filter Card */}
-      <Card className="max-w-3xl mx-auto overflow-hidden">
-        <CardHeader>
-          <CardTitle>Seleziona Classe ed Esercizio</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 py-4">
-          <LeaderboardContainer
-            classes={classes}
-            exercises={filteredExercises}
-            selectedClassId={selectedClassId}
-            selectedExerciseId={selectedExerciseId}
-            onClassChange={handleClassChange}
-            onExerciseChange={handleExerciseChange}
-          />
-        </CardContent>
-      </Card>
+      {/* Main Content Staggered */}
+      <motion.div
+        className="space-y-6"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Filter Card */}
+        <motion.div variants={staggerItem}>
+          <Card className="max-w-3xl mx-auto overflow-hidden">
+            <CardHeader>
+              <CardTitle>Seleziona Classe ed Esercizio</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 py-4">
+              <LeaderboardContainer
+                classes={classes}
+                exercises={filteredExercises}
+                selectedClassId={selectedClassId}
+                selectedExerciseId={selectedExerciseId}
+                onClassChange={handleClassChange}
+                onExerciseChange={handleExerciseChange}
+              />
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      {/* Leaderboard Card */}
-      {selectedClassId && selectedExerciseId && selectedExercise && (
-        <Card className="max-w-6xl mx-auto overflow-hidden">
-          <CardHeader>
-            <CardTitle>
-              {selectedExercise.name} - Rankings
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">
-              {studentsInClass.length} studenti nella classe
-              {criteriaLeaderboards.length > 0 &&
-                ` • ${criteriaLeaderboards.length} criteri`}
-            </p>
-          </CardHeader>
-          <CardContent className="px-4 py-4">
-            <LeaderboardTable
-              criteriaLeaderboards={criteriaLeaderboards}
-            />
-          </CardContent>
-        </Card>
-      )}
-    </div>
+        {/* Leaderboard Card */}
+        <AnimatePresence mode="wait">
+          {selectedClassId && selectedExerciseId && selectedExercise ? (
+            <motion.div
+              key={`${selectedClassId}-${selectedExerciseId}`}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="max-w-6xl mx-auto overflow-hidden">
+                <CardHeader>
+                  <CardTitle>
+                    {selectedExercise.name} - Rankings
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {studentsInClass.length} studenti nella classe
+                    {criteriaLeaderboards.length > 0 &&
+                      ` • ${criteriaLeaderboards.length} criteri`}
+                  </p>
+                </CardHeader>
+                <CardContent className="px-4 py-4">
+                  <LeaderboardTable
+                    criteriaLeaderboards={criteriaLeaderboards}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-muted-foreground py-12"
+            >
+              Seleziona una classe ed un esercizio per visualizzare le classifiche.
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 }

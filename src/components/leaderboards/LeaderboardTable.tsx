@@ -7,6 +7,8 @@ import {
 } from '@tanstack/react-table';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CriteriaLeaderboard, CriterionRanking } from '@/utils/leaderboard-utils';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface LeaderboardTableProps {
   criteriaLeaderboards: CriteriaLeaderboard[];
@@ -137,24 +139,33 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows.map((row) => {
+          {table.getRowModel().rows.map((row, idx) => {
             const rank = (row.original as any).rank;
             let rowBgClass = '';
             if (rank === 1) {
-              rowBgClass = 'bg-amber-400/10';
+              rowBgClass = 'bg-amber-400/10 hover:bg-amber-400/15';
             } else if (rank === 2) {
-              rowBgClass = 'bg-slate-300/10';
+              rowBgClass = 'bg-slate-300/10 hover:bg-slate-300/15';
             } else if (rank === 3) {
-              rowBgClass = 'bg-amber-700/10';
+              rowBgClass = 'bg-amber-700/10 hover:bg-amber-700/15';
             }
             return (
-              <TableRow key={row.id} className={rowBgClass}>
+              <motion.tr
+                key={row.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                className={cn(
+                  "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+                  rowBgClass
+                )}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="text-center py-2 px-3">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
-              </TableRow>
+              </motion.tr>
             );
           })}
         </TableBody>
