@@ -261,12 +261,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 >
                   <SidebarGroupLabel asChild>
                     <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md py-0 px-2 flex items-center w-full transition-colors group/trigger">
-                      <motion.div
-                        animate={{ rotate: "90deg" }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 mr-1.5" />
-                      </motion.div>
+                      <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 mr-1.5" />
                       <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
                     </CollapsibleTrigger>
                   </SidebarGroupLabel>

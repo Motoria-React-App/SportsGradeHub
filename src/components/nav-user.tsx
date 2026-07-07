@@ -43,6 +43,15 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const client = useClient()
 
+  const displayName = user.displayName || "Admin"
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name[0])
+    .join("")
+    .toUpperCase() || "A"
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -54,7 +63,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar || ""} alt={user.displayName || ""} />
-                <AvatarFallback className="rounded-lg">{(user.displayName.split(" ")[0].charAt(0) + user.displayName.split(" ")[1].charAt(0)).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.displayName}</span>
@@ -73,7 +82,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar || ""} alt={user.displayName || ""} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.displayName || "admin"}</span>
