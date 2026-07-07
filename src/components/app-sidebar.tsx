@@ -46,6 +46,7 @@ import { Link } from "react-router-dom"
 import { AddClassDialog } from "./add-class-dialog"
 import { Kbd, KbdGroup } from "./ui/kbd"
 import { useSettings } from "@/provider/settingsProvider"
+import { useTranslation } from "@/hooks/useTranslation"
 import { motion } from "framer-motion"
 import { staggerContainer, staggerItem } from "@/lib/motion"
 
@@ -63,23 +64,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { classes, refreshClasses } = useSchoolData();
   const { settings } = useSettings();
   const { openCommandDialog } = useCommandDialog();
+  const { t } = useTranslation();
   const [addClassDialogOpen, setAddClassDialogOpen] = React.useState(false);
 
   const data = {
     quickNav: [
       {
-        title: "Search",
+        title: t("sidebar.search"),
         url: "#",
         icon: Search,
         onClick: openCommandDialog,
       },
       {
-        title: "Home",
+        title: t("sidebar.home"),
         url: "/dashboard",
         icon: Home,
       },
       {
-        title: "Esercizi",
+        title: t("sidebar.exercises"),
         url: "/exercises",
         icon: Activity,
       },
@@ -88,12 +90,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       //   url: "/analytics",
       // },
       {
-        title: "Valutazioni",
+        title: t("sidebar.evaluations"),
         url: "/valutazioni/all/all",
         icon: ClipboardCheck,
       },
       {
-        title: "Leaderboards",
+        title: t("sidebar.leaderboards"),
         url: "/leaderboards",
         icon: Trophy,
       },
@@ -202,7 +204,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {!settings.collapsibleClasses ? (
                 <>
                   <SidebarGroupLabel className="px-2 flex items-center w-full transition-colors group/label relative">
-                    <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
+                    <span className="text-xs font-medium text-muted-foreground flex-1 text-left">{t("sidebar.classes")}</span>
                     <SidebarGroupAction
                       onClick={() => setAddClassDialogOpen(true)}
                     >
@@ -219,7 +221,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               onClick={() => setAddClassDialogOpen(true)}
                             >
                               <Plus className="size-4" />
-                              <span className="text-sm">Aggiungi classe</span>
+                              <span className="text-sm">{t("sidebar.addClass")}</span>
                             </SidebarMenuButton>
                           </SidebarMenuItem>
                         </motion.div>
@@ -262,7 +264,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarGroupLabel asChild>
                     <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md py-0 px-2 flex items-center w-full transition-colors group/trigger">
                       <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 mr-1.5" />
-                      <span className="text-xs font-medium text-muted-foreground flex-1 text-left">Classi</span>
+                      <span className="text-xs font-medium text-muted-foreground flex-1 text-left">{t("sidebar.classes")}</span>
                     </CollapsibleTrigger>
                   </SidebarGroupLabel>
                   <SidebarGroupAction
@@ -280,7 +282,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                               onClick={() => setAddClassDialogOpen(true)}
                             >
                               <Plus className="size-3.5" />
-                              <span>Aggiungi classe</span>
+                              <span>{t("sidebar.addClass")}</span>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
                         ) : (
@@ -322,7 +324,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               initial="hidden"
               animate="visible"
             >
-              <SidebarGroupLabel>Gestione</SidebarGroupLabel>
+              <SidebarGroupLabel>{t("sidebar.management")}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu className="gap-0.5">
                   <motion.div variants={staggerItem}>
@@ -338,7 +340,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           >
                             <Users className="size-4 text-muted-foreground" />
                           </motion.div>
-                          <span className="text-sm">Tutti gli Studenti</span>
+                          <span className="text-sm">{t("sidebar.allStudents")}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -47,7 +47,8 @@ import {
     Plus,
     Calendar,
     AlertTriangle,
-
+    Languages,
+    CheckCircle2,
 } from "lucide-react";
 import { useSchoolData } from "@/provider/clientProvider";
 import { useExport } from "@/hooks/useExport";
@@ -61,6 +62,7 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
 import { pageTransition, slideUp } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
@@ -72,6 +74,7 @@ export default function Settings() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = searchParams.get("tab") || "grading";
+    const { t } = useTranslation();
     const { exportAllEvaluations, exportAllStudents } = useExport();
     const { formatDate } = useDateFormatter()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -417,56 +420,63 @@ export default function Settings() {
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <FileText className="h-4 w-4" />
-                            Valutazioni
+                            {t("settings.tabs.grading")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="display"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <Palette className="h-4 w-4" />
-                            Visualizzazione
+                            {t("settings.tabs.display")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="schedule"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <Calendar className="h-4 w-4" />
-                            Orario
+                            {t("settings.tabs.schedule")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="justifications"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <AlertTriangle className="h-4 w-4" />
-                            Giustifiche
+                            {t("settings.tabs.justifications")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="export"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <Download className="h-4 w-4" />
-                            Esportazione
+                            {t("settings.tabs.export")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="data"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <Database className="h-4 w-4" />
-                            Gestione Dati
+                            {t("settings.tabs.data")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="account"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <User className="h-4 w-4" />
-                            Account
+                            {t("settings.tabs.account")}
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="language"
+                            className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
+                        >
+                            <Languages className="h-4 w-4" />
+                            {t("settings.tabs.language")}
                         </TabsTrigger>
                         <TabsTrigger
                             value="about"
                             className="w-full justify-start gap-2 data-[state=active]:bg-secondary data-[state=active]:text-foreground px-3 py-2 h-auto"
                         >
                             <HelpCircle className="h-4 w-4" />
-                            Informazioni
+                            {t("settings.tabs.about")}
                         </TabsTrigger>
                     </TabsList>
                 </aside>
@@ -1391,6 +1401,74 @@ export default function Settings() {
 
                                 <div className="text-sm text-center text-muted-foreground">
                                     <p>© 2025 SportsGradeHub. Tutti i diritti riservati.</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Language Settings */}
+                    <TabsContent value="language" className="space-y-6 mt-0">
+                        <div className="space-y-1">
+                            <h2 className="text-xl font-semibold">{t("settings.language.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.language.desc")}</p>
+                        </div>
+                        <Separator />
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Languages className="h-5 w-5" />
+                                    {t("settings.language.selectLanguage")}
+                                </CardTitle>
+                                <CardDescription>{t("settings.language.desc")}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Italian option */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            updateSettings({ language: "it" });
+                                            toast.success("Lingua aggiornata con successo!");
+                                        }}
+                                        className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-left transition-all duration-200 hover:shadow-md cursor-pointer ${
+                                            settings.language === "it"
+                                                ? "border-primary bg-primary/5 shadow-sm"
+                                                : "border-border bg-card hover:border-primary/50"
+                                        }`}
+                                    >
+                                        {settings.language === "it" && (
+                                            <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-primary" />
+                                        )}
+                                        <span className="text-4xl">🇮🇹</span>
+                                        <div className="text-center">
+                                            <p className="font-semibold text-sm">{t("settings.language.italian")}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">Italiano</p>
+                                        </div>
+                                    </button>
+
+                                    {/* English option */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            updateSettings({ language: "en" });
+                                            toast.success("Language updated successfully!");
+                                        }}
+                                        className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-left transition-all duration-200 hover:shadow-md cursor-pointer ${
+                                            settings.language === "en"
+                                                ? "border-primary bg-primary/5 shadow-sm"
+                                                : "border-border bg-card hover:border-primary/50"
+                                        }`}
+                                    >
+                                        {settings.language === "en" && (
+                                            <CheckCircle2 className="absolute top-3 right-3 h-5 w-5 text-primary" />
+                                        )}
+                                        <span className="text-4xl">🇬🇧</span>
+                                        <div className="text-center">
+                                            <p className="font-semibold text-sm">{t("settings.language.english")}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">English</p>
+                                        </div>
+                                    </button>
                                 </div>
                             </CardContent>
                         </Card>

@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
+import { useSchedule, DAYS_ORDER } from "@/provider/scheduleProvider";
 import { useSchoolData } from "@/provider/clientProvider";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { Settings, StickyNote, Pencil } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,6 +76,7 @@ function timeToMinutes(time: string): number {
 
 export function WeeklySchedule() {
     const { schedule, getSlotsByDay, updateSlot } = useSchedule();
+    const { t, lang } = useTranslation();
     const { classes } = useSchoolData();
     const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
     const [noteText, setNoteText] = useState("");
@@ -192,17 +194,17 @@ export function WeeklySchedule() {
             >
                 <Card className="flex-1">
                     <CardHeader>
-                        <CardTitle>Orario Settimanale</CardTitle>
+                        <CardTitle>{t("dashboard.weeklySchedule")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                             <div className="text-center">
-                                <p>Nessun orario configurato.</p>
-                                <p className="text-sm mt-1 mb-4">Configura l'orario nelle Impostazioni.</p>
+                                <p>{t("dashboard.noSchedule")}</p>
+                                <p className="text-sm mt-1 mb-4">{t("dashboard.noScheduleDesc")}</p>
                                 <Button asChild variant="outline">
                                     <Link to="/settings?tab=schedule">
                                         <Settings className="mr-2 h-4 w-4" />
-                                        Configura Orario
+                                        {t("dashboard.configureSchedule")}
                                     </Link>
                                 </Button>
                             </div>
@@ -226,14 +228,14 @@ export function WeeklySchedule() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div>
                                 <CardTitle className="flex items-center gap-2">
-                                    Orario Settimanale
+                                    {t("dashboard.weeklySchedule")}
                                     <motion.span
                                         className="text-xs font-normal text-muted-foreground ml-2 px-2 py-0.5 bg-muted rounded-full"
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ delay: 0.2 }}
                                     >
-                                        {now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                        {now.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
                                     </motion.span>
                                 </CardTitle>
                                 <AnimatePresence>
@@ -256,7 +258,7 @@ export function WeeklySchedule() {
                                                         animate={{ scale: [1, 1.2, 1] }}
                                                         transition={{ duration: 1, repeat: Infinity }}
                                                     />
-                                                    In corso: <span className="font-semibold">{getClassName(currentSlot.classId)}</span>
+                                                    {t("dashboard.ongoing")}: <span className="font-semibold">{getClassName(currentSlot.classId)}</span>
                                                 </motion.div>
                                             )}
                                             {!currentSlot && nextSlot && (
@@ -266,7 +268,7 @@ export function WeeklySchedule() {
                                                     animate={{ scale: 1 }}
                                                 >
                                                     <Clock className="w-3 h-3" />
-                                                    Prossima: <span className="font-semibold">{getClassName(nextSlot.classId)}</span> ({nextSlot.startTime})
+                                                    {t("dashboard.next")}: <span className="font-semibold">{getClassName(nextSlot.classId)}</span> ({nextSlot.startTime})
                                                 </motion.div>
                                             )}
                                         </motion.div>
@@ -276,7 +278,7 @@ export function WeeklySchedule() {
                             <Button asChild variant="outline" size="sm">
                                 <Link to="/settings?tab=schedule">
                                     <Settings className="mr-2 h-4 w-4" />
-                                    Configura Orario
+                                    {t("dashboard.configureSchedule")}
                                 </Link>
                             </Button>
                         </div>
@@ -308,7 +310,7 @@ export function WeeklySchedule() {
                                     {/* Day header */}
                                     <div className="h-10 flex flex-col items-center justify-center border-b border-border/50">
                                         <span className="text-xs font-medium uppercase text-muted-foreground">
-                                            {DAY_LABELS[day].slice(0, 3)}
+                                            {t("days." + day).slice(0, 3)}
                                         </span>
                                     </div>
 
@@ -442,7 +444,7 @@ export function WeeklySchedule() {
                                                                                 {getClassName(slot.classId)}
                                                                             </span>
                                                                             <span className="text-[10px] text-muted-foreground mt-1">
-                                                                                Nota Lezione
+                                                                                {t("dashboard.lessonNote")}
                                                                             </span>
                                                                         </div>
                                                                     </div>
@@ -495,24 +497,24 @@ export function WeeklySchedule() {
                                 exit="exit"
                             >
                                 <DialogHeader>
-                                    <DialogTitle>Nota Lezione: {selectedSlot ? getClassName(selectedSlot.classId) : ''}</DialogTitle>
+                                    <DialogTitle>{t("dashboard.lessonNote")}: {selectedSlot ? getClassName(selectedSlot.classId) : ''}</DialogTitle>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="note">Nota</Label>
+                                        <Label htmlFor="note">{t("dashboard.note")}</Label>
                                         <Textarea
                                             id="note"
                                             ref={textareaRef}
                                             className="min-h-[200px]"
-                                            placeholder="Scrivi una nota per questa lezione..."
+                                            placeholder={t("dashboard.writeNote")}
                                             value={noteText}
                                             onChange={(e) => setNoteText(e.target.value)}
                                         />
                                     </div>
                                 </div>
                                 <DialogFooter>
-                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Annulla</Button>
-                                    <Button onClick={handleSaveNote}>Salva</Button>
+                                    <Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t("common.cancel")}</Button>
+                                    <Button onClick={handleSaveNote}>{t("common.save")}</Button>
                                 </DialogFooter>
                             </motion.div>
                         </DialogContent>

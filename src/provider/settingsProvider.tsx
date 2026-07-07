@@ -25,6 +25,7 @@ export interface AppSettings {
     dateFormat: 'DD/MM/YYYY' | 'YYYY-MM-DD';  // default: 'DD/MM/YYYY'
     enableAnimations: boolean;      // default: true
     collapsibleClasses: boolean;    // default: false
+    language: 'it' | 'en';          // default: 'it'
 
     // Export
     exportFormat: 'csv' | 'excel' | 'pdf';  // default: 'csv'
@@ -52,6 +53,7 @@ const defaultSettings: AppSettings = {
     dateFormat: 'DD/MM/YYYY',
     enableAnimations: true,
     collapsibleClasses: false,
+    language: 'it',
     exportFormat: 'csv',
     includeNotesInExport: true,
     enableExerciseGroups: false,

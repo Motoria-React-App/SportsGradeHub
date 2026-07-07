@@ -9,11 +9,13 @@ import { ClassStatsSummary } from "@/components/dashboard/ClassStatsSummary";
 import { RecentActivityCompact } from "@/components/dashboard/RecentActivityCompact";
 import { useSchoolData } from "@/provider/clientProvider";
 import { pageTransition, staggerContainer, staggerItem, slideUp } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
 export default function Dashboard() {
     const { classes } = useSchoolData();
+    const { t } = useTranslation();
 
     // State for selected class - initialize from localStorage or default to first class
     const [selectedClassId, setSelectedClassId] = useState<string>("");
@@ -58,10 +60,10 @@ export default function Dashboard() {
                         >
                             <div className="space-y-1">
                                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                                    Dashboard
+                                    {t("dashboard.title")}
                                 </h1>
                                 <p className="text-muted-foreground text-sm md:text-base">
-                                    Panoramica e gestione delle lezioni
+                                    {t("dashboard.subtitle")}
                                 </p>
                             </div>
 

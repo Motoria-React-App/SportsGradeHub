@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Link } from "react-router-dom"
 import { useClient } from "@/provider/clientProvider"
+import { useTranslation } from "@/hooks/useTranslation"
 
 
 export function NavUser({
@@ -42,6 +43,7 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const client = useClient()
+  const { t } = useTranslation()
 
   const displayName = user.displayName || "Admin"
   const initials = displayName
@@ -94,23 +96,23 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
-                Account
+                {t("sidebar.account")}
               </DropdownMenuItem>
               <Link to={"/settings"}>
                 <DropdownMenuItem>
                   <Settings />
-                  Impostazioni
+                  {t("sidebar.settings")}
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem>
                 <Bell />
-                Notifications
+                {t("sidebar.notifications")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => client.logout()}>
               <LogOut />
-              Log out
+              {t("sidebar.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

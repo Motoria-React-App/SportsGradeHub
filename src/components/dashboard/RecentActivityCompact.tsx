@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { scaleIn, cardHover, staggerContainer, listItemVariants } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RecentActivityCompactProps {
     selectedClassId: string;
@@ -18,6 +19,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
     const { evaluations, students, exercises, exerciseGroups } = useSchoolData();
     const { formatGrade, getGradeColor } = useGradeFormatter();
     const { formatDate } = useDateFormatter();
+    const { t } = useTranslation();
 
     // Get last 4 evaluations with scores (filtered by class if selected)
     const recentEvaluations = useMemo(() => {
@@ -39,9 +41,9 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
 
                 return {
                     id: evaluation.id || `${evaluation.studentId}-${evaluation.exerciseId}-${index}`,
-                    studentName: student ? `${student.firstName} ${student.lastName}` : "Studente",
+                    studentName: student ? `${student.firstName} ${student.lastName}` : t("dashboard.student"),
                     studentInitials: student ? `${student.firstName[0]}${student.lastName[0]}` : "??",
-                    exerciseName: exercise?.name || "Esercizio",
+                    exerciseName: exercise?.name || t("dashboard.exercise"),
                     groupName: group?.groupName || "",
                     score: evaluation.score,
                     date: evaluation.createdAt,
@@ -59,11 +61,11 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
                 <Card>
                     <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                            <CardTitle className="text-base">Attività Recente</CardTitle>
+                            <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
                             <motion.div {...cardHover}>
                                 <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
                                     <Link to={selectedClassId ? `/valutazioni/${selectedClassId}/all` : "/valutazioni/all/all"}>
-                                        Vedi tutte
+                                        {t("dashboard.viewAll")}
                                         <ArrowRight className="ml-1 h-3 w-3" />
                                     </Link>
                                 </Button>
@@ -129,7 +131,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.3 }}
                             >
-                                Nessuna valutazione recente
+                                {t("dashboard.noRecentEvaluations")}
                             </motion.p>
                         )}
                     </CardContent>
