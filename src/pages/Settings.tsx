@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSettings, SchoolPeriod } from "@/provider/settingsProvider";
 import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
 import { useTheme } from "@/components/theme-provider";
@@ -70,6 +70,8 @@ export default function Settings() {
     const client = useClient();
     const user = client.UserModel;
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get("tab") || "grading";
     const { exportAllEvaluations, exportAllStudents } = useExport();
     const { formatDate } = useDateFormatter()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -407,7 +409,7 @@ export default function Settings() {
                 </div>
             </motion.div>
 
-            <Tabs defaultValue="grading" className="flex flex-col md:flex-row gap-8 items-start">
+            <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })} className="flex flex-col md:flex-row gap-8 items-start">
                 <aside className="w-full md:w-[250px] shrink-0">
                     <TabsList className="flex flex-col h-auto w-full justify-start gap-1 bg-transparent p-0">
                         <TabsTrigger

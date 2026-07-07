@@ -200,7 +200,7 @@ export function WeeklySchedule() {
                                 <p>Nessun orario configurato.</p>
                                 <p className="text-sm mt-1 mb-4">Configura l'orario nelle Impostazioni.</p>
                                 <Button asChild variant="outline">
-                                    <Link to="/settings">
+                                    <Link to="/settings?tab=schedule">
                                         <Settings className="mr-2 h-4 w-4" />
                                         Configura Orario
                                     </Link>
@@ -274,7 +274,7 @@ export function WeeklySchedule() {
                                 </AnimatePresence>
                             </div>
                             <Button asChild variant="outline" size="sm">
-                                <Link to="/settings">
+                                <Link to="/settings?tab=schedule">
                                     <Settings className="mr-2 h-4 w-4" />
                                     Configura Orario
                                 </Link>
