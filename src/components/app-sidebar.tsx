@@ -39,6 +39,7 @@ import {
   ClipboardCheck,
   ChevronRight,
   Trophy,
+  Archive,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
@@ -61,11 +62,14 @@ type NavItemType = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const client = useClient();
-  const { classes, refreshClasses } = useSchoolData();
+  const { classes, activeClasses, archivedClasses, refreshClasses } = useSchoolData();
   const { settings } = useSettings();
   const { openCommandDialog } = useCommandDialog();
   const { t } = useTranslation();
   const [addClassDialogOpen, setAddClassDialogOpen] = React.useState(false);
+
+  const displayActiveClasses = activeClasses || classes.filter(c => !c.isArchived);
+  const displayArchivedClasses = archivedClasses || classes.filter(c => c.isArchived);
 
   const data = {
     quickNav: [
@@ -85,10 +89,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/exercises",
         icon: Activity,
       },
-      // {
-      //   title: "Analytics",
-      //   url: "/analytics",
-      // },
       {
         title: t("sidebar.evaluations"),
         url: "/valutazioni/all/all",
@@ -100,11 +100,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Trophy,
       },
     ],
-    classes: classes.map((item: SchoolClass) => ({
+    classes: displayActiveClasses.map((item: SchoolClass) => ({
       title: item.className,
       url: `/classes/${item.id}`,
       icon: MdDesk,
     })) as NavItemType[],
+    archivedClasses: displayArchivedClasses.map((item: SchoolClass) => ({
+      id: item.id,
+      title: item.className,
+      year: item.schoolYear,
+      url: `/classes/${item.id}`,
+    })),
   }
 
 
@@ -317,6 +323,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </motion.div>
           </SidebarGroup>
 
+          {data.archivedClasses.length > 0 && (
+            <SidebarGroup className="py-1">
+              <Collapsible className="group/archived">
+                <SidebarGroupLabel asChild>
+                  <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md py-0 px-2 flex items-center w-full transition-colors group/trigger cursor-pointer">
+                    <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/archived:rotate-90 mr-1.5" />
+                    <span className="text-xs font-medium text-muted-foreground flex-1 text-left flex items-center gap-1.5">
+                      <Archive className="size-3 text-muted-foreground" />
+                      Classi Archiviate ({data.archivedClasses.length})
+                    </span>
+                  </CollapsibleTrigger>
+                </SidebarGroupLabel>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenuSub className="gap-0.5 pt-1 pr-1">
+                      {data.archivedClasses.map((item, index) => (
+                        <motion.div key={item.id} variants={staggerItem} custom={index}>
+                          <SidebarMenuSubItem>
+                            <SidebarMenuSubButton asChild>
+                              <Link to={item.url} className="flex items-center justify-between gap-2">
+                                <span className="truncate text-xs">{item.title}</span>
+                                <span className="text-[10px] text-muted-foreground px-1.5 py-0.2 rounded bg-muted/60 font-mono">
+                                  {item.year}
+                                </span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        </motion.div>
+                      ))}
+                    </SidebarMenuSub>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </Collapsible>
+            </SidebarGroup>
+          )}
 
           <SidebarGroup className="py-2">
             <motion.div

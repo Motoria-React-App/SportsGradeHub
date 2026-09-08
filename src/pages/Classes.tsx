@@ -4,18 +4,32 @@ import { useClient, useSchoolData } from "@/provider/clientProvider";
 import { useSettings } from "@/provider/settingsProvider";
 import { SchoolClassExpanded, Student, Evaluation, Exercise } from "@/types/types";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Users, Link2, Check, Clock, AlertCircle, Loader2, ExternalLink } from "lucide-react";
+import { Activity, Users, Link2, Check, Clock, AlertCircle, Loader2, ExternalLink, Archive, RotateCcw, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StudentDialog } from "@/components/student-dialog";
 import { StudentsTable } from "@/components/students-table";
+import { TransferStudentDialog } from "@/components/TransferStudentDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, slideUp, staggerContainer, staggerItem, buttonPress, cardHover, modalVariants, overlayVariants } from "@/lib/motion";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
+import { toast } from "sonner";
 import LoadingPage from "./Loading";
 
 
@@ -26,7 +40,7 @@ export default function Classes() {
     const navigate = useNavigate();
     const location = useLocation();
     const client = useClient();
-    const { evaluations, setEvaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses } = useSchoolData();
+    const { evaluations, setEvaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses, archiveClass, unarchiveClass } = useSchoolData();
     const { settings } = useSettings();
     const { formatGrade, getGradeColor } = useGradeFormatter();
 
@@ -35,11 +49,104 @@ export default function Classes() {
     const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
     const [activeTab, setActiveTab] = useState("students");
 
+    // Archive dialog state
+    const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+    const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
+
     // Exercise linking state
     const [exerciseDialogOpen, setExerciseDialogOpen] = useState(false);
     const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
     const [isSavingExercises, setIsSavingExercises] = useState(false);
     const [selectedExerciseForPreview, setSelectedExerciseForPreview] = useState<Exercise | null>(null);
+
+    // Transfer student state
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+    const [studentToTransfer, setStudentToTransfer] = useState<Student | null>(null);
+
+    const handleArchiveClass = async () => {
+        if (!schoolClass) return;
+        setIsArchiving(true);
+        try {
+            const ok = await archiveClass(schoolClass.id);
+            if (ok) {
+                setSchoolClass(prev => prev ? { ...prev, isArchived: true } : prev);
+                toast.success(`Classe "${schoolClass.className}" archiviata con successo`);
+            } else {
+                toast.error("Errore durante l'archiviazione della classe");
+            }
+        } catch {
+            toast.error("Errore durante l'archiviazione della classe");
+        } finally {
+            setIsArchiving(false);
+            setArchiveDialogOpen(false);
+        }
+    };
+
+    const handleUnarchiveClass = async () => {
+        if (!schoolClass) return;
+        setIsArchiving(true);
+        try {
+            const ok = await unarchiveClass(schoolClass.id);
+            if (ok) {
+                setSchoolClass(prev => prev ? { ...prev, isArchived: false } : prev);
+                toast.success(`Classe "${schoolClass.className}" ripristinata tra le classi attive`);
+            } else {
+                toast.error("Errore durante il ripristino della classe");
+            }
+        } catch {
+            toast.error("Errore durante il ripristino della classe");
+        } finally {
+            setIsArchiving(false);
+            setUnarchiveDialogOpen(false);
+        }
+    };
+
+    // Class analytics for Analisi tab
+    const classAnalytics = useMemo(() => {
+        if (!schoolClass) return null;
+        const studentIds = new Set(schoolClass.students.map(s => s.id));
+        const classEvals = evaluations.filter(e => studentIds.has(e.studentId) && e.score > 0);
+        
+        const avgGrade = classEvals.length > 0
+            ? Math.round((classEvals.reduce((sum, e) => sum + e.score, 0) / classEvals.length) * 10) / 10
+            : 0;
+
+        const passingGrade = settings.passingGrade || 6;
+        const passingCount = classEvals.filter(e => e.score >= passingGrade).length;
+        const passingRate = classEvals.length > 0
+            ? Math.round((passingCount / classEvals.length) * 100)
+            : 0;
+
+        // Group scores by exercise group
+        const groupScores: Record<string, { total: number; count: number; name: string }> = {};
+        classEvals.forEach(ev => {
+            const ex = allExercises.find(x => x.id === ev.exerciseId);
+            if (!ex) return;
+            const grp = exerciseGroups.find(g => g.id === ex.exerciseGroupId);
+            const grpId = grp?.id || "ungrouped";
+            const grpName = grp?.groupName || "Altro";
+            if (!groupScores[grpId]) {
+                groupScores[grpId] = { total: 0, count: 0, name: grpName };
+            }
+            groupScores[grpId].total += ev.score;
+            groupScores[grpId].count += 1;
+        });
+
+        const radarData = Object.values(groupScores).map(g => ({
+            subject: g.name.length > 14 ? g.name.slice(0, 14) + "..." : g.name,
+            fullSubject: g.name,
+            A: Math.round((g.total / g.count) * 10) / 10,
+            fullMark: 10,
+        })).sort((a, b) => a.subject.localeCompare(b.subject));
+
+        return {
+            avgGrade,
+            passingRate,
+            totalEvaluations: classEvals.length,
+            radarData,
+        };
+    }, [schoolClass, evaluations, allExercises, exerciseGroups, settings.passingGrade]);
 
     // Selection handlers
     const toggleSelectAll = () => {
@@ -288,7 +395,7 @@ export default function Classes() {
                 variants={slideUp}
             >
                 <div>
-                    <div className="flex items-center gap-3 mb-1">
+                    <div className="flex items-center gap-3 mb-1 flex-wrap">
                         <h1 className="text-3xl font-bold tracking-tight">{schoolClass.className}</h1>
                         <motion.span
                             className="text-sm font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary"
@@ -298,34 +405,119 @@ export default function Classes() {
                         >
                             {schoolClass.schoolYear}
                         </motion.span>
+                        {schoolClass.isArchived && (
+                            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 gap-1.5 py-0.5">
+                                <Archive className="w-3.5 h-3.5" />
+                                Archiviata
+                            </Badge>
+                        )}
                     </div>
                     <p className="text-muted-foreground flex items-center gap-2">
                         <Users className="w-4 h-4" />
                         {schoolClass.students.length} Studenti iscritti
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <motion.div {...buttonPress}>
-                        <Button
-                            variant="outline"
-                            className="gap-2"
-                            onClick={() => {
-                                setSelectedExerciseIds(schoolClass.assignedExercises || []);
-                                setExerciseDialogOpen(true);
-                            }}
-                        >
-                            <Link2 className="w-4 h-4" />
-                            Collega Esercizi
-                        </Button>
-                    </motion.div>
-                    <motion.div {...buttonPress}>
-                        <Button className="gap-2" onClick={() => { setSelectedStudent(null); setStudentDialogOpen(true); }}>
-                            <Users className="w-4 h-4" />
-                            Aggiungi Studente
-                        </Button>
-                    </motion.div>
+                <div className="flex flex-wrap gap-2">
+                    {schoolClass.isArchived ? (
+                        <>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2"
+                                    onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
+                                >
+                                    <ClipboardCheck className="w-4 h-4 text-primary" />
+                                    Valutazioni
+                                </Button>
+                            </motion.div>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:border-emerald-800 dark:hover:bg-emerald-950/20"
+                                    onClick={() => setUnarchiveDialogOpen(true)}
+                                >
+                                    <RotateCcw className="w-4 h-4" />
+                                    Ripristina
+                                </Button>
+                            </motion.div>
+                        </>
+                    ) : (
+                        <>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 text-amber-600 border-amber-300 hover:bg-amber-50 dark:border-amber-800 dark:hover:bg-amber-950/20"
+                                    onClick={() => setArchiveDialogOpen(true)}
+                                >
+                                    <Archive className="w-4 h-4" />
+                                    Archivia
+                                </Button>
+                            </motion.div>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2"
+                                    onClick={() => {
+                                        setSelectedExerciseIds(schoolClass.assignedExercises || []);
+                                        setExerciseDialogOpen(true);
+                                    }}
+                                >
+                                    <Link2 className="w-4 h-4" />
+                                    Collega Esercizi
+                                </Button>
+                            </motion.div>
+                            <motion.div {...buttonPress}>
+                                <Button className="gap-2" onClick={() => { setSelectedStudent(null); setStudentDialogOpen(true); }}>
+                                    <Users className="w-4 h-4" />
+                                    Aggiungi Studente
+                                </Button>
+                            </motion.div>
+                        </>
+                    )}
                 </div>
             </motion.div>
+
+            {/* Archived Alert Banner */}
+            {schoolClass.isArchived && (
+                <motion.div
+                    className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                    variants={slideUp}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-amber-100 dark:bg-amber-900/40 rounded-lg text-amber-700 dark:text-amber-300">
+                            <Archive className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 className="font-semibold text-sm text-amber-900 dark:text-amber-200">
+                                Classe Archiviata — Anno Scolastico {schoolClass.schoolYear}
+                            </h4>
+                            <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">
+                                I dati sono conservati nell'archivio storico. Puoi confrontare i risultati atletici di questa classe con le classi attive nella sezione Analisi.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 bg-background shadow-xs text-xs"
+                            onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
+                        >
+                            <ClipboardCheck className="w-3.5 h-3.5 text-primary" />
+                            Valutazioni
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1.5 bg-background shadow-xs text-xs text-emerald-600 border-emerald-300 hover:bg-emerald-50 dark:border-emerald-800"
+                            onClick={() => setUnarchiveDialogOpen(true)}
+                        >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            Ripristina
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -360,6 +552,10 @@ export default function Classes() {
                                                     setSelectedStudent(student);
                                                     setStudentDialogOpen(true);
                                                 }}
+                                                onTransfer={!schoolClass.isArchived ? (student) => {
+                                                    setStudentToTransfer(student);
+                                                    setTransferDialogOpen(true);
+                                                } : undefined}
                                                 showCheckboxes={false}
                                                 showNotes={true}
                                                 showYearAverage={true}
@@ -508,18 +704,148 @@ export default function Classes() {
                             )}
 
                             {activeTab === "analytics" && (
-                                <TabsContent value="analytics" forceMount className="mt-0">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle>Analisi Classe</CardTitle>
-                                            <CardDescription>Stats e andamento generale.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-lg">
-                                                <p className="text-muted-foreground">Grafici in arrivo...</p>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
+                                <TabsContent value="analytics" forceMount className="mt-0 space-y-6">
+                                    {/* Overview Metrics Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Card>
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                                    Media Generale Classe
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className={cn("text-3xl font-bold", classAnalytics?.avgGrade ? getGradeColor(classAnalytics.avgGrade) : "text-muted-foreground")}>
+                                                    {classAnalytics?.avgGrade ? formatGrade(classAnalytics.avgGrade) : "N/D"}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Basata su {classAnalytics?.totalEvaluations || 0} valutazioni
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card>
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                                    Tasso di Sufficienza
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-3xl font-bold text-foreground">
+                                                    {classAnalytics?.passingRate ?? 0}%
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Voti con punteggio ≥ {settings.passingGrade || 6}
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card>
+                                            <CardHeader className="pb-2">
+                                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                                    Valutazioni Registrate
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-3xl font-bold text-foreground">
+                                                    {classAnalytics?.totalEvaluations || 0}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Su {schoolClass.students.length} studenti iscritti
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+
+                                    {/* Radar Athletic Profile & Comparison CTA */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <Card className="lg:col-span-2">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <Activity className="h-5 w-5 text-primary" />
+                                                    Profilo Atletico per Disciplina
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Punteggio medio ottenuto dalla classe {schoolClass.className} nelle diverse categorie di esercizi.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                {classAnalytics && classAnalytics.radarData.length > 0 ? (
+                                                    <div className="h-[320px] w-full">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <RadarChart data={classAnalytics.radarData}>
+                                                                <PolarGrid stroke="hsl(var(--border))" />
+                                                                <PolarAngleAxis
+                                                                    dataKey="subject"
+                                                                    tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+                                                                />
+                                                                <PolarRadiusAxis
+                                                                    angle={30}
+                                                                    domain={[0, 10]}
+                                                                    tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }}
+                                                                />
+                                                                <RechartsTooltip
+                                                                    contentStyle={{
+                                                                        backgroundColor: "hsl(var(--popover))",
+                                                                        borderColor: "hsl(var(--border))",
+                                                                        borderRadius: "8px",
+                                                                        color: "hsl(var(--popover-foreground))",
+                                                                    }}
+                                                                />
+                                                                <Radar
+                                                                    name="Media Classe"
+                                                                    dataKey="A"
+                                                                    stroke="hsl(var(--primary))"
+                                                                    fill="hsl(var(--primary))"
+                                                                    fillOpacity={0.35}
+                                                                />
+                                                            </RadarChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-[250px] flex flex-col items-center justify-center text-muted-foreground text-center p-4">
+                                                        <Activity className="h-10 w-10 mb-2 opacity-30" />
+                                                        <p>Nessun dato sufficiente per tracciare il profilo atletico.</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">Registra le valutazioni negli esercizi per visualizzare il grafico radar.</p>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Comparison Action Card */}
+                                        <Card className="flex flex-col justify-between border-primary/20 bg-primary/[0.02]">
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2">
+                                                    <ClipboardCheck className="h-5 w-5 text-primary" />
+                                                    Valutazioni & Record
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Confronta {schoolClass.className} con le classi degli altri anni o attive.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3">
+                                                <p className="text-sm text-muted-foreground">
+                                                    {schoolClass.isArchived
+                                                        ? "Questa classe è archiviata. Puoi usarla come parametro di riferimento storico per valutare i progressi delle nuove classi."
+                                                        : "Confronta il rendimento di questa classe con le classi degli anni precedenti per individuare punti di forza e aree di miglioramento."}
+                                                </p>
+                                                <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-1">
+                                                    <div className="font-semibold text-foreground">Confronti disponibili:</div>
+                                                    <div className="text-muted-foreground">• Media generale & Tasso sufficienze</div>
+                                                    <div className="text-muted-foreground">• Radar delle abilità atletiche a confronto</div>
+                                                    <div className="text-muted-foreground">• Analisi per singolo esercizio</div>
+                                                </div>
+                                            </CardContent>
+                                            <CardContent className="pt-0">
+                                                <Button
+                                                    className="w-full gap-2 shadow-sm"
+                                                    onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
+                                                >
+                                                    <ClipboardCheck className="w-4 h-4" />
+                                                    Vai alle Valutazioni della Classe
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
                                 </TabsContent>
                             )}
                         </motion.div>
@@ -794,6 +1120,90 @@ export default function Classes() {
                  defaultClassId={schoolClass.id}
                  onSuccess={fetchData}
              />
+
+             {/* Transfer Student Dialog */}
+             <TransferStudentDialog
+                 open={transferDialogOpen}
+                 onOpenChange={setTransferDialogOpen}
+                 student={studentToTransfer}
+                 currentClassId={schoolClass.id}
+                 onSuccess={fetchData}
+             />
+
+             {/* Archive Class Confirmation Dialog */}
+             <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+                 <AlertDialogContent>
+                     <AlertDialogHeader>
+                         <AlertDialogTitle className="flex items-center gap-2">
+                             <Archive className="w-5 h-5 text-amber-600" />
+                             Archiviare la classe {schoolClass.className}?
+                         </AlertDialogTitle>
+                         <AlertDialogDescription className="space-y-2">
+                             <p>
+                                 La classe verrà spostata nell'archivio storico (Anno {schoolClass.schoolYear}) e nascosta dalla navigazione attiva.
+                             </p>
+                             <p className="text-xs text-muted-foreground">
+                                 Tutti i dati, le valutazioni e i voti degli studenti rimarranno intatti e potranno essere consultati o utilizzati per i confronti nelle Analisi. Potrai ripristinarla in qualsiasi momento.
+                             </p>
+                         </AlertDialogDescription>
+                     </AlertDialogHeader>
+                     <AlertDialogFooter>
+                         <AlertDialogCancel disabled={isArchiving}>Annulla</AlertDialogCancel>
+                         <AlertDialogAction
+                             onClick={(e) => {
+                                 e.preventDefault();
+                                 handleArchiveClass();
+                             }}
+                             disabled={isArchiving}
+                             className="bg-amber-600 hover:bg-amber-700 text-white"
+                         >
+                             {isArchiving ? (
+                                 <>
+                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                     Archiviazione...
+                                 </>
+                             ) : (
+                                 "Archivia Classe"
+                             )}
+                         </AlertDialogAction>
+                     </AlertDialogFooter>
+                 </AlertDialogContent>
+             </AlertDialog>
+
+             {/* Unarchive Class Confirmation Dialog */}
+             <AlertDialog open={unarchiveDialogOpen} onOpenChange={setUnarchiveDialogOpen}>
+                 <AlertDialogContent>
+                     <AlertDialogHeader>
+                         <AlertDialogTitle className="flex items-center gap-2">
+                             <RotateCcw className="w-5 h-5 text-emerald-600" />
+                             Ripristinare la classe {schoolClass.className}?
+                         </AlertDialogTitle>
+                         <AlertDialogDescription>
+                             La classe tornerà nell'elenco delle classi attive e sarà nuovamente visibile nel menu laterale e nella gestione quotidiana.
+                         </AlertDialogDescription>
+                     </AlertDialogHeader>
+                     <AlertDialogFooter>
+                         <AlertDialogCancel disabled={isArchiving}>Annulla</AlertDialogCancel>
+                         <AlertDialogAction
+                             onClick={(e) => {
+                                 e.preventDefault();
+                                 handleUnarchiveClass();
+                             }}
+                             disabled={isArchiving}
+                             className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                         >
+                             {isArchiving ? (
+                                 <>
+                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                     Ripristino...
+                                 </>
+                             ) : (
+                                 "Ripristina Classe"
+                             )}
+                         </AlertDialogAction>
+                     </AlertDialogFooter>
+                 </AlertDialogContent>
+             </AlertDialog>
          </motion.div>
      );
 }

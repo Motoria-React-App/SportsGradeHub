@@ -38,6 +38,29 @@ export interface AppSettings {
     maxJustifications: number;          // default: 3 (soglia massima per periodo)
     schoolPeriods: SchoolPeriod[];      // periodi scolastici configurabili
     currentPeriodId: string | null;     // ID del periodo attivo
+
+    // School Year & Graduated Classes
+    schoolYearStartMonth: number;       // default: 9 (Settembre, 1-12)
+    schoolYearStartDay: number;         // default: 1 (giorno di inizio, 1-31)
+    graduatedClassPrefixes: string[];   // default: ["5"] (prefissi per identificare le quinte/terminali)
+}
+
+/**
+ * Calcola la stringa dell'anno scolastico (es. "2025/2026")
+ * in base alla data di inizio configurata.
+ */
+export function getCurrentSchoolYearLabel(startMonth = 9, startDay = 1, fromDate = new Date()): string {
+    const year = fromDate.getFullYear();
+    const month = fromDate.getMonth() + 1;
+    const day = fromDate.getDate();
+
+    const isAfterOrOnStart = (month > startMonth) || (month === startMonth && day >= startDay);
+
+    if (isAfterOrOnStart) {
+        return `${year}/${year + 1}`;
+    } else {
+        return `${year - 1}/${year}`;
+    }
 }
 
 const defaultSettings: AppSettings = {
@@ -61,6 +84,10 @@ const defaultSettings: AppSettings = {
     maxJustifications: 3,
     schoolPeriods: [],
     currentPeriodId: null,
+    // School Year defaults
+    schoolYearStartMonth: 9,
+    schoolYearStartDay: 1,
+    graduatedClassPrefixes: ["5"],
 };
 
 interface SettingsProviderState {

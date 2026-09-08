@@ -3,6 +3,7 @@ import { useSettings, SchoolPeriod } from "@/provider/settingsProvider";
 import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Card,
     CardContent,
@@ -49,6 +50,10 @@ import {
     AlertTriangle,
     Languages,
     CheckCircle2,
+    Archive,
+    ClipboardCheck,
+    RotateCcw,
+    GraduationCap,
 } from "lucide-react";
 import { useSchoolData } from "@/provider/clientProvider";
 import { useExport } from "@/hooks/useExport";
@@ -67,7 +72,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 export default function Settings() {
     const { settings, updateSettings, clearCache, resetSettings, lastSync } = useSettings();
     const { schedule, addSlot, removeSlot, getSlotsByDay, resetSchedule, importSchedule } = useSchedule();
-    const { classes } = useSchoolData();
+    const { classes, activeClasses, archivedClasses, unarchiveClass, archiveClassesBatch } = useSchoolData();
     const { theme, setTheme } = useTheme();
     const client = useClient();
     const user = client.UserModel;
@@ -78,6 +83,91 @@ export default function Settings() {
     const { exportAllEvaluations, exportAllStudents } = useExport();
     const { formatDate } = useDateFormatter()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+    // Year-end archive state
+    const [selectedYearToArchive, setSelectedYearToArchive] = useState<string>('');
+    const [batchArchiveConfirmOpen, setBatchArchiveConfirmOpen] = useState(false);
+    const [isBatchArchiving, setIsBatchArchiving] = useState(false);
+
+    const activeList = activeClasses || classes.filter(c => !c.isArchived);
+    const archivedList = archivedClasses || classes.filter(c => c.isArchived);
+
+    const activeSchoolYears = Array.from(
+        new Set(activeList.map(c => c.schoolYear).filter(Boolean))
+    ).sort().reverse();
+
+    const classesInSelectedYear = selectedYearToArchive
+        ? activeList.filter(c => c.schoolYear === selectedYearToArchive)
+        : [];
+
+    // Graduated / Quinte class settings state
+    const [newPrefixInput, setNewPrefixInput] = useState('');
+    const prefixes = settings.graduatedClassPrefixes || ["5"];
+
+    const handleAddPrefix = () => {
+        const trimmed = newPrefixInput.trim();
+        if (!trimmed) return;
+        if (prefixes.some(p => p.toLowerCase() === trimmed.toLowerCase())) {
+            toast.info("Prefisso già presente");
+            return;
+        }
+        updateSettings({ graduatedClassPrefixes: [...prefixes, trimmed] });
+        setNewPrefixInput('');
+        toast.success(`Prefisso "${trimmed}" aggiunto`);
+    };
+
+    const handleRemovePrefix = (prefixToRemove: string) => {
+        if (prefixes.length <= 1) {
+            toast.error("È necessario mantenere almeno un prefisso");
+            return;
+        }
+        const updated = prefixes.filter(p => p !== prefixToRemove);
+        updateSettings({ graduatedClassPrefixes: updated });
+        toast.success(`Prefisso "${prefixToRemove}" rimosso`);
+    };
+
+    const handleResetBannerToday = () => {
+        localStorage.removeItem("sportsgrade_newyear_dismissed_date");
+        toast.success("Promemoria ripristinato: sarà visibile nella Dashboard");
+    };
+
+    const matchingGraduatingClasses = activeList.filter(c => {
+        const name = c.className.trim().toLowerCase();
+        return prefixes.some(p => name.startsWith(p.trim().toLowerCase()));
+    });
+
+    const handleBatchArchiveYear = async () => {
+        if (!selectedYearToArchive || classesInSelectedYear.length === 0) return;
+        setIsBatchArchiving(true);
+        try {
+            const classIds = classesInSelectedYear.map(c => c.id);
+            const ok = await archiveClassesBatch(classIds);
+            if (ok) {
+                toast.success(`Archiviate con successo ${classIds.length} classi dell'anno scolastico ${selectedYearToArchive}`);
+                setSelectedYearToArchive('');
+            } else {
+                toast.error("Alcune classi non sono state archiviate correttamente");
+            }
+        } catch {
+            toast.error("Errore durante l'archiviazione di fine anno");
+        } finally {
+            setIsBatchArchiving(false);
+            setBatchArchiveConfirmOpen(false);
+        }
+    };
+
+    const handleUnarchiveSingleClass = async (classId: string, className: string) => {
+        try {
+            const ok = await unarchiveClass(classId);
+            if (ok) {
+                toast.success(`Classe "${className}" ripristinata tra le classi attive`);
+            } else {
+                toast.error("Errore durante il ripristino della classe");
+            }
+        } catch {
+            toast.error("Errore durante il ripristino della classe");
+        }
+    };
 
     // State for adding new slot
     const [newSlotDay, setNewSlotDay] = useState<DayOfWeek>('lunedi');
@@ -1193,6 +1283,292 @@ export default function Settings() {
                             </CardContent>
                         </Card>
 
+                        {/* New School Year & Graduating Classes Configuration */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <GraduationCap className="h-5 w-5 text-primary" />
+                                    Inizio Anno Scolastico & Classi Terminali (Quinte)
+                                </CardTitle>
+                                <CardDescription>
+                                    Configura la data di inizio del nuovo anno scolastico e i prefissi per individuare le classi dell'ultimo anno da archiviare (es. "5" per 5A, 5B...).
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Start Date of the School Year */}
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3.5 rounded-lg border bg-muted/30">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-semibold">Data di Inizio Anno Scolastico</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Data in cui scatta l'avviso di inizio anno e il ciclo delle classi nella Dashboard.
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Select
+                                            value={String(settings.schoolYearStartMonth ?? 9)}
+                                            onValueChange={(val) => updateSettings({ schoolYearStartMonth: parseInt(val, 10) })}
+                                        >
+                                            <SelectTrigger className="w-[140px] bg-background text-xs">
+                                                <SelectValue placeholder="Mese" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="8">Agosto</SelectItem>
+                                                <SelectItem value="9">Settembre</SelectItem>
+                                                <SelectItem value="10">Ottobre</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-xs text-muted-foreground">Giorno:</span>
+                                            <Input
+                                                type="number"
+                                                min={1}
+                                                max={31}
+                                                value={settings.schoolYearStartDay ?? 1}
+                                                onChange={(e) => {
+                                                    const v = parseInt(e.target.value, 10);
+                                                    if (!isNaN(v) && v >= 1 && v <= 31) {
+                                                        updateSettings({ schoolYearStartDay: v });
+                                                    }
+                                                }}
+                                                className="w-16 h-8 text-xs bg-background"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Prefixes for Graduating Classes */}
+                                <div className="space-y-3 p-3.5 rounded-lg border bg-muted/30">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-sm font-semibold">Prefissi Classi Terminali / Quinte</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Le classi attive il cui nome inizia con uno di questi prefissi verranno proposte per l'archiviazione guidata all'inizio dell'anno.
+                                        </p>
+                                    </div>
+
+                                    {/* Badges list */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                                        {prefixes.map((prefix) => (
+                                            <Badge
+                                                key={prefix}
+                                                variant="secondary"
+                                                className="text-xs py-1 px-2.5 gap-1.5 flex items-center bg-background border"
+                                            >
+                                                <span>Inizia con "<strong>{prefix}</strong>"</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemovePrefix(prefix)}
+                                                    className="text-muted-foreground hover:text-destructive transition-colors ml-0.5 font-bold"
+                                                    title="Rimuovi prefisso"
+                                                >
+                                                    ×
+                                                </button>
+                                            </Badge>
+                                        ))}
+                                    </div>
+
+                                    {/* Add Prefix Input */}
+                                    <div className="flex items-center gap-2 pt-1">
+                                        <Input
+                                            placeholder="Nuovo prefisso (es. 5, V)..."
+                                            value={newPrefixInput}
+                                            onChange={(e) => setNewPrefixInput(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleAddPrefix();
+                                                }
+                                            }}
+                                            className="max-w-[220px] h-8 text-xs bg-background"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 text-xs gap-1"
+                                            onClick={handleAddPrefix}
+                                        >
+                                            <Plus className="h-3.5 w-3.5" />
+                                            Aggiungi
+                                        </Button>
+                                    </div>
+
+                                    {/* Live matching preview */}
+                                    <div className="text-xs pt-1 text-muted-foreground border-t mt-2">
+                                        Classi attive attualmente corrispondenti:{" "}
+                                        {matchingGraduatingClasses.length > 0 ? (
+                                            <span className="font-semibold text-foreground">
+                                                {matchingGraduatingClasses.map(c => c.className).join(", ")} ({matchingGraduatingClasses.length})
+                                            </span>
+                                        ) : (
+                                            <span className="italic">nessuna classe attiva corrisponde ai prefissi</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Reset prompt button */}
+                                <div className="flex items-center justify-between pt-1">
+                                    <div className="text-xs text-muted-foreground">
+                                        Hai posticipato il promemoria e vuoi farlo riapparire subito nella Dashboard?
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-xs h-8 gap-1.5"
+                                        onClick={handleResetBannerToday}
+                                    >
+                                        <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+                                        Ripristina Avviso
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Year-End Archiving and Class Archive Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Archive className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                                    Chiusura Anno Scolastico & Archivio Classi
+                                </CardTitle>
+                                <CardDescription>
+                                    Archivia le classi completate al termine dell'anno scolastico. Tutti i dati, voti e valutazioni rimangono conservati per la consultazione e il confronto storico.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Batch Archiving by School Year */}
+                                <div className="p-4 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="space-y-1">
+                                            <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
+                                                Archiviazione Fine Anno
+                                            </h4>
+                                            <p className="text-xs text-muted-foreground">
+                                                Seleziona un anno scolastico per archiviare tutte le relative classi attive in un colpo solo.
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <Select value={selectedYearToArchive} onValueChange={setSelectedYearToArchive}>
+                                                <SelectTrigger className="w-[170px] bg-background">
+                                                    <SelectValue placeholder="Scegli anno..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {activeSchoolYears.map((year) => {
+                                                        const count = activeList.filter(c => c.schoolYear === year).length;
+                                                        return (
+                                                            <SelectItem key={year} value={year}>
+                                                                {year} ({count} {count === 1 ? 'classe' : 'classi'})
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                disabled={!selectedYearToArchive || classesInSelectedYear.length === 0}
+                                                className="bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                                                onClick={() => setBatchArchiveConfirmOpen(true)}
+                                            >
+                                                <Archive className="w-4 h-4" />
+                                                Archivia Anno
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {selectedYearToArchive && classesInSelectedYear.length > 0 && (
+                                        <div className="text-xs text-amber-800 dark:text-amber-300 bg-background/70 p-2.5 rounded border border-amber-200/70 dark:border-amber-900/40">
+                                            Classi che verranno archiviate ({classesInSelectedYear.length}):{" "}
+                                            <span className="font-semibold">
+                                                {classesInSelectedYear.map(c => c.className).join(", ")}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Archived Classes List */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                                            Classi Archiviate ({archivedList.length})
+                                        </h4>
+                                        {archivedList.length > 0 && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs gap-1.5 text-primary"
+                                                onClick={() => navigate('/valutazioni')}
+                                            >
+                                                <ClipboardCheck className="w-3.5 h-3.5" />
+                                                Vai alle Valutazioni
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    {archivedList.length === 0 ? (
+                                        <div className="text-center py-6 text-muted-foreground text-sm border border-dashed rounded-lg">
+                                            Nessuna classe archiviata al momento.
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-1">
+                                            {archivedList.map((cls) => (
+                                                <div
+                                                    key={cls.id}
+                                                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/40 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-muted rounded-md text-muted-foreground">
+                                                            <Archive className="w-4 h-4" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium text-sm flex items-center gap-2">
+                                                                {cls.className}
+                                                                <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted font-mono">
+                                                                    {cls.schoolYear}
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {cls.students.length} studenti • {cls.exerciseGroups.length} gruppi esercizi
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs gap-1 h-8"
+                                                            onClick={() => navigate(`/classes/${cls.id}`)}
+                                                        >
+                                                            Vedi Scheda
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-xs gap-1 h-8 text-primary"
+                                                            onClick={() => navigate(`/valutazioni/${cls.id}/all`)}
+                                                        >
+                                                            <ClipboardCheck className="w-3 h-3" />
+                                                            Valutazioni
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-xs gap-1 h-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
+                                                            onClick={() => handleUnarchiveSingleClass(cls.id, cls.className)}
+                                                        >
+                                                            <RotateCcw className="w-3 h-3" />
+                                                            Ripristina
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
                         <Card className="border-destructive/50">
                             <CardHeader>
                                 <CardTitle className="text-destructive">Zona Pericolosa</CardTitle>
@@ -1475,6 +1851,42 @@ export default function Settings() {
                     </TabsContent>
                 </div>
             </Tabs>
+
+            {/* Batch Year Archive Confirmation Dialog */}
+            <AlertDialog open={batchArchiveConfirmOpen} onOpenChange={setBatchArchiveConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <Archive className="w-5 h-5 text-amber-600" />
+                            Archiviare tutte le classi dell'anno {selectedYearToArchive}?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                            <p>
+                                Verranno archiviate <strong>{classesInSelectedYear.length}</strong> classi:{" "}
+                                <span className="text-foreground font-medium">
+                                    {classesInSelectedYear.map(c => c.className).join(", ")}
+                                </span>.
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                Le classi verranno spostate nell'archivio storico e rimosse dal menu attivo delle lezioni. Tutti i voti, le valutazioni e la storia degli studenti rimarranno intatti per consultazioni e confronti. Potrai ripristinarle in qualunque momento.
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isBatchArchiving}>Annulla</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleBatchArchiveYear();
+                            }}
+                            disabled={isBatchArchiving}
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                            {isBatchArchiving ? "Archiviazione in corso..." : "Conferma Archiviazione Anno"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </motion.div>
     );
 }

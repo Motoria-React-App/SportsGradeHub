@@ -19,6 +19,7 @@ import { Search, Plus, Filter, Trash2, X, Copy, FileText } from "lucide-react";
 import { Student, Justification, Evaluation } from "@/types/types";
 import { StudentDialog } from "@/components/student-dialog";
 import { StudentsTable } from "@/components/students-table";
+import { TransferStudentDialog } from "@/components/TransferStudentDialog";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, staggerContainer, staggerItem, slideUp, buttonPress, cardHover } from "@/lib/motion";
@@ -37,6 +38,8 @@ export default function Students() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+    const [studentToTransfer, setStudentToTransfer] = useState<Student | null>(null);
 
     // Delete student handler
     const handleDeleteStudent = async (student: Student) => {
@@ -296,6 +299,7 @@ export default function Students() {
                     <StudentsTable
                         students={filteredStudents}
                         onEdit={(student) => { setSelectedStudent(student); setDialogOpen(true); }}
+                        onTransfer={(student) => { setStudentToTransfer(student); setTransferDialogOpen(true); }}
                         onDelete={handleDeleteStudent}
                         showCheckboxes={true}
                         showNotes={true}
@@ -371,6 +375,14 @@ export default function Students() {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 student={selectedStudent}
+                onSuccess={refreshStudents}
+            />
+
+            {/* Transfer Student Dialog */}
+            <TransferStudentDialog
+                open={transferDialogOpen}
+                onOpenChange={setTransferDialogOpen}
+                student={studentToTransfer}
                 onSuccess={refreshStudents}
             />
 

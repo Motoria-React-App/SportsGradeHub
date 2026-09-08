@@ -10,6 +10,7 @@ import { RecentActivityCompact } from "@/components/dashboard/RecentActivityComp
 import { useSchoolData } from "@/provider/clientProvider";
 import { pageTransition, staggerContainer, staggerItem, slideUp } from "@/lib/motion";
 import { useTranslation } from "@/hooks/useTranslation";
+import { NewYearBanner } from "@/components/NewYearBanner";
 
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
@@ -78,6 +79,9 @@ export default function Dashboard() {
                                 />
                             </motion.div>
                         </motion.div>
+
+                        {/* New School Year Banner for Graduating Classes */}
+                        <NewYearBanner />
 
                         <motion.div
                             className="grid grid-cols-1 lg:grid-cols-3 gap-6"

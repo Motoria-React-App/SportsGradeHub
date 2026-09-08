@@ -10,7 +10,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MoreHorizontal, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Student } from "@/types/types";
 import { useDateFormatter } from "@/hooks/useDateFormatter";
@@ -18,6 +18,7 @@ import { useDateFormatter } from "@/hooks/useDateFormatter";
 interface StudentsTableProps {
     students: Student[];
     onEdit?: (student: Student) => void;
+    onTransfer?: (student: Student) => void;
     onDelete?: (student: Student) => void;
     showCheckboxes?: boolean;
     showNotes?: boolean;
@@ -35,6 +36,7 @@ interface StudentsTableProps {
 export function StudentsTable({
     students,
     onEdit,
+    onTransfer,
     onDelete,
     showCheckboxes = false,
     showNotes = false,
@@ -197,7 +199,13 @@ export function StudentsTable({
                                                     Modifica
                                                 </DropdownMenuItem>
                                             )}
-                                            {onEdit && onDelete && <DropdownMenuSeparator />}
+                                            {onTransfer && (
+                                                <DropdownMenuItem onSelect={() => onTransfer(student)}>
+                                                    <ArrowRightLeft className="mr-2 h-4 w-4 text-primary" />
+                                                    Trasferisci Classe
+                                                </DropdownMenuItem>
+                                            )}
+                                            {(onEdit || onTransfer) && onDelete && <DropdownMenuSeparator />}
                                             {onDelete && (
                                                 <DropdownMenuItem
                                                     onSelect={(e) => {

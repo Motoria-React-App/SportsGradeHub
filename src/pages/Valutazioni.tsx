@@ -33,6 +33,8 @@ import {
 import { DecimalInput } from "@/components/ui/decimal-input";
 import ValutazioniGridView from "@/components/ValutazioniGridView";
 import { pageTransition, slideUp, buttonPress, modalVariants } from "@/lib/motion";
+import { getExerciseRecords } from "@/utils/record-utils";
+import { ExerciseRecordBanner, ExerciseGenderRecordBadge } from "@/components/ExerciseRecordBanner";
 
 
 // Helper to determine status based on evaluation value
@@ -696,6 +698,24 @@ export default function Valutazioni() {
         return null;
     }, [gradingPerformanceNum, gradingExercise, gradingStudent, settings.enableBasePoint]);
 
+    // Selected exercise object
+    const selectedExercise = useMemo(() => {
+        if (selectedExerciseId === "all") return null;
+        return exercises.find(e => e.id === selectedExerciseId) || null;
+    }, [selectedExerciseId, exercises]);
+
+    // Historical records for currently selected exercise (includes active and archived classes)
+    const selectedExerciseRecords = useMemo(() => {
+        if (!selectedExercise) return null;
+        return getExerciseRecords(selectedExercise, evaluations, students, classes);
+    }, [selectedExercise, evaluations, students, classes]);
+
+    // Historical records for the exercise being evaluated in the Kanban grading panel
+    const gradingExerciseRecords = useMemo(() => {
+        if (!gradingExercise) return null;
+        return getExerciseRecords(gradingExercise, evaluations, students, classes);
+    }, [gradingExercise, evaluations, students, classes]);
+
     // Stats
     const totalEvaluations = filteredEvaluations.length;
     const completedEvaluations = groupedEvaluations["valutato"].length;
@@ -834,6 +854,11 @@ export default function Valutazioni() {
                     </div>
                 </div>
 
+                {/* Historical Exercise Records Banner (by Gender M/F) */}
+                {selectedExercise && selectedExerciseRecords && (
+                    <ExerciseRecordBanner records={selectedExerciseRecords} />
+                )}
+
                 {/* Kanban columns / Grid view and grading panel */}
                 <div className="flex gap-6 items-stretch relative flex-1 min-h-0">
                     {viewMode === "kanban" ? (
@@ -949,6 +974,17 @@ export default function Valutazioni() {
                                     </div>
 
                                     <CardContent className="space-y-4 overflow-y-auto flex-1 p-6 pt-2 overscroll-contain">
+                                        {/* Gender Record Benchmark */}
+                                        {gradingExerciseRecords && gradingStudent && (
+                                            <ExerciseGenderRecordBadge
+                                                recordItem={
+                                                    gradingStudent.gender === 'F'
+                                                        ? gradingExerciseRecords.female.record
+                                                        : gradingExerciseRecords.male.record
+                                                }
+                                                gender={gradingStudent.gender}
+                                            />
+                                        )}
 
                                         {/* Performance input - conditional based on evaluation type */}
                                         {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (

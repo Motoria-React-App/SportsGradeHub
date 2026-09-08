@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
     User,
+    Archive,
 } from "lucide-react"
 import {
     CommandDialog,
@@ -80,11 +81,12 @@ export function CommandDialogDemo() {
                             {archivedClasses.map((cls) => (
                                 <CommandItem
                                     key={cls.id}
-                                    value={`${cls.className} ${cls.createdAt}`}
+                                    value={`${cls.className} ${cls.schoolYear} archiviata`}
                                     onSelect={() => handleSelectClass(cls.id)}
                                 >
-                                    <User />
-                                    <span>{cls.className}</span>
+                                    <Archive className="text-muted-foreground" />
+                                    <span className="flex-1">{cls.className}</span>
+                                    <span className="text-xs text-muted-foreground">{cls.schoolYear}</span>
                                 </CommandItem>
                             ))}
                         </CommandGroup>

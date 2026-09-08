@@ -42,12 +42,13 @@ import {
 } from 'recharts';
 import { useSchoolData, useClient } from '@/provider/clientProvider';
 import { useSettings } from '@/provider/settingsProvider';
-import { ArrowLeft, TrendingUp, Calendar, AlertTriangle, Plus, Trash2, Settings } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, AlertTriangle, Plus, Trash2, Settings, ArrowRightLeft, History, ExternalLink } from 'lucide-react';
 import { useGradeFormatter } from '@/hooks/useGradeFormatter';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
 import type { Student, Evaluation, Exercise, SchoolClass, Justification } from '@/types/types';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TransferStudentDialog } from '@/components/TransferStudentDialog';
 import { pageTransition, slideUp, modalVariants, overlayVariants } from '@/lib/motion';
 
 export default function StudentDetail() {
@@ -79,7 +80,60 @@ export default function StudentDetail() {
         return classes.find((c: SchoolClass) => c.id === student.currentClassId);
     }, [student, classes]);
 
-    // const classHistory = student?.classHistory || [];
+    const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+
+    // Compute comprehensive class history (current class + past classes + classHistory)
+    const allStudentClasses = useMemo(() => {
+        if (!student) return [];
+        const classMap = new Map<string, { classId: string; className: string; schoolYear: string; isArchived: boolean; isCurrent: boolean }>();
+
+        // Current class
+        if (student.currentClassId) {
+            const cls = classes.find(c => c.id === student.currentClassId);
+            if (cls) {
+                classMap.set(cls.id, {
+                    classId: cls.id,
+                    className: cls.className,
+                    schoolYear: cls.schoolYear,
+                    isArchived: Boolean(cls.isArchived),
+                    isCurrent: true,
+                });
+            }
+        }
+
+        // Classes where student ID is enrolled
+        classes.forEach(c => {
+            if (c.students && c.students.includes(student.id)) {
+                if (!classMap.has(c.id)) {
+                    classMap.set(c.id, {
+                        classId: c.id,
+                        className: c.className,
+                        schoolYear: c.schoolYear,
+                        isArchived: Boolean(c.isArchived),
+                        isCurrent: c.id === student.currentClassId,
+                    });
+                }
+            }
+        });
+
+        // Backend classHistory array
+        if (Array.isArray(student.classHistory)) {
+            student.classHistory.forEach(entry => {
+                const cls = classes.find(c => c.id === entry.classId);
+                if (!classMap.has(entry.classId)) {
+                    classMap.set(entry.classId, {
+                        classId: entry.classId,
+                        className: cls?.className || 'Classe passata',
+                        schoolYear: entry.schoolYear || cls?.schoolYear || '',
+                        isArchived: entry.archived ?? Boolean(cls?.isArchived),
+                        isCurrent: entry.classId === student.currentClassId,
+                    });
+                }
+            });
+        }
+
+        return Array.from(classMap.values());
+    }, [student, classes]);
 
     // Get all unique exercises for this student (from their evaluations)
     const studentExercises = useMemo(() => {
@@ -246,6 +300,18 @@ export default function StudentDetail() {
                         </div>
                     </div>
                 </div>
+
+                <div className="ml-auto flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-xs h-9"
+                        onClick={() => setTransferDialogOpen(true)}
+                    >
+                        <ArrowRightLeft className="h-4 w-4 text-primary" />
+                        Trasferisci Classe
+                    </Button>
+                </div>
             </motion.div>
 
             {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -280,43 +346,86 @@ export default function StudentDetail() {
             />
 
             {/* Cronologia Classi */}
-            {/* <Card>
+            <Card>
                 <CardHeader>
-                    <CardTitle>Cronologia delle Classi</CardTitle>
-                    <CardDescription>Classe e anno scolastico</CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2">
+                                <History className="h-5 w-5 text-primary" />
+                                Cronologia delle Classi
+                            </CardTitle>
+                            <CardDescription>
+                                Classi frequentate dallo studente negli anni scolastici (attive e archiviate).
+                            </CardDescription>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs"
+                            onClick={() => setTransferDialogOpen(true)}
+                        >
+                            <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
+                            Trasferisci
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                    {classHistory.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">Nessuna cronologia disponibile</p>
+                    {allStudentClasses.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-6 text-xs">Nessuna cronologia disponibile</p>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Classe</TableHead>
-                                    <TableHead>Anno Scolastico</TableHead>
-                                    <TableHead>Stato</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {classHistory.map((entry: ClassHistoryEntry) => {
-                                    const cls = classes.find((c: SchoolClass) => c.id === entry.classId);
-                                    return (
+                        <div className="rounded-lg border overflow-hidden">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Classe</TableHead>
+                                        <TableHead>Anno Scolastico</TableHead>
+                                        <TableHead>Stato Iscrizione</TableHead>
+                                        <TableHead className="text-right">Azioni</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {allStudentClasses.map((entry) => (
                                         <TableRow key={entry.classId}>
-                                            <TableCell className="font-medium">{cls?.className || 'N/D'}</TableCell>
-                                            <TableCell>{entry.schoolYear}</TableCell>
+                                            <TableCell className="font-semibold text-foreground">
+                                                {entry.className}
+                                            </TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                                {entry.schoolYear || 'N/D'}
+                                            </TableCell>
                                             <TableCell>
-                                                <Badge variant={entry.archived ? "secondary" : "default"}>
-                                                    {entry.archived ? 'Archiviata' : 'Attiva'}
-                                                </Badge>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {entry.isCurrent && (
+                                                        <Badge variant="default" className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                                                            Classe Attuale
+                                                        </Badge>
+                                                    )}
+                                                    {entry.isArchived ? (
+                                                        <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                                                            Archiviata
+                                                        </Badge>
+                                                    ) : !entry.isCurrent ? (
+                                                        <Badge variant="secondary" className="text-[10px]">
+                                                            Attiva
+                                                        </Badge>
+                                                    ) : null}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1">
+                                                    <Link to={`/classes/${entry.classId}`}>
+                                                        <span>Apri classe</span>
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </Link>
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                 </CardContent>
-            </Card> */}
+            </Card>
 
             {/* Grafico e Selezione Esercizio */}
             <Card>
@@ -504,6 +613,14 @@ export default function StudentDetail() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Transfer Student Dialog */}
+            <TransferStudentDialog
+                open={transferDialogOpen}
+                onOpenChange={setTransferDialogOpen}
+                student={student}
+                currentClassId={studentClass?.id}
+            />
         </motion.div>
     );
 }

@@ -303,6 +303,14 @@ class Client {
         return await this.sendRequest<void>(`/api/classes/${id}`, "DELETE");
     }
 
+    public async archiveClass(id: string) {
+        return await this.updateClass(id, { isArchived: true });
+    }
+
+    public async unarchiveClass(id: string) {
+        return await this.updateClass(id, { isArchived: false });
+    }
+
     // ============ EXERCISES API ============
     public async getAllExercises() {
         return await this.sendRequest<Exercise[]>("/api/exercises", "GET");
@@ -749,8 +757,13 @@ interface ClientContextProps {
     logout: () => void;
     // Classes
     classes: SchoolClass[];
+    activeClasses: SchoolClass[];
+    archivedClasses: SchoolClass[];
     refreshClasses: () => Promise<void>;
     setClasses: React.Dispatch<React.SetStateAction<SchoolClass[]>>;
+    archiveClass: (classId: string) => Promise<boolean>;
+    unarchiveClass: (classId: string) => Promise<boolean>;
+    archiveClassesBatch: (classIds: string[]) => Promise<boolean>;
     // Students
     students: Student[];
     refreshStudents: () => Promise<void>;
@@ -843,16 +856,94 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const refreshClasses = useCallback(async () => {
         if (!userRef.current && !client.UserModel) return;
         try {
-            const response = await client.getNonArchivedClasses();
-            if (response.success && response.data) {
-                setClasses(response.data);
-            } else if (response.error) {
-                console.error("Failed to fetch classes:", response.error.message);
+            // First attempt: fetch all classes via getClasses()
+            const response = await client.getClasses();
+            if (response.success && response.data && Array.isArray(response.data)) {
+                let loadedClasses = response.data;
+                // Check if archived classes are already in response or if separate call is needed
+                const hasArchived = loadedClasses.some(c => c.isArchived);
+                if (!hasArchived) {
+                    try {
+                        const archivedRes = await client.getArchivedClasses();
+                        if (archivedRes.success && archivedRes.data && archivedRes.data.length > 0) {
+                            const existingIds = new Set(loadedClasses.map(c => c.id));
+                            const uniqueArchived = archivedRes.data
+                                .filter(c => !existingIds.has(c.id))
+                                .map(c => ({ ...c, isArchived: true }));
+                            loadedClasses = [...loadedClasses, ...uniqueArchived];
+                        }
+                    } catch {
+                        // ignore if separate archived call fails
+                    }
+                }
+                setClasses(loadedClasses);
+            } else {
+                // Fallback: fetch non-archived and archived in parallel
+                const [nonArchivedRes, archivedRes] = await Promise.allSettled([
+                    client.getNonArchivedClasses(),
+                    client.getArchivedClasses(),
+                ]);
+                const active = nonArchivedRes.status === 'fulfilled' && nonArchivedRes.value.success && nonArchivedRes.value.data
+                    ? nonArchivedRes.value.data
+                    : [];
+                const archived = archivedRes.status === 'fulfilled' && archivedRes.value.success && archivedRes.value.data
+                    ? archivedRes.value.data.map(c => ({ ...c, isArchived: true }))
+                    : [];
+                const combined = [...active, ...archived];
+                if (combined.length > 0) {
+                    setClasses(combined);
+                }
             }
         } catch (error) {
             console.error("Failed to fetch classes", error);
         }
     }, [client]);
+
+    const archiveClass = useCallback(async (classId: string): Promise<boolean> => {
+        try {
+            const res = await client.archiveClass(classId);
+            if (res.success) {
+                setClasses(prev => prev.map(c => c.id === classId ? { ...c, isArchived: true } : c));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Failed to archive class:", error);
+            return false;
+        }
+    }, [client]);
+
+    const unarchiveClass = useCallback(async (classId: string): Promise<boolean> => {
+        try {
+            const res = await client.unarchiveClass(classId);
+            if (res.success) {
+                setClasses(prev => prev.map(c => c.id === classId ? { ...c, isArchived: false } : c));
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Failed to unarchive class:", error);
+            return false;
+        }
+    }, [client]);
+
+    const archiveClassesBatch = useCallback(async (classIds: string[]): Promise<boolean> => {
+        try {
+            let allSuccess = true;
+            for (const id of classIds) {
+                const res = await client.archiveClass(id);
+                if (!res.success) allSuccess = false;
+            }
+            setClasses(prev => prev.map(c => classIds.includes(c.id) ? { ...c, isArchived: true } : c));
+            return allSuccess;
+        } catch (error) {
+            console.error("Failed to batch archive classes:", error);
+            return false;
+        }
+    }, [client]);
+
+    const activeClasses = useMemo(() => classes.filter(c => !c.isArchived), [classes]);
+    const archivedClasses = useMemo(() => classes.filter(c => c.isArchived), [classes]);
 
     const refreshStudents = useCallback(async () => {
         if (!userRef.current && !client.UserModel) return;
@@ -936,8 +1027,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         isLoading,
         logout,
         classes,
+        activeClasses,
+        archivedClasses,
         refreshClasses,
         setClasses,
+        archiveClass,
+        unarchiveClass,
+        archiveClassesBatch,
         students,
         refreshStudents,
         setStudents,
@@ -951,7 +1047,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
         refreshEvaluations,
         setEvaluations,
         refreshAllData,
-    }), [client, user, isAuthenticated, isLoading, logout, classes, refreshClasses, setClasses, students, refreshStudents, setStudents, exercises, refreshExercises, setExercises, exerciseGroups, refreshExerciseGroups, setExerciseGroups, evaluations, refreshEvaluations, setEvaluations, refreshAllData]);
+    }), [client, user, isAuthenticated, isLoading, logout, classes, activeClasses, archivedClasses, refreshClasses, setClasses, archiveClass, unarchiveClass, archiveClassesBatch, students, refreshStudents, setStudents, exercises, refreshExercises, setExercises, exerciseGroups, refreshExerciseGroups, setExerciseGroups, evaluations, refreshEvaluations, setEvaluations, refreshAllData]);
 
     return (
         <ClientContext.Provider value={value}>
@@ -1036,8 +1132,13 @@ export const useSchoolData = () => {
 
     return {
         classes: context.classes,
+        activeClasses: context.activeClasses,
+        archivedClasses: context.archivedClasses,
         refreshClasses: context.refreshClasses,
         setClasses: context.setClasses,
+        archiveClass: context.archiveClass,
+        unarchiveClass: context.unarchiveClass,
+        archiveClassesBatch: context.archiveClassesBatch,
         students: context.students,
         refreshStudents: context.refreshStudents,
         setStudents: context.setStudents,

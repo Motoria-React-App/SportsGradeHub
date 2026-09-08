@@ -43,6 +43,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { motion } from "framer-motion";
 import { pageTransition, slideUp, buttonPress } from "@/lib/motion";
+import { getExerciseRecords } from "@/utils/record-utils";
+import { ExerciseRecordBanner } from "@/components/ExerciseRecordBanner";
 
 // Unit display names in Italian
 const unitDisplayNames: Record<string, string> = {
@@ -75,6 +77,9 @@ export default function Exercises() {
   const {
     exercises,
     exerciseGroups,
+    evaluations,
+    students,
+    classes,
     refreshExercises,
     refreshExerciseGroups
   } = useSchoolData();
@@ -96,6 +101,12 @@ export default function Exercises() {
   // Detail/Edit dialog
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+
+  // Historical records for the selected exercise (including archived classes)
+  const selectedExerciseRecords = useMemo(() => {
+    if (!selectedExercise) return null;
+    return getExerciseRecords(selectedExercise, evaluations, students, classes);
+  }, [selectedExercise, evaluations, students, classes]);
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [editFormData, setEditFormData] = useState({
@@ -2527,6 +2538,13 @@ export default function Exercises() {
                   </div>
                 )}
               </div>
+
+              {/* Historical Exercise Records (M/F) */}
+              {!isEditing && selectedExerciseRecords && (
+                <div className="pt-2">
+                  <ExerciseRecordBanner records={selectedExerciseRecords} />
+                </div>
+              )}
 
               {/* Metadata */}
               {!isEditing && (
