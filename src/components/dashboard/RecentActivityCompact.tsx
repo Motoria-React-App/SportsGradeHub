@@ -7,6 +7,9 @@ import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useDateFormatter } from "@/hooks/useDateFormatter";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { scaleIn, cardHover, staggerContainer, listItemVariants } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface RecentActivityCompactProps {
     selectedClassId: string;
@@ -16,6 +19,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
     const { evaluations, students, exercises, exerciseGroups } = useSchoolData();
     const { formatGrade, getGradeColor } = useGradeFormatter();
     const { formatDate } = useDateFormatter();
+    const { t } = useTranslation();
 
     // Get last 4 evaluations with scores (filtered by class if selected)
     const recentEvaluations = useMemo(() => {
@@ -28,7 +32,7 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
             .filter(e => e.score > 0 && classStudentIds.includes(e.studentId))
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 4)
-            .map(evaluation => {
+            .map((evaluation, index) => {
                 const student = students.find(s => s.id === evaluation.studentId);
                 const exercise = exercises.find(e => e.id === evaluation.exerciseId);
                 const group = exercise
@@ -36,10 +40,10 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
                     : null;
 
                 return {
-                    id: `${evaluation.studentId}-${evaluation.exerciseId}`,
-                    studentName: student ? `${student.firstName} ${student.lastName}` : "Studente",
+                    id: evaluation.id || `${evaluation.studentId}-${evaluation.exerciseId}-${index}`,
+                    studentName: student ? `${student.firstName} ${student.lastName}` : t("dashboard.student"),
                     studentInitials: student ? `${student.firstName[0]}${student.lastName[0]}` : "??",
-                    exerciseName: exercise?.name || "Esercizio",
+                    exerciseName: exercise?.name || t("dashboard.exercise"),
                     groupName: group?.groupName || "",
                     score: evaluation.score,
                     date: evaluation.createdAt,
@@ -48,56 +52,91 @@ export function RecentActivityCompact({ selectedClassId }: RecentActivityCompact
     }, [evaluations, students, exercises, exerciseGroups, selectedClassId]);
 
     return (
-        <Card>
-            <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Attività Recente</CardTitle>
-                    <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                        <Link to={selectedClassId ? `/valutazioni/${selectedClassId}/all` : "/valutazioni/all/all"}>
-                            Vedi tutte
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                        </Link>
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                {recentEvaluations.length > 0 ? (
-                    <div className="space-y-3">
-                        {recentEvaluations.map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+        <motion.div
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div {...cardHover}>
+                <Card>
+                    <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
+                            <motion.div {...cardHover}>
+                                <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
+                                    <Link to={selectedClassId ? `/valutazioni/${selectedClassId}/all` : "/valutazioni/all/all"}>
+                                        {t("dashboard.viewAll")}
+                                        <ArrowRight className="ml-1 h-3 w-3" />
+                                    </Link>
+                                </Button>
+                            </motion.div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {recentEvaluations.length > 0 ? (
+                            <motion.div
+                                className="space-y-3"
+                                variants={staggerContainer}
+                                initial="hidden"
+                                animate="visible"
                             >
-                                <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="text-xs">
-                                        {item.studentInitials}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium truncate">
-                                        {item.studentName}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                        {item.exerciseName}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className={`text-sm font-bold ${getGradeColor(item.score)}`}>
-                                        {formatGrade(item.score)}
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground">
-                                        {formatDate(item.date)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                        Nessuna valutazione recente
-                    </p>
-                )}
-            </CardContent>
-        </Card>
+                                {recentEvaluations.map((item, index) => (
+                                    <motion.div
+                                        key={item.id}
+                                        variants={listItemVariants}
+                                        custom={index}
+                                        whileHover={{ x: 4, backgroundColor: "rgba(var(--muted), 0.5)" }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                    >
+                                        <div className="flex items-center gap-3 p-2 rounded-lg">
+                                            <motion.div
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                transition={{ type: "spring", stiffness: 300 }}
+                                            >
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarFallback className="text-xs">
+                                                        {item.studentInitials}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </motion.div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium truncate">
+                                                    {item.studentName}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                    {item.exerciseName}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <motion.p
+                                                    className={`text-sm font-bold ${getGradeColor(item.score)}`}
+                                                    initial={{ scale: 0.8, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    transition={{ delay: index * 0.1 + 0.2, type: "spring", stiffness: 200 }}
+                                                >
+                                                    {formatGrade(item.score)}
+                                                </motion.p>
+                                                <p className="text-[10px] text-muted-foreground">
+                                                    {formatDate(item.date)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </motion.div>
+                        ) : (
+                            <motion.p
+                                className="text-sm text-muted-foreground text-center py-4"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.3 }}
+                            >
+                                {t("dashboard.noRecentEvaluations")}
+                            </motion.p>
+                        )}
+                    </CardContent>
+                </Card>
+            </motion.div>
+        </motion.div>
     );
 }

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import ValutazioniGridView from "@/components/ValutazioniGridView";
+import { pageTransition, slideUp, buttonPress, modalVariants } from "@/lib/motion";
 
 
 // Helper to determine status based on evaluation value
@@ -598,64 +599,73 @@ export default function Valutazioni() {
                                 Nessuno studente
                             </div>
                         ) : (
-                            items.map((ev) => {
-                                const student = getStudent(ev.studentId);
-                                const exercise = getExercise(ev.exerciseId);
-                                if (!student || !exercise) return null;
+                            <AnimatePresence mode="popLayout">
+                                {items.map((ev) => {
+                                    const student = getStudent(ev.studentId);
+                                    const exercise = getExercise(ev.exerciseId);
+                                    if (!student || !exercise) return null;
 
-                                const isSelected = selectedEvaluationForGrading?.studentId === ev.studentId &&
-                                    selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
+                                    const isSelected = selectedEvaluationForGrading?.studentId === ev.studentId &&
+                                        selectedEvaluationForGrading?.exerciseId === ev.exerciseId;
 
-                                return (
-                                    <div
-                                        key={`${ev.studentId}-${ev.exerciseId}`}
-                                        className={cn(
-                                            "group p-3 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-all duration-300",
-                                            "hover:shadow-lg hover:bg-card",
-                                            isSelected
-                                                ? "ring-2 ring-primary border-primary bg-card"
-                                                : "border-border/50 hover:border-primary/20",
-                                            status === "valutato" && "hover:border-green-500/30",
-                                            status === "valutando" && "border-yellow-500/20 shadow-sm shadow-yellow-500/5"
-                                        )}
-                                        onClick={() => selectEvaluationForGrading(ev)}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            {/* Status specific avatar/icon */}
-                                            <div className={cn(
-                                                "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
-                                                status === "non-valutato" && "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary",
-                                                status === "valutando" && "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60",
-                                                status === "valutato" && "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-900/60"
-                                            )}>
-                                                {status === "valutato" ? <Check className="h-5 w-5" /> :
-                                                    status === "valutando" ? <Clock className="h-5 w-5 animate-pulse" /> :
-                                                        <User className="h-5 w-5" />}
-                                            </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-semibold text-sm leading-tight transition-colors truncate">
-                                                    {student.firstName} {student.lastName}
-                                                </p>
-                                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
-                                                    Classe {getClassName(student.currentClassId)}
-                                                </p>
-                                            </div>
-
-                                            {ev.score > 0 && (
-                                                <div className={cn(
-                                                    "h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold shadow-xs shrink-0",
-                                                    getGradeBgColor(ev.score),
-                                                    getGradeColor(ev.score),
-                                                    "border border-current/20"
-                                                )}>
-                                                    {formatGrade(ev.score)}
-                                                </div>
+                                    return (
+                                        <motion.div
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9 }}
+                                            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                                            key={`${ev.studentId}-${ev.exerciseId}`}
+                                            className={cn(
+                                                "group p-3 rounded-xl border bg-card/50 backdrop-blur-sm cursor-pointer transition-all duration-300",
+                                                "hover:shadow-lg hover:bg-card",
+                                                isSelected
+                                                    ? "ring-2 ring-primary border-primary bg-card"
+                                                    : "border-border/50 hover:border-primary/20",
+                                                status === "valutato" && "hover:border-green-500/30",
+                                                status === "valutando" && "border-yellow-500/20 shadow-sm shadow-yellow-500/5"
                                             )}
-                                        </div>
-                                    </div>
-                                );
-                            })
+                                            onClick={() => selectEvaluationForGrading(ev)}
+                                            whileHover={{ y: -2 }}
+                                            whileTap={{ scale: 0.98 }}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {/* Status specific avatar/icon */}
+                                                <div className={cn(
+                                                    "h-10 w-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300",
+                                                    status === "non-valutato" && "bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:bg-primary/10 group-hover:text-primary",
+                                                    status === "valutando" && "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60",
+                                                    status === "valutato" && "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 group-hover:bg-green-200 dark:group-hover:bg-green-900/60"
+                                                )}>
+                                                    {status === "valutato" ? <Check className="h-5 w-5" /> :
+                                                        status === "valutando" ? <Clock className="h-5 w-5 animate-pulse" /> :
+                                                            <User className="h-5 w-5" />}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-sm leading-tight transition-colors truncate">
+                                                        {student.firstName} {student.lastName}
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
+                                                        Classe {getClassName(student.currentClassId)}
+                                                    </p>
+                                                </div>
+
+                                                {ev.score > 0 && (
+                                                    <div className={cn(
+                                                        "h-10 w-10 flex items-center justify-center rounded-lg text-sm font-bold shadow-xs shrink-0",
+                                                        getGradeBgColor(ev.score),
+                                                        getGradeColor(ev.score),
+                                                        "border border-current/20"
+                                                    )}>
+                                                        {formatGrade(ev.score)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
                         )}
                     </div>
                 </ScrollArea>
@@ -692,9 +702,17 @@ export default function Valutazioni() {
 
     return (
         <>
-            <div className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-1rem)] p-4 md:p-6 gap-6 animate-in fade-in duration-700 overflow-hidden">
+            <motion.div
+                className="flex flex-col h-[calc(100vh-2rem)] md:h-[calc(100vh-1rem)] p-4 md:p-6 gap-6 overflow-hidden"
+                variants={pageTransition}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <motion.div
+                    className="flex items-center justify-between"
+                    variants={slideUp}
+                >
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">Valutazioni</h1>
                         <p className="text-muted-foreground">
@@ -729,21 +747,25 @@ export default function Valutazioni() {
                         </ToggleGroup>
 
                         {selectedExerciseId !== "all" && filteredEvaluations.length > 0 && (
-                            <Button
-                                variant="outline"
-                                className="gap-2 text-destructive hover:text-destructive"
-                                onClick={() => setIsResetDialogOpen(true)}
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                                Nuova Sessione
-                            </Button>
+                            <motion.div {...buttonPress}>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 text-destructive hover:text-destructive"
+                                    onClick={() => setIsResetDialogOpen(true)}
+                                >
+                                    <RotateCcw className="h-4 w-4" />
+                                    Nuova Sessione
+                                </Button>
+                            </motion.div>
                         )}
-                        <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
-                            <Plus className="h-4 w-4" />
-                            Assegna Esercizio
-                        </Button>
+                        <motion.div {...buttonPress}>
+                            <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
+                                <Plus className="h-4 w-4" />
+                                Assegna Esercizio
+                            </Button>
+                        </motion.div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Filters and stats */}
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -868,10 +890,10 @@ export default function Valutazioni() {
                         {viewMode === "kanban" && selectedEvaluationForGrading && gradingStudent && gradingExercise && (
                             <motion.div
                                 key="grading-panel"
-                                initial={{ opacity: 0, x: 50 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 50 }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
+                                variants={modalVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 className="fixed right-6 top-24 z-50"
                             >
                                 <Card className="w-[400px] shadow-xl border-2 flex flex-col max-h-[calc(100vh-120px)] p-0 gap-0 overflow-hidden">
@@ -887,9 +909,13 @@ export default function Valutazioni() {
                                             </Button>
                                         </div>
                                         <div className="flex items-center gap-3 mt-2">
-                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                                            <motion.div
+                                                className="h-12 w-12 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center"
+                                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                                transition={{ type: "spring", stiffness: 300 }}
+                                            >
                                                 <User className="h-6 w-6 text-primary" />
-                                            </div>
+                                            </motion.div>
                                             <div>
                                                 <p className="font-semibold">{gradingStudent.firstName} {gradingStudent.lastName}</p>
                                                 <p className="text-sm text-muted-foreground">
@@ -1204,7 +1230,7 @@ export default function Valutazioni() {
                         </Button>
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* Assign Exercise Modal */}
             <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
@@ -1330,18 +1356,18 @@ export default function Valutazioni() {
                                 handleDeleteEvaluation();
                             }}
                         >
-                            {isDeleting ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Eliminazione...
-                                </>
-                            ) : (
-                                "Elimina"
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
+                               {isDeleting ? (
+                                   <>
+                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                       Eliminazione...
+                                   </>
+                               ) : (
+                                   "Elimina"
+                               )}
+                           </AlertDialogAction>
+                       </AlertDialogFooter>
+                   </AlertDialogContent>
+               </AlertDialog>
+           </>
     );
 }

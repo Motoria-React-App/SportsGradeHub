@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { IconInnerShadowTop } from "@tabler/icons-react";
+
 
 interface Step {
     title: string;
@@ -109,7 +109,7 @@ export function OnboardingTour() {
                             />
                         ) || (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <IconInnerShadowTop className="h-16 w-16 text-primary" />
+                                    <img src="/logoSGH.png" alt="SportsGradeHub Logo" className="h-16 w-16 object-cover rounded-full shadow-sm" />
                                 </div>
                             )}
                         {step.video && (

@@ -11,6 +11,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSchoolData } from "@/provider/clientProvider";
 import { Activity } from "lucide-react";
+import { motion } from "framer-motion";
+import { scaleIn, cardHover } from "@/lib/motion";
 
 interface ClassPerformanceRadarProps {
     selectedClassId: string;
@@ -76,69 +78,108 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
     if (!selectedClassId) return null;
 
     return (
-        <Card className="col-span-1">
-            <CardHeader className="pb-4">
-                <CardTitle className="text-base flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-primary" />
-                    Profilo Atletico
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="h-[300px] w-full flex items-center justify-center">
-                    {radarData.length >= 3 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                                <PolarGrid strokeDasharray="3 3" className="opacity-50" />
-                                <PolarAngleAxis
-                                    dataKey="subject"
-                                    tick={{ fill: 'currentColor', fontSize: 12, className: 'text-muted-foreground' }}
-                                />
-                                <PolarRadiusAxis
-                                    angle={30}
-                                    domain={[0, 10]}
-                                    tick={false}
-                                    axisLine={false}
-                                />
-                                <Radar
-                                    name="Media Classe"
-                                    dataKey="A"
-                                    stroke="#3b82f6"
-                                    fill="#3b82f6"
-                                    fillOpacity={0.5}
-                                />
-                                <Tooltip
-                                    content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            const data = payload[0].payload;
-                                            return (
-                                                <div className="rounded-lg border bg-popover p-2 shadow-sm">
-                                                    <p className="text-sm font-medium text-popover-foreground">
-                                                        {data.fullSubject}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Media Voto: <span className="font-bold text-foreground">{data.A}</span>
-                                                    </p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                            </RadarChart>
-                        </ResponsiveContainer>
-                    ) : radarData.length > 0 ? (
-                        <div className="text-center text-muted-foreground p-6">
-                            <p>Dati insufficienti per il grafico radar.</p>
-                            <p className="text-sm mt-2">Servono valutazioni in almeno 3 gruppi di esercizi diversi.</p>
+        <motion.div
+            className="col-span-1"
+            variants={scaleIn}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div {...cardHover}>
+                <Card>
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                            >
+                                <Activity className="w-4 h-4 text-primary" />
+                            </motion.div>
+                            Profilo Atletico
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[300px] w-full flex items-center justify-center">
+                            {radarData.length >= 3 ? (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.3, duration: 0.5 }}
+                                    className="w-full h-full"
+                                >
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                                            <PolarGrid strokeDasharray="3 3" className="opacity-50" />
+                                            <PolarAngleAxis
+                                                dataKey="subject"
+                                                tick={{ fill: 'currentColor', fontSize: 12, className: 'text-muted-foreground' }}
+                                            />
+                                            <PolarRadiusAxis
+                                                angle={30}
+                                                domain={[0, 10]}
+                                                tick={false}
+                                                axisLine={false}
+                                            />
+                                            <Radar
+                                                name="Media Classe"
+                                                dataKey="A"
+                                                stroke="#3b82f6"
+                                                fill="#3b82f6"
+                                                fillOpacity={0.5}
+                                                animationDuration={1000}
+                                                animationEasing="ease-out"
+                                            />
+                                            <Tooltip
+                                                content={({ active, payload }) => {
+                                                    if (active && payload && payload.length) {
+                                                        const data = payload[0].payload;
+                                                        return (
+                                                            <motion.div
+                                                                className="rounded-lg border bg-popover p-2 shadow-sm"
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                transition={{ duration: 0.2 }}
+                                                            >
+                                                                <p className="text-sm font-medium text-popover-foreground">
+                                                                    {data.fullSubject}
+                                                                </p>
+                                                                <p className="text-sm text-muted-foreground">
+                                                                    Media Voto: <span className="font-bold text-foreground">{data.A}</span>
+                                                                </p>
+                                                            </motion.div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                }}
+                                            />
+                                        </RadarChart>
+                                    </ResponsiveContainer>
+                                </motion.div>
+                            ) : radarData.length > 0 ? (
+                                <motion.div
+                                    className="text-center text-muted-foreground p-6"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                >
+                                    <p>Dati insufficienti per il grafico radar.</p>
+                                    <p className="text-sm mt-2">Servono valutazioni in almeno 3 gruppi di esercizi diversi.</p>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    className="text-center text-muted-foreground p-6"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.3 }}
+                                >
+                                    <p>Nessun dato di valutazione disponibile.</p>
+                                    <p className="text-sm mt-2">Valuta gli esercizi per vedere il profilo della classe.</p>
+                                </motion.div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="text-center text-muted-foreground p-6">
-                            <p>Nessun dato di valutazione disponibile.</p>
-                            <p className="text-sm mt-2">Valuta gli esercizi per vedere il profilo della classe.</p>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
+                    </CardContent>
+                </Card>
+            </motion.div>
+        </motion.div>
     );
 }

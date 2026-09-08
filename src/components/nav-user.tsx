@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Link } from "react-router-dom"
 import { useClient } from "@/provider/clientProvider"
+import { useTranslation } from "@/hooks/useTranslation"
 
 
 export function NavUser({
@@ -42,6 +43,16 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar()
   const client = useClient()
+  const { t } = useTranslation()
+
+  const displayName = user.displayName || "Admin"
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((name) => name[0])
+    .join("")
+    .toUpperCase() || "A"
 
   return (
     <SidebarMenu>
@@ -54,7 +65,7 @@ export function NavUser({
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={user.avatar || ""} alt={user.displayName || ""} />
-                <AvatarFallback className="rounded-lg">{(user.displayName.split(" ")[0].charAt(0) + user.displayName.split(" ")[1].charAt(0)).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.displayName}</span>
@@ -73,7 +84,7 @@ export function NavUser({
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar || ""} alt={user.displayName || ""} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.displayName || "admin"}</span>
@@ -85,23 +96,23 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck />
-                Account
+                {t("sidebar.account")}
               </DropdownMenuItem>
               <Link to={"/settings"}>
                 <DropdownMenuItem>
                   <Settings />
-                  Impostazioni
+                  {t("sidebar.settings")}
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem>
                 <Bell />
-                Notifications
+                {t("sidebar.notifications")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => client.logout()}>
               <LogOut />
-              Log out
+              {t("sidebar.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

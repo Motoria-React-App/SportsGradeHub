@@ -8,17 +8,33 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { motion } from "framer-motion"
+import { pageTransition, slideUp, scaleIn } from "@/lib/motion"
 
 export default function PrivacyPage() {
     return (
-        <div className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div className="flex w-full max-w-2xl flex-col gap-6">
-                <Link to="/login" className="flex items-center gap-2 self-center font-medium">
-                    <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
-                        <GalleryVerticalEnd className="size-4" />
-                    </div>
-                    SportsGradeHub
-                </Link>
+        <motion.div
+            className="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10"
+            variants={pageTransition}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div
+                className="flex w-full max-w-2xl flex-col gap-6"
+                variants={scaleIn}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div
+                    variants={slideUp}
+                >
+                    <Link to="/login" className="flex items-center gap-2 self-center font-medium">
+                        <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+                            <GalleryVerticalEnd className="size-4" />
+                        </div>
+                        SportsGradeHub
+                    </Link>
+                </motion.div>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-2xl">Privacy Policy</CardTitle>
@@ -64,7 +80,7 @@ export default function PrivacyPage() {
                         </div>
                     </CardContent>
                 </Card>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     )
 }
