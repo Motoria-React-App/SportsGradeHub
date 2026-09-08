@@ -76,12 +76,12 @@ const UNASSIGNED_GROUP_ID = "unassigned";
 export default function Exercises() {
   const {
     exercises,
+    setExercises,
     exerciseGroups,
+    setExerciseGroups,
     evaluations,
     students,
     classes,
-    refreshExercises,
-    refreshExerciseGroups
   } = useSchoolData();
   const client = useClient();
   const { settings } = useSettings();
@@ -321,9 +321,14 @@ export default function Exercises() {
         evaluationCriteriaWithRanges: evaluationType === 'criteria-ranges' ? validCriteriaWithRanges : undefined,
       });
 
-      if (response.success) {
-        await refreshExercises();
-        await refreshExerciseGroups();
+      if (response.success && response.data) {
+        const createdExercise = (response.data as any).exercise || response.data;
+        setExercises(prev => [...prev, createdExercise]);
+        if (groupId && groupId !== UNASSIGNED_GROUP_ID) {
+          setExerciseGroups(prev => prev.map(g =>
+            g.id === groupId ? { ...g, exercises: [...(g.exercises || []), createdExercise.id] } : g
+          ));
+        }
         setDialogOpen(false);
         resetForm();
       } else {
@@ -345,7 +350,11 @@ export default function Exercises() {
     try {
       const response = await client.deleteExercise(exerciseToDelete.id);
       if (response.success) {
-        await refreshExercises();
+        setExercises(prev => prev.filter(e => e.id !== exerciseToDelete.id));
+        setExerciseGroups(prev => prev.map(g => ({
+          ...g,
+          exercises: (g.exercises || []).filter(id => id !== exerciseToDelete.id)
+        })));
         setDeleteDialogOpen(false);
         setExerciseToDelete(null);
       } else {
@@ -368,8 +377,9 @@ export default function Exercises() {
         exercises: [],
       });
 
-      if (response.success) {
-        await refreshExerciseGroups();
+      if (response.success && response.data) {
+        const newGroup = (response.data as any).group || response.data;
+        setExerciseGroups(prev => [...prev, newGroup]);
         setNewGroupDialogOpen(false);
         setNewGroupName("");
       } else {
@@ -391,7 +401,8 @@ export default function Exercises() {
     try {
       const response = await client.deleteExerciseGroup(groupToDelete);
       if (response.success) {
-        await refreshExerciseGroups();
+        setExerciseGroups(prev => prev.filter(g => g.id !== groupToDelete));
+        setExercises(prev => prev.map(e => e.exerciseGroupId === groupToDelete ? { ...e, exerciseGroupId: '' } : e));
         setDeleteGroupDialogOpen(false);
         setGroupToDelete(null);
       } else {
@@ -490,7 +501,25 @@ export default function Exercises() {
       });
 
       if (response.success) {
-        await refreshExercises();
+        const updatedExerciseData = (response.data as any)?.exercise;
+        setExercises(prev => prev.map(e => {
+          if (e.id === selectedExercise.id) {
+            return {
+              ...e,
+              ...(updatedExerciseData || {
+                name: editFormData.name,
+                exerciseGroupId: editFormData.exerciseGroupId,
+                unit: editFormData.unit,
+                maxScore: editFormData.maxScore,
+                evaluationType: editEvaluationType,
+                evaluationRanges: editEvaluationType === 'range' ? evaluationRanges : undefined,
+                evaluationCriteria: editEvaluationType === 'criteria' ? validCriteria : undefined,
+                evaluationCriteriaWithRanges: editEvaluationType === 'criteria-ranges' ? validCriteriaWithRanges : undefined,
+              })
+            };
+          }
+          return e;
+        }));
         setIsEditing(false);
         setDetailDialogOpen(false);
       } else {

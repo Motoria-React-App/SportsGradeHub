@@ -28,7 +28,7 @@ import { pageTransition, staggerContainer, staggerItem, slideUp, buttonPress, ca
 
 export default function Students() {
     const client = useClient();
-    const { classes, students, evaluations, refreshStudents, setStudents } = useSchoolData();
+    const { classes, students, evaluations, setStudents } = useSchoolData();
     const { settings } = useSettings();
     const [selectedClass, setSelectedClass] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
@@ -375,7 +375,6 @@ export default function Students() {
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 student={selectedStudent}
-                onSuccess={refreshStudents}
             />
 
             {/* Transfer Student Dialog */}
@@ -383,7 +382,6 @@ export default function Students() {
                 open={transferDialogOpen}
                 onOpenChange={setTransferDialogOpen}
                 student={studentToTransfer}
-                onSuccess={refreshStudents}
             />
 
             {/* Delete Confirmation Dialog */}

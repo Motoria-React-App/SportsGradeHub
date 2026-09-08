@@ -189,6 +189,10 @@ export function SettingsProvider({ children, storageKey = "sportsgrade-settings"
 
     // Automatic period activation
     useEffect(() => {
+        if (!settings.schoolPeriods || settings.schoolPeriods.length === 0) {
+            return;
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const activePeriod = settings.schoolPeriods.find(p =>
             today >= p.startDate && today <= p.endDate

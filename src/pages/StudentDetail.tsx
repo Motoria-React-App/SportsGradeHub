@@ -53,7 +53,7 @@ import { pageTransition, slideUp, modalVariants, overlayVariants } from '@/lib/m
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
-    const { students, classes, evaluations, exercises, refreshStudents } = useSchoolData();
+    const { students, setStudents, classes, evaluations, exercises, refreshStudents } = useSchoolData();
     const { settings } = useSettings();
     const client = useClient();
     const { formatGrade } = useGradeFormatter();
@@ -335,6 +335,7 @@ export default function StudentDetail() {
                 formatDate={formatDate}
                 client={client}
                 refreshStudents={refreshStudents}
+                setStudents={setStudents}
                 justificationDialogOpen={justificationDialogOpen}
                 setJustificationDialogOpen={setJustificationDialogOpen}
                 newJustificationDate={newJustificationDate}

@@ -40,7 +40,7 @@ export default function Classes() {
     const navigate = useNavigate();
     const location = useLocation();
     const client = useClient();
-    const { evaluations, setEvaluations, classes, exercises: allExercises, exerciseGroups, refreshClasses, archiveClass, unarchiveClass } = useSchoolData();
+    const { evaluations, setEvaluations, classes, setClasses, exercises: allExercises, exerciseGroups, archiveClass, unarchiveClass } = useSchoolData();
     const { settings } = useSettings();
     const { formatGrade, getGradeColor } = useGradeFormatter();
 
@@ -312,11 +312,24 @@ export default function Classes() {
                     }
                 }
 
-                // Close dialog FIRST to prevent flash during refresh
+                // Update local state for the class and global classes list
+                const updatedAssigned = selectedExerciseIds;
+                const updatedAssignedList = allExercises.filter(e => updatedAssigned.includes(e.id));
+
+                setSchoolClass(prev => prev ? {
+                    ...prev,
+                    assignedExercises: updatedAssigned,
+                    assignedExercisesList: updatedAssignedList
+                } : null);
+
+                setClasses(prev => prev.map(c =>
+                    c.id === schoolClass.id
+                        ? { ...c, assignedExercises: updatedAssigned }
+                        : c
+                ));
+
                 setExerciseDialogOpen(false);
                 setIsSavingExercises(false);
-                await fetchData();
-                await refreshClasses();
             }
         } catch (error) {
             console.error("Failed to save exercises:", error);

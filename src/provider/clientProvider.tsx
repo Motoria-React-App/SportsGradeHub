@@ -311,6 +311,14 @@ class Client {
         return await this.updateClass(id, { isArchived: false });
     }
 
+    public async archiveClassesBatch(classIds: string[]) {
+        return await this.sendRequest<{ message: string; updatedCount: number; classIds: string[] }>(
+            "/api/classes/batch-archive",
+            "PUT",
+            { classIds, isArchived: true }
+        );
+    }
+
     // ============ EXERCISES API ============
     public async getAllExercises() {
         return await this.sendRequest<Exercise[]>("/api/exercises", "GET");
@@ -325,11 +333,11 @@ class Client {
     }
 
     public async createExercise(data: Omit<Exercise, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) {
-        return await this.sendRequest<Exercise>("/api/exercises", "POST", data);
+        return await this.sendRequest<{ message: string; exercise: Exercise }>("/api/exercises", "POST", data);
     }
 
     public async updateExercise(id: string, data: Partial<Omit<Exercise, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>>) {
-        return await this.sendRequest<Exercise>(`/api/exercises/${id}`, "PUT", data);
+        return await this.sendRequest<{ message: string; exercise: Exercise }>(`/api/exercises/${id}`, "PUT", data);
     }
 
     public async deleteExercise(id: string) {
@@ -346,11 +354,11 @@ class Client {
     }
 
     public async createExerciseGroup(data: Omit<ExerciseGroup, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>) {
-        return await this.sendRequest<ExerciseGroup>("/api/exercisesGroup", "POST", data);
+        return await this.sendRequest<{ message: string; group: ExerciseGroup }>("/api/exercisesGroup", "POST", data);
     }
 
     public async updateExerciseGroup(id: string, data: Partial<Omit<ExerciseGroup, 'id' | 'ownerId' | 'createdAt' | 'updatedAt'>>) {
-        return await this.sendRequest<ExerciseGroup>(`/api/exercisesGroup/${id}`, "PUT", data);
+        return await this.sendRequest<{ message: string; group: ExerciseGroup }>(`/api/exercisesGroup/${id}`, "PUT", data);
     }
 
     public async deleteExerciseGroup(id: string) {
@@ -856,43 +864,9 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     const refreshClasses = useCallback(async () => {
         if (!userRef.current && !client.UserModel) return;
         try {
-            // First attempt: fetch all classes via getClasses()
             const response = await client.getClasses();
             if (response.success && response.data && Array.isArray(response.data)) {
-                let loadedClasses = response.data;
-                // Check if archived classes are already in response or if separate call is needed
-                const hasArchived = loadedClasses.some(c => c.isArchived);
-                if (!hasArchived) {
-                    try {
-                        const archivedRes = await client.getArchivedClasses();
-                        if (archivedRes.success && archivedRes.data && archivedRes.data.length > 0) {
-                            const existingIds = new Set(loadedClasses.map(c => c.id));
-                            const uniqueArchived = archivedRes.data
-                                .filter(c => !existingIds.has(c.id))
-                                .map(c => ({ ...c, isArchived: true }));
-                            loadedClasses = [...loadedClasses, ...uniqueArchived];
-                        }
-                    } catch {
-                        // ignore if separate archived call fails
-                    }
-                }
-                setClasses(loadedClasses);
-            } else {
-                // Fallback: fetch non-archived and archived in parallel
-                const [nonArchivedRes, archivedRes] = await Promise.allSettled([
-                    client.getNonArchivedClasses(),
-                    client.getArchivedClasses(),
-                ]);
-                const active = nonArchivedRes.status === 'fulfilled' && nonArchivedRes.value.success && nonArchivedRes.value.data
-                    ? nonArchivedRes.value.data
-                    : [];
-                const archived = archivedRes.status === 'fulfilled' && archivedRes.value.success && archivedRes.value.data
-                    ? archivedRes.value.data.map(c => ({ ...c, isArchived: true }))
-                    : [];
-                const combined = [...active, ...archived];
-                if (combined.length > 0) {
-                    setClasses(combined);
-                }
+                setClasses(response.data);
             }
         } catch (error) {
             console.error("Failed to fetch classes", error);
@@ -929,10 +903,16 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
 
     const archiveClassesBatch = useCallback(async (classIds: string[]): Promise<boolean> => {
         try {
+            const res = await client.archiveClassesBatch(classIds);
+            if (res.success) {
+                setClasses(prev => prev.map(c => classIds.includes(c.id) ? { ...c, isArchived: true } : c));
+                return true;
+            }
+            // Fallback to sequential updates if batch route failed
             let allSuccess = true;
             for (const id of classIds) {
-                const res = await client.archiveClass(id);
-                if (!res.success) allSuccess = false;
+                const r = await client.archiveClass(id);
+                if (!r.success) allSuccess = false;
             }
             setClasses(prev => prev.map(c => classIds.includes(c.id) ? { ...c, isArchived: true } : c));
             return allSuccess;
