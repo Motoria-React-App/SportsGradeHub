@@ -200,9 +200,21 @@ class Client {
     // Check if user is authenticated
     public async isAuthenticated(): Promise<boolean> {
         try {
-            const response = await this.sendRequest<UserModel>('/api/user', "GET");  // Endpoint che restituisce user da verifyJWT
-            if (response.success) {
-                this._userModel = response.data;
+            const response = await this.sendRequest<{ success: boolean; user: UserModel['user'] }>('/api/user', "GET");  // Endpoint che restituisce user da verifyJWT
+            if (response.success && response.data?.user) {
+                if (this._userModel) {
+                    this._userModel = {
+                        ...this._userModel,
+                        user: response.data.user
+                    };
+                    this.persistUser(this._userModel);
+                } else {
+                    this.UserModel = {
+                        success: true,
+                        expiresIn: 3600,
+                        user: response.data.user
+                    };
+                }
 
                 return true;
             }
@@ -434,11 +446,23 @@ class Client {
      */
     public async refreshAccessToken(): Promise<'success' | 'expired' | 'error'> {
         try {
+            // Send refresh token in body if available for cross-origin environments,
+            // while still allowing cookies for same-origin
+            const body = this._userModel?.refreshToken
+                ? { p_key: this._userModel.refreshToken }
+                : undefined;
+
             // Pass isRetry=true to prevent sendRequest from trying to refresh AGAIN
             // if this call fails (which would cause an infinite loop).
-            const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST", undefined, true);
+            const response = await this.sendRequest<{ accessToken?: string; expiresIn?: number }>("/auth/refresh-token", "POST", body, true);
 
-            if (response.success) {
+            if (response.success && response.data) {
+                if (response.data.accessToken && this._userModel) {
+                    this.UserModel = {
+                        ...this._userModel,
+                        accessToken: response.data.accessToken,
+                    };
+                }
                 return 'success';
             }
 
@@ -691,10 +715,9 @@ class Client {
         };
 
 
-        // if (this._userModel?.accessToken) {
-        //     headers["authorization"] = `Bearer ${this._userModel.accessToken}`;
-        // }
-
+        if (this._userModel?.accessToken) {
+            headers["Authorization"] = `Bearer ${this._userModel.accessToken}`;
+        }
 
         return headers;
     }
@@ -759,7 +782,7 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     // Keep a ref to user so callbacks can read the latest value
     // without needing to be recreated every time user changes.
     const userRef = React.useRef(user);
-    useEffect(() => { userRef.current = user; }, [user]);
+    userRef.current = user;
 
     // Initialize user state from client on mount and validate session
     useEffect(() => {
@@ -804,11 +827,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshClasses = useCallback(async () => {
-        if (!userRef.current) return;
+        if (!userRef.current && !client.UserModel) return;
         try {
             const response = await client.getNonArchivedClasses();
             if (response.success && response.data) {
                 setClasses(response.data);
+            } else if (response.error) {
+                console.error("Failed to fetch classes:", response.error.message);
             }
         } catch (error) {
             console.error("Failed to fetch classes", error);
@@ -816,11 +841,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshStudents = useCallback(async () => {
-        if (!userRef.current) return;
+        if (!userRef.current && !client.UserModel) return;
         try {
             const response = await client.getStudents();
             if (response.success && response.data) {
                 setStudents(response.data);
+            } else if (response.error) {
+                console.error("Failed to fetch students:", response.error.message);
             }
         } catch (error) {
             console.error("Failed to fetch students", error);
@@ -828,11 +855,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshExercises = useCallback(async () => {
-        if (!userRef.current) return;
+        if (!userRef.current && !client.UserModel) return;
         try {
             const response = await client.getAllExercises();
             if (response.success && response.data) {
                 setExercises(response.data);
+            } else if (response.error) {
+                console.error("Failed to fetch exercises:", response.error.message);
             }
         } catch (error) {
             console.error("Failed to fetch exercises", error);
@@ -840,11 +869,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshExerciseGroups = useCallback(async () => {
-        if (!userRef.current) return;
+        if (!userRef.current && !client.UserModel) return;
         try {
             const response = await client.getAllExerciseGroups();
             if (response.success && response.data) {
                 setExerciseGroups(response.data);
+            } else if (response.error) {
+                console.error("Failed to fetch exercise groups:", response.error.message);
             }
         } catch (error) {
             console.error("Failed to fetch exercise groups", error);
@@ -852,11 +883,13 @@ export const ClientProvider: React.FC<ClientProviderProps> = ({ children }) => {
     }, [client]);
 
     const refreshEvaluations = useCallback(async () => {
-        if (!userRef.current) return;
+        if (!userRef.current && !client.UserModel) return;
         try {
             const response = await client.getAllEvaluations();
             if (response.success && response.data) {
                 setEvaluations(response.data);
+            } else if (response.error) {
+                console.error("Failed to fetch evaluations:", response.error.message);
             }
         } catch (error) {
             console.error("Failed to fetch evaluations", error);
