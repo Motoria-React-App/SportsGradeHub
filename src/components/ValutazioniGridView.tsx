@@ -13,11 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Student, Exercise, Evaluation, SchoolClass, SortMode, ScoreRange } from "@/types/types";
-import { User, Grid3X3, Check, MousePointerClick } from "lucide-react";
+import { User, Grid3X3, Check, MousePointerClick, History } from "lucide-react";
 
 
 interface ValutazioniGridViewProps {
     filteredEvaluations: Evaluation[];
+    allEvaluations?: Evaluation[];
     students: Student[];
     exercises: Exercise[];
     classes: SchoolClass[];
@@ -158,6 +159,7 @@ type RowStatus = "complete" | "partial" | "none";
 
 export default function ValutazioniGridView({
     filteredEvaluations,
+    allEvaluations,
     students,
     classes,
     filteredExercises,
@@ -602,6 +604,29 @@ export default function ValutazioniGridView({
         return cls?.className || "N/A";
     };
 
+    const getPastHistory = (studentId: string) => {
+        if (!exercise) return null;
+        const evals = (allEvaluations || filteredEvaluations).filter(
+            e => e.studentId === studentId && e.exerciseId === exercise.id && e.score > 0
+        );
+        const currentEv = evalMap.get(`${studentId}-${exercise.id}`);
+        const past = evals.find(e => e.id !== currentEv?.id);
+        if (!past || past.score <= 0) return null;
+
+        const student = students.find(s => s.id === studentId);
+        let pastClass = classes.find(c => c.students?.includes(studentId) && c.id !== student?.currentClassId);
+        if (!pastClass) {
+            pastClass = classes.find(c => c.id === student?.currentClassId);
+        }
+        return {
+            score: past.score,
+            performanceValue: past.performanceValue,
+            className: pastClass?.className || "Classe passata",
+            schoolYear: pastClass?.schoolYear || "",
+            date: new Date(past.createdAt).toLocaleDateString("it-IT"),
+        };
+    };
+
     // ─── Empty / prompt states ──────────────────────────────────────────────
     if (selectedExerciseId === "all" || !exercise) {
         return (
@@ -730,9 +755,36 @@ export default function ValutazioniGridView({
                                                     <p className="text-sm font-semibold truncate">
                                                         {student.lastName} {student.firstName}
                                                     </p>
-                                                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold opacity-70">
-                                                        {getClassName(student.currentClassId)}
-                                                    </p>
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold opacity-70">
+                                                            {getClassName(student.currentClassId)}
+                                                        </span>
+                                                        {(() => {
+                                                            const past = getPastHistory(student.id);
+                                                            if (!past) return null;
+                                                            return (
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-300/40 dark:border-blue-800 cursor-help">
+                                                                            <History className="size-2.5" />
+                                                                            Storico: {formatGrade(past.score)}
+                                                                        </span>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="right" className="text-xs space-y-1 p-2">
+                                                                        <p className="font-semibold text-foreground">Storico esercizio precedente:</p>
+                                                                        <p className="text-muted-foreground">
+                                                                            Classe {past.className} {past.schoolYear ? `(${past.schoolYear})` : ""}
+                                                                        </p>
+                                                                        <p>
+                                                                            Voto: <strong className="text-primary">{formatGrade(past.score)}</strong>
+                                                                            {past.performanceValue && ` • Valore: ${past.performanceValue}`}
+                                                                        </p>
+                                                                        <p className="text-[10px] text-muted-foreground">Data: {past.date}</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            );
+                                                        })()}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </TableCell>

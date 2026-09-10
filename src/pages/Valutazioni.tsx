@@ -15,7 +15,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSchoolData, useClient } from "@/provider/clientProvider";
 import type { Student, Exercise, Evaluation, Gender, EvaluationStatus, SortMode } from "@/types/types";
-import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2, Columns3, Grid3X3, ArrowUpDown } from "lucide-react";
+import { Plus, User, Check, Clock, AlertCircle, X, Loader2, Save, RotateCcw, Trash2, Columns3, Grid3X3, ArrowUpDown, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
@@ -651,6 +651,24 @@ export default function Valutazioni() {
                                                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
                                                         Classe {getClassName(student.currentClassId)}
                                                     </p>
+                                                    {(() => {
+                                                        const pastEvals = evaluations.filter(e =>
+                                                            e.studentId === student.id &&
+                                                            e.exerciseId === ev.exerciseId &&
+                                                            e.id !== ev.id &&
+                                                            e.score > 0
+                                                        );
+                                                        if (pastEvals.length === 0) return null;
+                                                        const latestPast = [...pastEvals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                                                        return (
+                                                            <div className="mt-1">
+                                                                <span className="inline-flex items-center gap-1 text-[9px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-300/30">
+                                                                    <History className="h-2.5 w-2.5" />
+                                                                    Storico: {formatGrade(latestPast.score)}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
 
                                                 {ev.score > 0 && (
@@ -715,6 +733,17 @@ export default function Valutazioni() {
         if (!gradingExercise) return null;
         return getExerciseRecords(gradingExercise, evaluations, students, classes);
     }, [gradingExercise, evaluations, students, classes]);
+
+    // Historical evaluations for the student being evaluated in the Kanban grading panel
+    const gradingPastAttempts = useMemo(() => {
+        if (!selectedEvaluationForGrading) return [];
+        return evaluations.filter(e =>
+            e.studentId === selectedEvaluationForGrading.studentId &&
+            e.exerciseId === selectedEvaluationForGrading.exerciseId &&
+            e.id !== selectedEvaluationForGrading.id &&
+            e.score > 0
+        ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [selectedEvaluationForGrading, evaluations]);
 
     // Stats
     const totalEvaluations = filteredEvaluations.length;
@@ -894,6 +923,7 @@ export default function Valutazioni() {
                         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                             <ValutazioniGridView
                                 filteredEvaluations={filteredEvaluations}
+                                allEvaluations={evaluations}
                                 students={students}
                                 exercises={exercises}
                                 classes={classes}
@@ -984,6 +1014,42 @@ export default function Valutazioni() {
                                                 }
                                                 gender={gradingStudent.gender}
                                             />
+                                        )}
+
+                                        {/* Historical evaluations from previous classes */}
+                                        {gradingPastAttempts.length > 0 && (
+                                            <div className="rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/60 p-3 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="font-semibold text-xs text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
+                                                        <History className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                                        Storico Classi Precedenti
+                                                    </span>
+                                                    <Badge variant="outline" className="text-[10px] text-blue-700 dark:text-blue-300 border-blue-300">
+                                                        {gradingPastAttempts.length} {gradingPastAttempts.length === 1 ? "valutazione passata" : "valutazioni passate"}
+                                                    </Badge>
+                                                </div>
+                                                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                                    {gradingPastAttempts.map((past) => {
+                                                        const pastDate = new Date(past.createdAt).toLocaleDateString("it-IT");
+                                                        return (
+                                                            <div key={past.id} className="flex items-center justify-between p-2 rounded-md bg-background/90 border text-xs">
+                                                                <div>
+                                                                    <span className="font-medium text-foreground">
+                                                                        Data: {pastDate}
+                                                                    </span>
+                                                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                                                        Prestazione: {past.performanceValue !== "" ? `${past.performanceValue} ${gradingExercise.unit || ""}` : "N/D"}
+                                                                        {past.comments && ` • ${past.comments}`}
+                                                                    </div>
+                                                                </div>
+                                                                <Badge variant="secondary" className="font-bold text-xs shrink-0">
+                                                                    {formatGrade(past.score)}
+                                                                </Badge>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         )}
 
                                         {/* Performance input - conditional based on evaluation type */}

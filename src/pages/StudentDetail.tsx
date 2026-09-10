@@ -159,11 +159,33 @@ export default function StudentDetail() {
         return evals.sort((a: Evaluation, b: Evaluation) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }, [evaluations, student, selectedExerciseId]);
 
+    // Helper to find the class corresponding to the evaluation date
+    const getClassForEvaluation = (evalDateStr: string) => {
+        if (!student) return "";
+        const evalDate = new Date(evalDateStr);
+        const evalYear = evalDate.getFullYear();
+        const evalMonth = evalDate.getMonth() + 1;
+
+        for (const c of allStudentClasses) {
+            if (!c.schoolYear) continue;
+            const parts = c.schoolYear.split(/[\/\-]/);
+            if (parts.length >= 2) {
+                const y1 = parseInt(parts[0], 10);
+                const y2 = parseInt(parts[1], 10);
+                if ((evalYear === y1 && evalMonth >= 9) || (evalYear === y2 && evalMonth < 9)) {
+                    return `${c.className} (${c.schoolYear})`;
+                }
+            }
+        }
+        return studentClass ? `${studentClass.className} (${studentClass.schoolYear || ""})` : "";
+    };
+
     // Graph data - sequence of grades instead of yearly averages
     const chartData = useMemo(() => {
         return filteredEvaluations.map((ev) => {
             const date = new Date(ev.createdAt);
             const exercise = exercises.find((e: Exercise) => e.id === ev.exerciseId);
+            const classLabel = getClassForEvaluation(ev.createdAt);
 
             return {
                 date: date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }),
@@ -171,9 +193,10 @@ export default function StudentDetail() {
                 score: ev.score,
                 formattedScore: formatGrade(ev.score),
                 exerciseName: exercise?.name || 'Valutazione',
+                classLabel,
             };
         });
-    }, [filteredEvaluations, exercises, formatGrade]);
+    }, [filteredEvaluations, exercises, formatGrade, allStudentClasses, studentClass]);
 
     // Breakdown data for criteria/sub-exercises
     const breakdownData = useMemo(() => {
@@ -558,6 +581,11 @@ export default function StudentDetail() {
                                                                     <div className="text-xs text-gray-400 mt-1 max-w-[200px] truncate">
                                                                         {data.exerciseName}
                                                                     </div>
+                                                                    {data.classLabel && (
+                                                                        <div className="text-[11px] text-blue-300 mt-0.5 font-medium">
+                                                                            {data.classLabel}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         );

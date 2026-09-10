@@ -3,6 +3,7 @@ import {
     User,
     Archive,
 } from "lucide-react"
+import { MdDesk } from "react-icons/md"
 import {
     CommandDialog,
     CommandEmpty,
@@ -70,23 +71,28 @@ export function CommandDialogDemo() {
                                 key={cls.id}
                                 value={`${cls.className} ${cls.createdAt}`}
                                 onSelect={() => handleSelectClass(cls.id)}
+                                className="cursor-pointer"
                             >
-                                <User />
+                                <MdDesk className="size-4" />
                                 <span>{cls.className}</span>
                             </CommandItem>
                         ))}
                     </CommandGroup>
                     {archivedClasses.length > 0 && (
-                        <CommandGroup heading="Classi Archiviate">
+                        <CommandGroup heading="Classi Archiviate (Storico)">
                             {archivedClasses.map((cls) => (
                                 <CommandItem
                                     key={cls.id}
-                                    value={`${cls.className} ${cls.schoolYear} archiviata`}
+                                    value={`${cls.className} ${cls.schoolYear} archiviata archivio storico`}
                                     onSelect={() => handleSelectClass(cls.id)}
+                                    className="cursor-pointer"
                                 >
-                                    <Archive className="text-muted-foreground" />
-                                    <span className="flex-1">{cls.className}</span>
-                                    <span className="text-xs text-muted-foreground">{cls.schoolYear}</span>
+                                    <Archive className="size-4 text-amber-600 dark:text-amber-400" />
+                                    <span className="flex-1 font-medium">{cls.className}</span>
+                                    <span className="text-xs text-muted-foreground mr-2">{cls.schoolYear}</span>
+                                    <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-300/40">
+                                        Archiviata
+                                    </span>
                                 </CommandItem>
                             ))}
                         </CommandGroup>
@@ -97,8 +103,9 @@ export function CommandDialogDemo() {
                                 key={student.id}
                                 value={`${student.firstName} ${student.lastName}`}
                                 onSelect={() => handleSelectStudent(student.id)}
+                                className="cursor-pointer"
                             >
-                                <User />
+                                <User className="size-4" />
                                 <span>{student.firstName} {student.lastName}</span>
                             </CommandItem>
                         ))}

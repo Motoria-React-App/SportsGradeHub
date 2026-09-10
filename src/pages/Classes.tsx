@@ -1,17 +1,18 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useClient, useSchoolData } from "@/provider/clientProvider";
-import { useSettings } from "@/provider/settingsProvider";
+import { useSettings, getCurrentSchoolYearLabel } from "@/provider/settingsProvider";
 import { SchoolClassExpanded, Student, Evaluation, Exercise } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Users, Link2, Check, Clock, AlertCircle, Loader2, ExternalLink, Archive, RotateCcw, ClipboardCheck } from "lucide-react";
+import { Activity, Users, Link2, Check, Clock, AlertCircle, Loader2, ExternalLink, Archive, RotateCcw, ClipboardCheck, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StudentDialog } from "@/components/student-dialog";
 import { StudentsTable } from "@/components/students-table";
 import { TransferStudentDialog } from "@/components/TransferStudentDialog";
+import { PromoteClassDialog } from "@/components/PromoteClassDialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     AlertDialog,
@@ -63,6 +64,7 @@ export default function Classes() {
     // Transfer student state
     const [transferDialogOpen, setTransferDialogOpen] = useState(false);
     const [studentToTransfer, setStudentToTransfer] = useState<Student | null>(null);
+    const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
 
     const handleArchiveClass = async () => {
         if (!schoolClass) return;
@@ -147,6 +149,24 @@ export default function Classes() {
             radarData,
         };
     }, [schoolClass, evaluations, allExercises, exerciseGroups, settings.passingGrade]);
+
+    const startMonth = settings.schoolYearStartMonth ?? 9;
+    const startDay = settings.schoolYearStartDay ?? 1;
+    const currentYearLabel = getCurrentSchoolYearLabel(startMonth, startDay);
+
+    const isFifthGrade = useMemo(() => {
+        if (!schoolClass) return false;
+        const prefixes = Array.isArray(settings.graduatedClassPrefixes) && settings.graduatedClassPrefixes.length > 0
+            ? settings.graduatedClassPrefixes
+            : ["5"];
+        const name = schoolClass.className.trim().toLowerCase();
+        return prefixes.some(p => name.startsWith(p.trim().toLowerCase()));
+    }, [schoolClass, settings.graduatedClassPrefixes]);
+
+    const isPendingArchive = useMemo(() => {
+        if (!schoolClass || schoolClass.isArchived) return false;
+        return Boolean(schoolClass.schoolYear && schoolClass.schoolYear.trim() !== "" && schoolClass.schoolYear.trim() !== currentYearLabel.trim());
+    }, [schoolClass, currentYearLabel]);
 
     // Selection handlers
     const toggleSelectAll = () => {
@@ -456,6 +476,18 @@ export default function Classes() {
                         </>
                     ) : (
                         <>
+                            {!isFifthGrade && (
+                                <motion.div {...buttonPress}>
+                                    <Button
+                                        variant="outline"
+                                        className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
+                                        onClick={() => setPromoteDialogOpen(true)}
+                                    >
+                                        <GraduationCap className="w-4 h-4" />
+                                        Promuovi Classe
+                                    </Button>
+                                </motion.div>
+                            )}
                             <motion.div {...buttonPress}>
                                 <Button
                                     variant="outline"
@@ -489,6 +521,43 @@ export default function Classes() {
                     )}
                 </div>
             </motion.div>
+
+            {/* Pending Archive / Promotion Alert Banner for non-5th past year classes */}
+            {!schoolClass.isArchived && isPendingArchive && !isFifthGrade && (
+                <motion.div
+                    className="rounded-xl border border-amber-300/80 bg-amber-500/10 p-4 dark:border-amber-900/60 dark:bg-amber-950/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                    variants={slideUp}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-amber-500/15 rounded-lg text-amber-600 dark:text-amber-400 shrink-0">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="font-semibold text-sm text-foreground">
+                                    Anno Scolastico {schoolClass.schoolYear || "Precedente"} — Classe da Archiviare
+                                </h4>
+                                <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/40">
+                                    Inizio Nuovo Anno
+                                </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Questa classe fa parte dell'anno precedente. Puoi promuovere e trasferire gli studenti nella nuova classe per l'anno {currentYearLabel}, escludendo i non ammessi (bocciati).
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                        <Button
+                            size="sm"
+                            className="gap-1.5 text-xs h-8"
+                            onClick={() => setPromoteDialogOpen(true)}
+                        >
+                            <GraduationCap className="w-3.5 h-3.5" />
+                            Promuovi Studenti ({schoolClass.students.length})
+                        </Button>
+                    </div>
+                </motion.div>
+            )}
 
             {/* Archived Alert Banner */}
             {schoolClass.isArchived && (
@@ -1217,6 +1286,12 @@ export default function Classes() {
                      </AlertDialogFooter>
                  </AlertDialogContent>
              </AlertDialog>
+             {/* Promote Class Dialog */}
+             <PromoteClassDialog
+                 open={promoteDialogOpen}
+                 onOpenChange={setPromoteDialogOpen}
+                 sourceClass={schoolClass}
+             />
          </motion.div>
      );
 }

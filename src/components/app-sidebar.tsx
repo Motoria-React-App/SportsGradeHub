@@ -39,14 +39,20 @@ import {
   ClipboardCheck,
   ChevronRight,
   Trophy,
-  Archive,
+  Clock,
 } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { useCommandDialog } from "@/provider/commandDialogProvider"
 import { Link } from "react-router-dom"
 import { AddClassDialog } from "./add-class-dialog"
 import { Kbd, KbdGroup } from "./ui/kbd"
-import { useSettings } from "@/provider/settingsProvider"
+import { useSettings, getCurrentSchoolYearLabel } from "@/provider/settingsProvider"
 import { useTranslation } from "@/hooks/useTranslation"
 import { motion } from "framer-motion"
 import { staggerContainer, staggerItem } from "@/lib/motion"
@@ -57,19 +63,24 @@ type NavItemType = {
   url: string
   icon?: React.ComponentType<{ className?: string }>
   isActive?: boolean
+  schoolYear?: string
+  needsArchive?: boolean
 }
 
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const client = useClient();
-  const { classes, activeClasses, archivedClasses, refreshClasses } = useSchoolData();
+  const { classes, activeClasses, refreshClasses } = useSchoolData();
   const { settings } = useSettings();
   const { openCommandDialog } = useCommandDialog();
   const { t } = useTranslation();
   const [addClassDialogOpen, setAddClassDialogOpen] = React.useState(false);
 
+  const startMonth = settings.schoolYearStartMonth ?? 9;
+  const startDay = settings.schoolYearStartDay ?? 1;
+  const currentYearLabel = getCurrentSchoolYearLabel(startMonth, startDay);
+
   const displayActiveClasses = activeClasses || classes.filter(c => !c.isArchived);
-  const displayArchivedClasses = archivedClasses || classes.filter(c => c.isArchived);
 
   const data = {
     quickNav: [
@@ -100,17 +111,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Trophy,
       },
     ],
-    classes: displayActiveClasses.map((item: SchoolClass) => ({
-      title: item.className,
-      url: `/classes/${item.id}`,
-      icon: MdDesk,
-    })) as NavItemType[],
-    archivedClasses: displayArchivedClasses.map((item: SchoolClass) => ({
-      id: item.id,
-      title: item.className,
-      year: item.schoolYear,
-      url: `/classes/${item.id}`,
-    })),
+    classes: displayActiveClasses.map((item: SchoolClass) => {
+      const needsArchive = Boolean(
+        item.schoolYear &&
+        item.schoolYear.trim() !== "" &&
+        item.schoolYear.trim() !== currentYearLabel.trim()
+      );
+      return {
+        title: item.className,
+        url: `/classes/${item.id}`,
+        icon: MdDesk,
+        schoolYear: item.schoolYear,
+        needsArchive,
+      };
+    }) as NavItemType[],
   }
 
 
@@ -244,14 +258,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                     item.isActive && "bg-sidebar-accent"
                                   )}
                                 >
-                                  <Link to={item.url} className="flex items-center gap-2">
-                                    <motion.div
-                                      whileHover={{ scale: 1.1, rotate: 5 }}
-                                      transition={{ type: "spring", stiffness: 300 }}
-                                    >
-                                      {Icon && <Icon className="size-4 text-muted-foreground" />}
-                                    </motion.div>
-                                    <span className="text-sm flex-1 truncate">{item.title}</span>
+                                  <Link to={item.url} className="flex items-center justify-between gap-2 w-full">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <motion.div
+                                        whileHover={{ scale: 1.1, rotate: 5 }}
+                                        transition={{ type: "spring", stiffness: 300 }}
+                                      >
+                                        {Icon && <Icon className="size-4 text-muted-foreground" />}
+                                      </motion.div>
+                                      <span className="text-sm truncate">{item.title}</span>
+                                    </div>
+                                    {item.needsArchive && (
+                                      <TooltipProvider delayDuration={200}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="inline-flex items-center justify-center size-4 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                                              <Clock className="size-2.5" />
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="right" className="text-xs">
+                                            Classe dell'anno precedente ({item.schoolYear}): da archiviare o trasferire
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
                                   </Link>
                                 </SidebarMenuButton>
                               </SidebarMenuItem>
@@ -299,16 +329,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                                   asChild
                                   isActive={item.isActive}
                                 >
-                                  <Link to={item.url} className="flex items-center gap-2">
-                                    <motion.div
-                                      whileHover={{ scale: 1.1, rotate: 5 }}
-                                      transition={{ type: "spring", stiffness: 300 }}
-                                    >
-                                      {item.icon && (
-                                        <item.icon className="size-3.5 text-muted-foreground" />
-                                      )}
-                                    </motion.div>
-                                    <span className="truncate">{item.title}</span>
+                                  <Link to={item.url} className="flex items-center justify-between gap-2 w-full">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <motion.div
+                                        whileHover={{ scale: 1.1, rotate: 5 }}
+                                        transition={{ type: "spring", stiffness: 300 }}
+                                      >
+                                        {item.icon && (
+                                          <item.icon className="size-3.5 text-muted-foreground" />
+                                        )}
+                                      </motion.div>
+                                      <span className="truncate">{item.title}</span>
+                                    </div>
+                                    {item.needsArchive && (
+                                      <TooltipProvider delayDuration={200}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="inline-flex items-center justify-center size-4 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                                              <Clock className="size-2.5" />
+                                            </span>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="right" className="text-xs">
+                                            Classe dell'anno precedente ({item.schoolYear}): da archiviare o trasferire
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
                                   </Link>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
@@ -322,42 +368,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               )}
             </motion.div>
           </SidebarGroup>
-
-          {data.archivedClasses.length > 0 && (
-            <SidebarGroup className="py-1">
-              <Collapsible className="group/archived">
-                <SidebarGroupLabel asChild>
-                  <CollapsibleTrigger className="hover:bg-sidebar-accent rounded-md py-0 px-2 flex items-center w-full transition-colors group/trigger cursor-pointer">
-                    <ChevronRight className="size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/archived:rotate-90 mr-1.5" />
-                    <span className="text-xs font-medium text-muted-foreground flex-1 text-left flex items-center gap-1.5">
-                      <Archive className="size-3 text-muted-foreground" />
-                      Classi Archiviate ({data.archivedClasses.length})
-                    </span>
-                  </CollapsibleTrigger>
-                </SidebarGroupLabel>
-                <CollapsibleContent>
-                  <SidebarGroupContent>
-                    <SidebarMenuSub className="gap-0.5 pt-1 pr-1">
-                      {data.archivedClasses.map((item, index) => (
-                        <motion.div key={item.id} variants={staggerItem} custom={index}>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton asChild>
-                              <Link to={item.url} className="flex items-center justify-between gap-2">
-                                <span className="truncate text-xs">{item.title}</span>
-                                <span className="text-[10px] text-muted-foreground px-1.5 py-0.2 rounded bg-muted/60 font-mono">
-                                  {item.year}
-                                </span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </motion.div>
-                      ))}
-                    </SidebarMenuSub>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </Collapsible>
-            </SidebarGroup>
-          )}
 
           <SidebarGroup className="py-2">
             <motion.div
