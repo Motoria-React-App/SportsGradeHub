@@ -32,6 +32,7 @@ import { pageTransition, slideUp, staggerContainer, staggerItem, buttonPress, ca
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts";
 import { toast } from "sonner";
 import LoadingPage from "./Loading";
+import { useTranslation } from "@/hooks/useTranslation";
 
 
 
@@ -41,6 +42,7 @@ export default function Classes() {
     const navigate = useNavigate();
     const location = useLocation();
     const client = useClient();
+    const { t } = useTranslation();
     const { evaluations, setEvaluations, classes, setClasses, exercises: allExercises, exerciseGroups, archiveClass, unarchiveClass } = useSchoolData();
     const { settings } = useSettings();
     const { formatGrade, getGradeColor } = useGradeFormatter();
@@ -73,12 +75,12 @@ export default function Classes() {
             const ok = await archiveClass(schoolClass.id);
             if (ok) {
                 setSchoolClass(prev => prev ? { ...prev, isArchived: true } : prev);
-                toast.success(`Classe "${schoolClass.className}" archiviata con successo`);
+                toast.success(`${t("classes.archived")} (${schoolClass.className})`);
             } else {
-                toast.error("Errore durante l'archiviazione della classe");
+                toast.error(t("common.error"));
             }
         } catch {
-            toast.error("Errore durante l'archiviazione della classe");
+            toast.error(t("common.error"));
         } finally {
             setIsArchiving(false);
             setArchiveDialogOpen(false);
@@ -92,12 +94,12 @@ export default function Classes() {
             const ok = await unarchiveClass(schoolClass.id);
             if (ok) {
                 setSchoolClass(prev => prev ? { ...prev, isArchived: false } : prev);
-                toast.success(`Classe "${schoolClass.className}" ripristinata tra le classi attive`);
+                toast.success(`${t("classes.unarchived")} (${schoolClass.className})`);
             } else {
-                toast.error("Errore durante il ripristino della classe");
+                toast.error(t("common.error"));
             }
         } catch {
-            toast.error("Errore durante il ripristino della classe");
+            toast.error(t("common.error"));
         } finally {
             setIsArchiving(false);
             setUnarchiveDialogOpen(false);
@@ -401,11 +403,11 @@ export default function Classes() {
                 initial="hidden"
                 animate="visible"
             >
-                <h2 className="text-2xl font-bold">Classe non trovata</h2>
-                <p className="text-muted-foreground">La classe richiesta non esiste o è stata rimossa.</p>
+                <h2 className="text-2xl font-bold">{t("classes.notFound")}</h2>
+                <p className="text-muted-foreground">{t("classes.notFoundDesc")}</p>
                 <motion.div {...buttonPress}>
                     <Button onClick={() => window.history.back()}>
-                        Torna indietro
+                        {t("common.goBack")}
                     </Button>
                 </motion.div>
             </motion.div>
@@ -441,13 +443,13 @@ export default function Classes() {
                         {schoolClass.isArchived && (
                             <Badge variant="outline" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 gap-1.5 py-0.5">
                                 <Archive className="w-3.5 h-3.5" />
-                                Archiviata
+                                {t("classes.archivedBadge")}
                             </Badge>
                         )}
                     </div>
                     <p className="text-muted-foreground flex items-center gap-2">
                         <Users className="w-4 h-4" />
-                        {schoolClass.students.length} Studenti iscritti
+                        {schoolClass.students.length} {t("classes.enrolledStudents")}
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -460,7 +462,7 @@ export default function Classes() {
                                     onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
                                 >
                                     <ClipboardCheck className="w-4 h-4 text-primary" />
-                                    Valutazioni
+                                    {t("nav.evaluations")}
                                 </Button>
                             </motion.div>
                             <motion.div {...buttonPress}>
@@ -470,7 +472,7 @@ export default function Classes() {
                                     onClick={() => setUnarchiveDialogOpen(true)}
                                 >
                                     <RotateCcw className="w-4 h-4" />
-                                    Ripristina
+                                    {t("classes.restore")}
                                 </Button>
                             </motion.div>
                         </>
@@ -535,14 +537,14 @@ export default function Classes() {
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="font-semibold text-sm text-foreground">
-                                    Anno Scolastico {schoolClass.schoolYear || "Precedente"} — Classe da Archiviare
+                                    {t("classes.pendingArchiveTitle", { year: schoolClass.schoolYear || t("classes.previousYear") })}
                                 </h4>
                                 <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/40">
-                                    Inizio Nuovo Anno
+                                    {t("classes.newYearBadge")}
                                 </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Questa classe fa parte dell'anno precedente. Puoi promuovere e trasferire gli studenti nella nuova classe per l'anno {currentYearLabel}, escludendo i non ammessi (bocciati).
+                                {t("classes.pendingArchiveDesc", { year: currentYearLabel })}
                             </p>
                         </div>
                     </div>
@@ -553,7 +555,7 @@ export default function Classes() {
                             onClick={() => setPromoteDialogOpen(true)}
                         >
                             <GraduationCap className="w-3.5 h-3.5" />
-                            Promuovi Studenti ({schoolClass.students.length})
+                            {t("classes.promoteStudents")} ({schoolClass.students.length})
                         </Button>
                     </div>
                 </motion.div>
@@ -571,10 +573,10 @@ export default function Classes() {
                         </div>
                         <div>
                             <h4 className="font-semibold text-sm text-amber-900 dark:text-amber-200">
-                                Classe Archiviata — Anno Scolastico {schoolClass.schoolYear}
+                                {t("classes.archivedTitle", { year: schoolClass.schoolYear })}
                             </h4>
                             <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">
-                                I dati sono conservati nell'archivio storico. Puoi confrontare i risultati atletici di questa classe con le classi attive nella sezione Analisi.
+                                {t("classes.archivedDesc")}
                             </p>
                         </div>
                     </div>
@@ -586,7 +588,7 @@ export default function Classes() {
                             onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
                         >
                             <ClipboardCheck className="w-3.5 h-3.5 text-primary" />
-                            Valutazioni
+                            {t("nav.evaluations")}
                         </Button>
                         <Button
                             size="sm"
@@ -595,7 +597,7 @@ export default function Classes() {
                             onClick={() => setUnarchiveDialogOpen(true)}
                         >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            Ripristina
+                            {t("classes.restore")}
                         </Button>
                     </div>
                 </motion.div>
@@ -604,9 +606,9 @@ export default function Classes() {
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full md:w-[400px] grid-cols-3">
-                    <TabsTrigger value="students">Studenti</TabsTrigger>
-                    <TabsTrigger value="exercises">Esercizi</TabsTrigger>
-                    <TabsTrigger value="analytics">Analisi</TabsTrigger>
+                    <TabsTrigger value="students">{t("classes.studentsTab")}</TabsTrigger>
+                    <TabsTrigger value="exercises">{t("nav.exercises")}</TabsTrigger>
+                    <TabsTrigger value="analytics">{t("analytics.title")}</TabsTrigger>
                 </TabsList>
 
                 <div className="mt-6">
@@ -622,9 +624,9 @@ export default function Classes() {
                                 <TabsContent value="students" forceMount className="space-y-4 mt-0">
                                     <Card>
                                         <CardHeader>
-                                            <CardTitle>Elenco Studenti</CardTitle>
+                                            <CardTitle>{t("classes.studentsList")}</CardTitle>
                                             <CardDescription>
-                                                Gestisci l'anagrafica degli studenti della classe {schoolClass.className}.
+                                                {t("classes.studentsListDesc", { name: schoolClass.className })}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent className="p-0">
@@ -660,9 +662,9 @@ export default function Classes() {
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h3 className="text-lg font-medium">Esercizi Assegnati</h3>
+                                                <h3 className="text-lg font-medium">{t("classes.assignedExercises")}</h3>
                                                 <p className="text-sm text-muted-foreground">
-                                                    Esercizi collegati a questa classe per le valutazioni.
+                                                    {t("classes.assignedExercisesDesc")}
                                                 </p>
                                             </div>
                                             <Button
@@ -673,7 +675,7 @@ export default function Classes() {
                                                 }}
                                             >
                                                 <Link2 className="w-4 h-4" />
-                                                Collega Esercizi
+                                                {t("classes.linkExercises")}
                                             </Button>
                                         </div>
 
@@ -747,7 +749,7 @@ export default function Classes() {
                                                                         {/* Average score */}
                                                                         {stats.completed > 0 && (
                                                                             <div className="flex items-center justify-between">
-                                                                                <span className="text-xs text-muted-foreground">Media</span>
+                                                                                <span className="text-xs text-muted-foreground">{t("analytics.average")}</span>
                                                                                 <span className={cn("font-bold", getGradeColor(stats.avgScore))}>
                                                                                     {formatGrade(stats.avgScore)}
                                                                                 </span>
@@ -764,9 +766,9 @@ export default function Classes() {
                                             <Card>
                                                 <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                                                     <Activity className="h-12 w-12 text-muted-foreground/30 mb-4" />
-                                                    <h3 className="text-lg font-medium">Nessun esercizio collegato</h3>
+                                                    <h3 className="text-lg font-medium">{t("classes.noExercisesLinked")}</h3>
                                                     <p className="text-muted-foreground max-w-sm mt-1 mb-4">
-                                                        Collega degli esercizi a questa classe per iniziare le valutazioni.
+                                                        {t("classes.noExercisesLinkedDesc")}
                                                     </p>
                                                     <Button
                                                         variant="outline"
@@ -776,7 +778,7 @@ export default function Classes() {
                                                         }}
                                                     >
                                                         <Link2 className="w-4 h-4 mr-2" />
-                                                        Collega Esercizi
+                                                        {t("classes.linkExercises")}
                                                     </Button>
                                                 </CardContent>
                                             </Card>
@@ -792,15 +794,15 @@ export default function Classes() {
                                         <Card>
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Media Generale Classe
+                                                    {t("analytics.classAverage")}
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className={cn("text-3xl font-bold", classAnalytics?.avgGrade ? getGradeColor(classAnalytics.avgGrade) : "text-muted-foreground")}>
-                                                    {classAnalytics?.avgGrade ? formatGrade(classAnalytics.avgGrade) : "N/D"}
+                                                    {classAnalytics?.avgGrade ? formatGrade(classAnalytics.avgGrade) : t("common.na")}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    Basata su {classAnalytics?.totalEvaluations || 0} valutazioni
+                                                    {t("analytics.basedOn", { count: classAnalytics?.totalEvaluations || 0 })}
                                                 </p>
                                             </CardContent>
                                         </Card>
@@ -808,7 +810,7 @@ export default function Classes() {
                                         <Card>
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Tasso di Sufficienza
+                                                    {t("analytics.passingRate")}
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
@@ -816,7 +818,7 @@ export default function Classes() {
                                                     {classAnalytics?.passingRate ?? 0}%
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    Voti con punteggio ≥ {settings.passingGrade || 6}
+                                                    {t("analytics.scoresAbove")} {settings.passingGrade || 6}
                                                 </p>
                                             </CardContent>
                                         </Card>
@@ -824,7 +826,7 @@ export default function Classes() {
                                         <Card>
                                             <CardHeader className="pb-2">
                                                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                                                    Valutazioni Registrate
+                                                    {t("analytics.totalEvaluations")}
                                                 </CardTitle>
                                             </CardHeader>
                                             <CardContent>
@@ -832,7 +834,7 @@ export default function Classes() {
                                                     {classAnalytics?.totalEvaluations || 0}
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    Su {schoolClass.students.length} studenti iscritti
+                                                    {t("analytics.enrolledStudents", { count: schoolClass.students.length })}
                                                 </p>
                                             </CardContent>
                                         </Card>
@@ -844,10 +846,10 @@ export default function Classes() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <Activity className="h-5 w-5 text-primary" />
-                                                    Profilo Atletico per Disciplina
+                                                    {t("analytics.athleticProfile")}
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Punteggio medio ottenuto dalla classe {schoolClass.className} nelle diverse categorie di esercizi.
+                                                    {t("analytics.athleticProfileDesc", { name: schoolClass.className })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent>
@@ -886,8 +888,8 @@ export default function Classes() {
                                                 ) : (
                                                     <div className="h-[250px] flex flex-col items-center justify-center text-muted-foreground text-center p-4">
                                                         <Activity className="h-10 w-10 mb-2 opacity-30" />
-                                                        <p>Nessun dato sufficiente per tracciare il profilo atletico.</p>
-                                                        <p className="text-xs text-muted-foreground mt-1">Registra le valutazioni negli esercizi per visualizzare il grafico radar.</p>
+                                                        <p>{t("analytics.noData")}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">{t("analytics.noDataHint")}</p>
                                                     </div>
                                                 )}
                                             </CardContent>
@@ -898,23 +900,23 @@ export default function Classes() {
                                             <CardHeader>
                                                 <CardTitle className="flex items-center gap-2">
                                                     <ClipboardCheck className="h-5 w-5 text-primary" />
-                                                    Valutazioni & Record
+                                                    {t("analytics.evaluationsAndRecords")}
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Confronta {schoolClass.className} con le classi degli altri anni o attive.
+                                                    {t("analytics.compareDesc", { name: schoolClass.className })}
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="space-y-3">
                                                 <p className="text-sm text-muted-foreground">
                                                     {schoolClass.isArchived
-                                                        ? "Questa classe è archiviata. Puoi usarla come parametro di riferimento storico per valutare i progressi delle nuove classi."
-                                                        : "Confronta il rendimento di questa classe con le classi degli anni precedenti per individuare punti di forza e aree di miglioramento."}
+                                                        ? t("analytics.archivedCompareDesc")
+                                                        : t("analytics.activeCompareDesc")}
                                                 </p>
                                                 <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-1">
-                                                    <div className="font-semibold text-foreground">Confronti disponibili:</div>
-                                                    <div className="text-muted-foreground">• Media generale & Tasso sufficienze</div>
-                                                    <div className="text-muted-foreground">• Radar delle abilità atletiche a confronto</div>
-                                                    <div className="text-muted-foreground">• Analisi per singolo esercizio</div>
+                                                    <div className="font-semibold text-foreground">{t("analytics.availableComparisons")}</div>
+                                                    <div className="text-muted-foreground">• {t("analytics.comparison1")}</div>
+                                                    <div className="text-muted-foreground">• {t("analytics.comparison2")}</div>
+                                                    <div className="text-muted-foreground">• {t("analytics.comparison3")}</div>
                                                 </div>
                                             </CardContent>
                                             <CardContent className="pt-0">
@@ -923,7 +925,7 @@ export default function Classes() {
                                                     onClick={() => navigate(`/valutazioni/${schoolClass.id}/all`)}
                                                 >
                                                     <ClipboardCheck className="w-4 h-4" />
-                                                    Vai alle Valutazioni della Classe
+                                                    {t("classes.goToEvaluations")}
                                                 </Button>
                                             </CardContent>
                                         </Card>
@@ -952,9 +954,9 @@ export default function Classes() {
                                 exit="exit"
                             >
                                 <DialogHeader>
-                                    <DialogTitle>Collega Esercizi alla Classe</DialogTitle>
+                                    <DialogTitle>{t("classes.linkExercisesTitle")}</DialogTitle>
                                     <DialogDescription>
-                                        Seleziona gli esercizi da associare alla classe {schoolClass.className}.
+                                        {t("classes.linkExercisesDesc", { name: schoolClass.className })}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <ScrollArea className="h-[400px] pr-4">
@@ -1003,8 +1005,8 @@ export default function Classes() {
                                         ) : (
                                             <div className="text-center py-8 text-muted-foreground">
                                                 <Activity className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                                                <p>Nessun esercizio disponibile.</p>
-                                                <p className="text-sm mt-1">Crea degli esercizi dalla pagina Esercizi.</p>
+                                                <p>{t("exercises.noExercises")}</p>
+                                                <p className="text-sm mt-1">{t("exercises.noExercisesHint")}</p>
                                             </div>
                                         )}
                                     </div>
@@ -1012,20 +1014,20 @@ export default function Classes() {
                                 <DialogFooter>
                                     <div className="flex items-center justify-between w-full">
                                         <span className="text-sm text-muted-foreground">
-                                            {selectedExerciseIds.length} esercizi selezionati
+                                            {selectedExerciseIds.length} {t("exercises.selected")}
                                         </span>
                                         <div className="flex gap-2">
                                             <Button variant="outline" onClick={() => setExerciseDialogOpen(false)}>
-                                                Annulla
+                                                {t("common.cancel")}
                                             </Button>
                                             <Button onClick={handleSaveExercises} disabled={isSavingExercises}>
                                                 {isSavingExercises ? (
                                                     <>
                                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                        Salvataggio...
+                                                        {t("common.saving")}
                                                     </>
                                                 ) : (
-                                                    "Salva"
+                                                    t("common.save")
                                                 )}
                                             </Button>
                                         </div>
@@ -1059,7 +1061,7 @@ export default function Classes() {
                                             <div>
                                                 <DialogTitle>{selectedExerciseForPreview.name}</DialogTitle>
                                                 <DialogDescription>
-                                                    Valutazioni per questo esercizio nella classe {schoolClass.className}
+                                                    {t("classes.exercisePreviewDesc", { name: schoolClass.className })}
                                                 </DialogDescription>
                                             </div>
                                         </div>
@@ -1085,7 +1087,7 @@ export default function Classes() {
                                                         >
                                                             {stats.completed}
                                                         </motion.div>
-                                                        <div className="text-xs text-green-600/70">Completati</div>
+                                                        <div className="text-xs text-green-600/70">{t("exercises.completed")}</div>
                                                     </motion.div>
                                                     <motion.div variants={staggerItem} className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-center">
                                                         <motion.div
@@ -1096,7 +1098,7 @@ export default function Classes() {
                                                         >
                                                             {stats.inProgress}
                                                         </motion.div>
-                                                        <div className="text-xs text-yellow-600/70">In Corso</div>
+                                                        <div className="text-xs text-yellow-600/70">{t("exercises.inProgress")}</div>
                                                     </motion.div>
                                                     <motion.div variants={staggerItem} className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-center">
                                                         <motion.div
@@ -1107,7 +1109,7 @@ export default function Classes() {
                                                         >
                                                             {stats.notStarted}
                                                         </motion.div>
-                                                        <div className="text-xs text-slate-600/70">Non Iniziati</div>
+                                                        <div className="text-xs text-slate-600/70">{t("exercises.notStarted")}</div>
                                                     </motion.div>
                                                 </motion.div>
                                             );
@@ -1168,8 +1170,8 @@ export default function Classes() {
                                                 ) : (
                                                     <div className="text-center py-8 text-muted-foreground">
                                                         <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                                        <p>Nessuna valutazione per questo esercizio.</p>
-                                                        <p className="text-sm mt-1">Vai alle Valutazioni per assegnare l'esercizio.</p>
+                                                        <p>{t("exercises.noEvaluations")}</p>
+                                                        <p className="text-sm mt-1">{t("exercises.goToEvaluations")}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -1183,7 +1185,7 @@ export default function Classes() {
                                                 onClick={() => navigate(`/valutazioni/${schoolClass.id}/${selectedExerciseForPreview.id}`)}
                                             >
                                                 <ExternalLink className="w-4 h-4" />
-                                                Vai alle Valutazioni
+                                                {t("nav.evaluations")}
                                             </Button>
                                         </motion.div>
                                     </DialogFooter>
@@ -1218,19 +1220,19 @@ export default function Classes() {
                      <AlertDialogHeader>
                          <AlertDialogTitle className="flex items-center gap-2">
                              <Archive className="w-5 h-5 text-amber-600" />
-                             Archiviare la classe {schoolClass.className}?
+                             {t("classes.archiveConfirmTitle", { name: schoolClass.className })}
                          </AlertDialogTitle>
                          <AlertDialogDescription className="space-y-2">
                              <p>
-                                 La classe verrà spostata nell'archivio storico (Anno {schoolClass.schoolYear}) e nascosta dalla navigazione attiva.
+                                 {t("classes.archiveConfirmDesc1", { year: schoolClass.schoolYear })}
                              </p>
                              <p className="text-xs text-muted-foreground">
-                                 Tutti i dati, le valutazioni e i voti degli studenti rimarranno intatti e potranno essere consultati o utilizzati per i confronti nelle Analisi. Potrai ripristinarla in qualsiasi momento.
+                                 {t("classes.archiveConfirmDesc2")}
                              </p>
                          </AlertDialogDescription>
                      </AlertDialogHeader>
                      <AlertDialogFooter>
-                         <AlertDialogCancel disabled={isArchiving}>Annulla</AlertDialogCancel>
+                         <AlertDialogCancel disabled={isArchiving}>{t("common.cancel")}</AlertDialogCancel>
                          <AlertDialogAction
                              onClick={(e) => {
                                  e.preventDefault();
@@ -1242,10 +1244,10 @@ export default function Classes() {
                              {isArchiving ? (
                                  <>
                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                     Archiviazione...
+                                     {t("common.saving")}
                                  </>
                              ) : (
-                                 "Archivia Classe"
+                                 t("classes.archiveAction")
                              )}
                          </AlertDialogAction>
                      </AlertDialogFooter>
@@ -1258,14 +1260,14 @@ export default function Classes() {
                      <AlertDialogHeader>
                          <AlertDialogTitle className="flex items-center gap-2">
                              <RotateCcw className="w-5 h-5 text-emerald-600" />
-                             Ripristinare la classe {schoolClass.className}?
+                             {t("classes.restoreConfirmTitle", { name: schoolClass.className })}
                          </AlertDialogTitle>
                          <AlertDialogDescription>
-                             La classe tornerà nell'elenco delle classi attive e sarà nuovamente visibile nel menu laterale e nella gestione quotidiana.
+                             {t("classes.restoreConfirmDesc")}
                          </AlertDialogDescription>
                      </AlertDialogHeader>
                      <AlertDialogFooter>
-                         <AlertDialogCancel disabled={isArchiving}>Annulla</AlertDialogCancel>
+                         <AlertDialogCancel disabled={isArchiving}>{t("common.cancel")}</AlertDialogCancel>
                          <AlertDialogAction
                              onClick={(e) => {
                                  e.preventDefault();
@@ -1277,10 +1279,10 @@ export default function Classes() {
                              {isArchiving ? (
                                  <>
                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                     Ripristino...
+                                     {t("common.saving")}
                                  </>
                              ) : (
-                                 "Ripristina Classe"
+                                 t("classes.restoreAction")
                              )}
                          </AlertDialogAction>
                      </AlertDialogFooter>

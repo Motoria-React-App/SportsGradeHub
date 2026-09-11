@@ -11,10 +11,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { pageTransition, slideUp, staggerContainer, staggerItem } from '@/lib/motion';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function Leaderboards() {
   const { classes, students, exercises, evaluations, exerciseGroups } = useSchoolData();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useTranslation();
 
   // Get initial values from URL params or localStorage
   const initialClassId = searchParams.get('class') || localStorage.getItem('sportsgrade_last_class') || '';
@@ -137,9 +139,9 @@ export default function Leaderboards() {
     >
       {/* Header */}
       <motion.div variants={slideUp}>
-        <h1 className="text-3xl font-bold tracking-tight">Leaderboards</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("leaderboards.title")}</h1>
         <p className="text-muted-foreground mt-2">
-          Visualizza la classifica degli studenti per criteri di valutazione per ogni esercizio
+          {t("leaderboards.subtitle")}
         </p>
       </motion.div>
 
@@ -154,7 +156,7 @@ export default function Leaderboards() {
         <motion.div variants={staggerItem}>
           <Card className="max-w-3xl mx-auto overflow-hidden">
             <CardHeader>
-              <CardTitle>Seleziona Classe ed Esercizio</CardTitle>
+              <CardTitle>{t("common.filter")}: {t("leaderboards.selectClass")} & {t("leaderboards.selectExercise")}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 py-4">
               <LeaderboardContainer
@@ -182,12 +184,12 @@ export default function Leaderboards() {
               <Card className="max-w-6xl mx-auto overflow-hidden">
                 <CardHeader>
                   <CardTitle>
-                    {selectedExercise.name} - Rankings
+                    {selectedExercise.name} - {t("leaderboards.overallRanking")}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-2">
-                    {studentsInClass.length} studenti nella classe
+                    {studentsInClass.length} {t("dashboard.studentsCount")}
                     {criteriaLeaderboards.length > 0 &&
-                      ` • ${criteriaLeaderboards.length} criteri`}
+                      ` • ${criteriaLeaderboards.length} ${t("leaderboards.criteriaRanking").toLowerCase()}`}
                   </p>
                 </CardHeader>
                 <CardContent className="px-4 py-4">
@@ -205,7 +207,7 @@ export default function Leaderboards() {
               exit={{ opacity: 0 }}
               className="text-center text-muted-foreground py-12"
             >
-              Seleziona una classe ed un esercizio per visualizzare le classifiche.
+              {t("leaderboards.noData")}
             </motion.div>
           )}
         </AnimatePresence>

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CriteriaLeaderboard, CriterionRanking } from '@/utils/leaderboard-utils';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface LeaderboardTableProps {
   criteriaLeaderboards: CriteriaLeaderboard[];
@@ -21,6 +22,8 @@ interface LeaderboardRow {
 }
 
 export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: LeaderboardTableProps) {
+  const { t } = useTranslation();
+
   const { columns, data } = useMemo(() => {
     if (criteriaLeaderboards.length === 0) {
       return { columns: [], data: [] };
@@ -61,7 +64,7 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
     const columnHelper = createColumnHelper<LeaderboardRow>();
     const tableColumns: import('@tanstack/react-table').ColumnDef<LeaderboardRow, any>[] = [
       columnHelper.accessor('rank', {
-        header: 'Posto',
+        header: t("leaderboards.rank"),
         cell: (info) => <span className="font-semibold text-sm">{info.getValue()}.</span>,
         size: 80,
       }),
@@ -88,7 +91,7 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
     });
 
     return { columns: tableColumns, data: rows };
-  }, [criteriaLeaderboards]);
+  }, [criteriaLeaderboards, t]);
 
   const table = useReactTable({
     data,
@@ -99,7 +102,7 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Caricamento della classifica...</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       </div>
     );
   }
@@ -107,7 +110,7 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
   if (criteriaLeaderboards.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Seleziona un esercizio per visualizzare la classifica</p>
+        <p className="text-muted-foreground">{t("leaderboards.noData")}</p>
       </div>
     );
   }
@@ -115,7 +118,7 @@ export function LeaderboardTable({ criteriaLeaderboards, isLoading = false }: Le
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Nessuna valutazione trovata per questo esercizio e classe</p>
+        <p className="text-muted-foreground">{t("evaluations.noEvaluations")}</p>
       </div>
     );
   }

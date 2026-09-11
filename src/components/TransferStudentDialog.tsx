@@ -22,6 +22,7 @@ import { useSchoolData, useClient } from "@/provider/clientProvider";
 import { Student } from "@/types/types";
 import { ArrowRightLeft, CheckCircle2, Info, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface TransferStudentDialogProps {
     open: boolean;
@@ -38,6 +39,7 @@ export function TransferStudentDialog({
     currentClassId,
     onSuccess,
 }: TransferStudentDialogProps) {
+    const { t } = useTranslation();
     const client = useClient();
     const { activeClasses, classes, evaluations, exercises, refreshClasses, refreshStudents } = useSchoolData();
 
@@ -87,7 +89,7 @@ export function TransferStudentDialog({
             });
 
             if (!updateStudentRes.success) {
-                toast.error("Errore durante l'aggiornamento della classe dello studente");
+                toast.error(t("common.error"));
                 setIsTransferring(false);
                 return;
             }
@@ -116,9 +118,7 @@ export function TransferStudentDialog({
                 await client.createEvaluationsBatch(newEvaluations);
             }
 
-            toast.success(
-                `Studente "${student.firstName} ${student.lastName}" trasferito nella classe ${targetClass?.className || ""}. Lo storico è stato conservato.`
-            );
+            toast.success(t("dialogs.transferStudent.transferSuccess"));
 
             await Promise.all([refreshClasses(), refreshStudents()]);
 
@@ -127,7 +127,7 @@ export function TransferStudentDialog({
             if (onSuccess) onSuccess();
         } catch (error) {
             console.error("Error transferring student:", error);
-            toast.error("Si è verificato un errore durante il trasferimento dello studente");
+            toast.error(t("common.error"));
         } finally {
             setIsTransferring(false);
         }
@@ -143,10 +143,10 @@ export function TransferStudentDialog({
                         </div>
                         <div>
                             <DialogTitle className="text-base font-bold">
-                                Trasferimento Studente
+                                {t("dialogs.transferStudent.title")}
                             </DialogTitle>
                             <DialogDescription className="text-xs mt-0.5">
-                                Sposta lo studente in una nuova classe (es. bocciatura, cambio sezione).
+                                {t("dialogs.transferStudent.desc")}
                             </DialogDescription>
                         </div>
                     </div>
@@ -163,13 +163,13 @@ export function TransferStudentDialog({
                                 {student.firstName} {student.lastName}
                             </div>
                             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                                <span>Classe attuale:</span>
+                                <span>{t("dialogs.transferStudent.currentClass")}:</span>
                                 <Badge variant="secondary" className="text-[11px] h-4.5 px-1.5">
-                                    {currentClass ? `${currentClass.className} (${currentClass.schoolYear || "N/D"})` : "Nessuna classe"}
+                                    {currentClass ? `${currentClass.className} (${currentClass.schoolYear || "N/A"})` : "N/A"}
                                 </Badge>
                                 {currentClass?.isArchived && (
                                     <Badge variant="outline" className="text-[9px] h-4 text-muted-foreground">
-                                        Archiviata
+                                        {t("classes.isArchivedBadge")}
                                     </Badge>
                                 )}
                             </div>
@@ -179,21 +179,21 @@ export function TransferStudentDialog({
                     {/* Target Class Selection */}
                     <div className="space-y-1.5">
                         <Label className="text-xs font-semibold">
-                            Seleziona Nuova Classe Attiva <span className="text-destructive">*</span>
+                            {t("dialogs.transferStudent.targetClass")} <span className="text-destructive">*</span>
                         </Label>
                         <Select value={targetClassId} onValueChange={setTargetClassId}>
                             <SelectTrigger className="w-full text-xs">
-                                <SelectValue placeholder="Scegli classe di destinazione..." />
+                                <SelectValue placeholder={t("dialogs.transferStudent.selectTargetClass")} />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableClasses.length === 0 ? (
                                     <div className="p-2 text-xs text-muted-foreground text-center">
-                                        Nessuna altra classe attiva disponibile
+                                        {t("classes.noClassFound")}
                                     </div>
                                 ) : (
                                     availableClasses.map(cls => (
                                         <SelectItem key={cls.id} value={cls.id} className="text-xs">
-                                            {cls.className} {cls.schoolYear ? `(${cls.schoolYear})` : ""} • {cls.students?.length || 0} studenti
+                                            {cls.className} {cls.schoolYear ? `(${cls.schoolYear})` : ""} • {cls.students?.length || 0} {t("dashboard.studentsCount")}
                                         </SelectItem>
                                     ))
                                 )}
@@ -212,11 +212,10 @@ export function TransferStudentDialog({
                                     className="mt-0.5"
                                 />
                                 <label htmlFor="init-exercises" className="text-xs text-foreground cursor-pointer font-medium">
-                                    Inizializza {missingTargetExercises.length} {missingTargetExercises.length === 1 ? "nuovo esercizio" : "nuovi esercizi"} per questa classe
+                                    {missingTargetExercises.length} {t("classes.assignedExercises")}
                                 </label>
                             </div>
                             <div className="text-[11px] text-muted-foreground pl-6">
-                                Esercizi della nuova classe da valutare:{" "}
                                 <span className="font-semibold text-foreground/80">
                                     {missingTargetExercises.map(e => e?.name).join(", ")}
                                 </span>
@@ -228,9 +227,8 @@ export function TransferStudentDialog({
                     <div className="p-2.5 rounded-lg border bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/60 text-[11px] text-blue-900 dark:text-blue-300 flex items-start gap-2">
                         <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-600 dark:text-blue-400" />
                         <div className="space-y-1">
-                            <span className="font-semibold block">Preservazione dello Storico:</span>
                             <span>
-                                Lo studente rimarrà visibile anche nel registro della classe precedente. Tutti gli esercizi e le valutazioni già completati rimangono salvati e legati al suo profilo.
+                                {t("dialogs.transferStudent.desc")}
                             </span>
                         </div>
                     </div>
@@ -243,7 +241,7 @@ export function TransferStudentDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={isTransferring}
                     >
-                        Annulla
+                        {t("common.cancel")}
                     </Button>
                     <Button
                         size="sm"
@@ -254,12 +252,12 @@ export function TransferStudentDialog({
                         {isTransferring ? (
                             <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Trasferimento in corso...
+                                {t("common.loading")}
                             </>
                         ) : (
                             <>
                                 <CheckCircle2 className="h-3.5 w-3.5" />
-                                Conferma Trasferimento
+                                {t("dialogs.transferStudent.transferBtn")}
                             </>
                         )}
                     </Button>

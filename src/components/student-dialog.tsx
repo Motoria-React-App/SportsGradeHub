@@ -21,6 +21,7 @@ import {
 import { useClient, useSchoolData } from "@/provider/clientProvider"
 import { toast } from "sonner"
 import { Student, Gender } from "@/types/types"
+import { useTranslation } from "@/hooks/useTranslation"
 
 interface StudentDialogProps {
     open: boolean
@@ -37,6 +38,7 @@ export function StudentDialog({
     defaultClassId,
     onSuccess 
 }: StudentDialogProps) {
+    const { t } = useTranslation()
     const client = useClient()
     const { classes, setStudents } = useSchoolData()
     const [isLoading, setIsLoading] = React.useState(false)
@@ -88,17 +90,17 @@ export function StudentDialog({
         e.preventDefault()
 
         if (!formData.firstName.trim()) {
-            toast.error("Il nome è obbligatorio")
+            toast.error(t("students.firstName"))
             return
         }
 
         if (!formData.lastName.trim()) {
-            toast.error("Il cognome è obbligatorio")
+            toast.error(t("students.lastName"))
             return
         }
 
         if (!formData.currentClassId) {
-            toast.error("Seleziona una classe")
+            toast.error(t("dashboard.selectClassPlaceholder"))
             return
         }
 
@@ -117,7 +119,7 @@ export function StudentDialog({
                 })
 
                 if (res.success && res.data?.student) {
-                    toast.success(`Studente "${formData.firstName} ${formData.lastName}" modificato con successo!`)
+                    toast.success(t("students.studentUpdated"))
                     setStudents(prev => prev.map(s => 
                         s.id === student.id ? res.data!.student : s
                     ))
@@ -138,7 +140,7 @@ export function StudentDialog({
                 })
 
                 if (res.success && res.data?.student) {
-                    toast.success(`Studente "${formData.firstName} ${formData.lastName}" aggiunto con successo!`)
+                    toast.success(t("students.studentAdded"))
                     setStudents(prev => [...prev, res.data!.student])
                 } else {
                     throw new Error(res.error?.message || "Errore sconosciuto")
@@ -152,7 +154,7 @@ export function StudentDialog({
             onSuccess?.()
 
         } catch (error) {
-            toast.error(isEditMode ? "Errore durante la modifica" : "Errore durante la creazione")
+            toast.error(t("common.error"))
             console.error(error)
         } finally {
             setIsLoading(false)
@@ -164,12 +166,10 @@ export function StudentDialog({
             <DialogContent className="sm:max-w-[450px]">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditMode ? "Modifica Studente" : "Nuovo Studente"}
+                        {isEditMode ? t("students.editStudent") : t("students.addStudent")}
                     </DialogTitle>
                     <DialogDescription>
-                        {isEditMode 
-                            ? "Modifica i dati dello studente." 
-                            : "Inserisci i dati del nuovo studente."}
+                        {t("dialogs.student.desc")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -178,11 +178,11 @@ export function StudentDialog({
                         {/* Nome e Cognome */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="firstName">Nome *</Label>
+                                <Label htmlFor="firstName">{t("students.firstName")} *</Label>
                                 <Input
                                     id="firstName"
                                     name="firstName"
-                                    placeholder="Mario"
+                                    placeholder={t("students.firstName")}
                                     value={formData.firstName}
                                     onChange={handleInputChange}
                                     disabled={isLoading}
@@ -190,11 +190,11 @@ export function StudentDialog({
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="lastName">Cognome *</Label>
+                                <Label htmlFor="lastName">{t("students.lastName")} *</Label>
                                 <Input
                                     id="lastName"
                                     name="lastName"
-                                    placeholder="Rossi"
+                                    placeholder={t("students.lastName")}
                                     value={formData.lastName}
                                     onChange={handleInputChange}
                                     disabled={isLoading}
@@ -205,7 +205,7 @@ export function StudentDialog({
                         {/* Sesso e Data di Nascita */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="gender">Sesso *</Label>
+                                <Label htmlFor="gender">{t("students.gender")} *</Label>
                                 <Select
                                     value={formData.gender}
                                     onValueChange={(v) => setFormData(prev => ({ ...prev, gender: v as Gender }))}
@@ -215,14 +215,14 @@ export function StudentDialog({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="M">Maschio</SelectItem>
-                                        <SelectItem value="F">Femmina</SelectItem>
-                                        <SelectItem value="N">Non specificato</SelectItem>
+                                        <SelectItem value="M">{t("students.male")}</SelectItem>
+                                        <SelectItem value="F">{t("students.female")}</SelectItem>
+                                        <SelectItem value="N">{t("students.other")}</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="birthdate">Data di Nascita</Label>
+                                <Label htmlFor="birthdate">{t("students.birthdate")}</Label>
                                 <Input
                                     id="birthdate"
                                     name="birthdate"
@@ -236,14 +236,14 @@ export function StudentDialog({
 
                         {/* Classe */}
                         <div className="grid gap-2">
-                            <Label htmlFor="currentClassId">Classe *</Label>
+                            <Label htmlFor="currentClassId">{t("students.currentClass")} *</Label>
                             <Select
                                 value={formData.currentClassId}
                                 onValueChange={(v) => setFormData(prev => ({ ...prev, currentClassId: v }))}
                                 disabled={isLoading}
                             >
                                 <SelectTrigger id="currentClassId">
-                                    <SelectValue placeholder="Seleziona una classe" />
+                                    <SelectValue placeholder={t("dashboard.selectClassPlaceholder")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {classes.map((cls) => (
@@ -257,11 +257,11 @@ export function StudentDialog({
 
                         {/* Note */}
                         <div className="grid gap-2">
-                            <Label htmlFor="notes">Note</Label>
+                            <Label htmlFor="notes">{t("students.notes")}</Label>
                             <Textarea
                                 id="notes"
                                 name="notes"
-                                placeholder="Eventuali note sullo studente..."
+                                placeholder={t("students.notesPlaceholder")}
                                 value={formData.notes}
                                 onChange={handleInputChange}
                                 disabled={isLoading}
@@ -277,12 +277,12 @@ export function StudentDialog({
                             onClick={() => onOpenChange(false)}
                             disabled={isLoading}
                         >
-                            Annulla
+                            {t("common.cancel")}
                         </Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading 
-                                ? (isEditMode ? "Salvataggio..." : "Creazione...") 
-                                : (isEditMode ? "Salva Modifiche" : "Crea Studente")}
+                                ? t("common.saving")
+                                : (isEditMode ? t("common.saveChanges") : t("students.addStudent"))}
                         </Button>
                     </DialogFooter>
                 </form>

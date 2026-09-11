@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSchoolData } from "@/provider/clientProvider";
 import { motion } from "framer-motion";
 import { scaleIn, buttonPress, staggerContainer, staggerItem } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface QuickActionsPanelProps {
     selectedClassId: string;
@@ -13,6 +14,7 @@ interface QuickActionsPanelProps {
 export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
     const { classes } = useSchoolData();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const selectedClass = classes.find(c => c.id === selectedClassId);
 
@@ -32,7 +34,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
         >
             <Card>
                 <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Azioni Rapide</CardTitle>
+                    <CardTitle className="text-base">{t("dashboard.quickActions")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <motion.div
@@ -56,7 +58,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                                         >
                                             <ClipboardCheck className="h-5 w-5" />
                                         </motion.div>
-                                        Avvia Valutazione
+                                        {t("dashboard.startEvaluation")}
                                     </Link>
                                 </Button>
                             </motion.div>
@@ -79,7 +81,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                                         >
                                             <Users className="h-5 w-5" />
                                         </motion.div>
-                                        <span className="text-xs">Studenti</span>
+                                        <span className="text-xs">{t("dashboard.studentsBtn")}</span>
                                     </Link>
                                 </Button>
                             </motion.div>
@@ -95,7 +97,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                                     >
                                         <ClipboardPlus className="h-5 w-5" />
                                     </motion.div>
-                                    <span className="text-xs">Collega Esercizio</span>
+                                    <span className="text-xs">{t("dashboard.linkExerciseBtn")}</span>
                                 </Button>
                             </motion.div>
                         </motion.div>
@@ -108,7 +110,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.3 }}
                             >
-                                <p className="text-xs text-muted-foreground">Classe selezionata</p>
+                                <p className="text-xs text-muted-foreground">{t("dashboard.selectedClass")}</p>
                                 <motion.p
                                     className="font-medium text-primary"
                                     initial={{ opacity: 0 }}
@@ -123,7 +125,7 @@ export function QuickActionsPanel({ selectedClassId }: QuickActionsPanelProps) {
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.5 }}
                                 >
-                                    {selectedClass.students.length} studenti
+                                    {selectedClass.students.length} {t("dashboard.studentsCount")}
                                 </motion.p>
                             </motion.div>
                         )}

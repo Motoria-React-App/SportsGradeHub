@@ -23,10 +23,12 @@ import { TransferStudentDialog } from "@/components/TransferStudentDialog";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, staggerContainer, staggerItem, slideUp, buttonPress, cardHover } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 
 
 export default function Students() {
+    const { t } = useTranslation();
     const client = useClient();
     const { classes, students, evaluations, setStudents } = useSchoolData();
     const { settings } = useSettings();
@@ -43,19 +45,19 @@ export default function Students() {
 
     // Delete student handler
     const handleDeleteStudent = async (student: Student) => {
-        if (!confirm(`Sei sicuro di voler eliminare ${student.firstName} ${student.lastName}?`)) {
+        if (!confirm(`${t("students.deleteConfirmTitle")} ${student.firstName} ${student.lastName}?`)) {
             return;
         }
         try {
             const res = await client.deleteStudent(student.id);
             if (res.success) {
-                toast.success(`Studente "${student.firstName} ${student.lastName}" eliminato`);
+                toast.success(`${t("students.studentDeleted")} (${student.firstName} ${student.lastName})`);
                 setStudents((prev) => prev.filter((s) => s.id !== student.id));
             } else {
-                toast.error("Errore durante l'eliminazione");
+                toast.error(t("common.error"));
             }
         } catch {
-            toast.error("Errore durante l'eliminazione");
+            toast.error(t("common.error"));
         }
     };
 
@@ -146,7 +148,7 @@ export default function Students() {
             for (const studentId of selectedStudents) {
                 await client.deleteStudent(studentId);
             }
-            toast.success(`${selectedStudents.size} studenti eliminati`);
+            toast.success(t("students.studentDeleted"));
 
             // Remove deleted students from local state
             const deletedIds = new Set<string>(selectedStudents);
@@ -155,7 +157,7 @@ export default function Students() {
             setSelectedStudents(new Set<string>());
             setDeleteDialogOpen(false);
         } catch {
-            toast.error("Errore durante l'eliminazione");
+            toast.error(t("common.error"));
         }
     };
 
@@ -172,13 +174,13 @@ export default function Students() {
                 variants={slideUp}
             >
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Studenti</h1>
-                    <p className="text-muted-foreground">Gestione anagrafica studenti</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t("students.title")}</h1>
+                    <p className="text-muted-foreground">{t("students.subtitle")}</p>
                 </div>
                 <motion.div {...buttonPress}>
                     <Button className="gap-2" onClick={() => { setSelectedStudent(null); setDialogOpen(true); }}>
                         <Plus className="h-4 w-4" />
-                        Nuovo Studente
+                        {t("students.addStudent")}
                     </Button>
                 </motion.div>
             </motion.div>
@@ -194,7 +196,7 @@ export default function Students() {
                     <motion.div {...cardHover}>
                         <Card className="overflow-hidden">
                             <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Totale Studenti</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("classes.totalStudents")}</p>
                                 <motion.p
                                     className="text-2xl font-bold leading-none mt-1.5"
                                     initial={{ scale: 0.8, opacity: 0 }}
@@ -211,7 +213,7 @@ export default function Students() {
                     <motion.div {...cardHover}>
                         <Card className="overflow-hidden">
                             <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                                <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Media Insufficiente</p>
+                                <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wider">{t("analytics.failingStudents")}</p>
                                 <motion.p
                                     className="text-2xl font-bold leading-none mt-1.5 text-orange-600 dark:text-orange-400"
                                     initial={{ scale: 0.8, opacity: 0 }}
@@ -228,7 +230,7 @@ export default function Students() {
                     <motion.div {...cardHover}>
                         <Card className="overflow-hidden">
                             <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                                <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">Media Sufficiente</p>
+                                <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wider">{t("analytics.passingStudents")}</p>
                                 <motion.p
                                     className="text-2xl font-bold leading-none mt-1.5 text-green-600 dark:text-green-400"
                                     initial={{ scale: 0.8, opacity: 0 }}
@@ -248,7 +250,7 @@ export default function Students() {
                     <motion.div {...cardHover}>
                         <Card className="overflow-hidden">
                             <CardContent className="p-4 flex flex-col justify-center min-h-[80px]">
-                                <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">Giustifiche Eccessive</p>
+                                <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">{t("students.maxJustificationsReached")}</p>
                                 <motion.p
                                     className="text-2xl font-bold leading-none mt-1.5 text-red-600 dark:text-red-400"
                                     initial={{ scale: 0.8, opacity: 0 }}
@@ -270,7 +272,7 @@ export default function Students() {
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="Cerca studente..."
+                            placeholder={t("students.searchStudents")}
                             className="pl-8"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -279,13 +281,13 @@ export default function Students() {
                     <Select disabled value={selectedClass} onValueChange={setSelectedClass}>
                         <SelectTrigger className="w-[180px]">
                             <Filter className="mr-2 h-4 w-4" />
-                            <SelectValue placeholder="Filtra per classe" />
+                            <SelectValue placeholder={t("students.filterByClass")} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tutte le classi</SelectItem>
+                            <SelectItem value="all">{t("common.allFem")}</SelectItem>
                             {classes.map((cls) => (
                                 <SelectItem key={cls.id} value={cls.id}>
-                                    Classe {cls.className}
+                                    {t("classes.title")} {cls.className}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -330,26 +332,26 @@ export default function Students() {
                             <CardContent className="px-4">
                                 <div className="flex items-center gap-4">
                                     <span className="text-sm font-medium">
-                                        {selectedStudents.size} Selezionat{selectedStudents.size === 1 ? 'o' : 'i'}
+                                        {selectedStudents.size} {t("common.select")}
                                     </span>
                                     <div className="h-4 w-px bg-border" />
                                     <div className="flex items-center gap-2">
                                         <motion.div {...buttonPress}>
-                                            <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                            <Button variant="outline" size="sm" onClick={() => toast.info(t("common.loading"))}>
                                                 <Copy className="h-4 w-4 mr-2" />
-                                                Duplica
+                                                {t("common.copy")}
                                             </Button>
                                         </motion.div>
                                         <motion.div {...buttonPress}>
-                                            <Button variant="outline" size="sm" onClick={() => toast.info("Funzione in sviluppo")}>
+                                            <Button variant="outline" size="sm" onClick={() => toast.info(t("common.loading"))}>
                                                 <FileText className="h-4 w-4 mr-2" />
-                                                Esporta
+                                                {t("common.export")}
                                             </Button>
                                         </motion.div>
                                         <motion.div {...buttonPress}>
                                             <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
                                                 <Trash2 className="h-4 w-4 mr-2" />
-                                                Elimina
+                                                {t("common.delete")}
                                             </Button>
                                         </motion.div>
                                     </div>
@@ -388,16 +390,15 @@ export default function Students() {
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Sei sicuro di voler eliminare gli studenti?</AlertDialogTitle>
+                        <AlertDialogTitle>{t("dialogs.deleteConfirm.title")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Stai per eliminare {selectedStudents.size} student{selectedStudents.size === 1 ? 'e' : 'i'}.
-                            Questa azione non può essere annullata.
+                            {t("students.deleteConfirmDesc")}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmBulkDelete} className="bg-destructive hover:bg-destructive/90">
-                            Elimina
+                            {t("common.delete")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

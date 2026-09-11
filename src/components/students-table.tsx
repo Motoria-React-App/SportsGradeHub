@@ -14,6 +14,7 @@ import { MoreHorizontal, Pencil, Trash2, AlertTriangle, ArrowRightLeft } from "l
 import { cn } from "@/lib/utils";
 import { Student } from "@/types/types";
 import { useDateFormatter } from "@/hooks/useDateFormatter";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface StudentsTableProps {
     students: Student[];
@@ -52,6 +53,7 @@ export function StudentsTable({
 }: StudentsTableProps) {
     const navigate = useNavigate();
     const { formatDate } = useDateFormatter();
+    const { t } = useTranslation();
 
     const allSelected = selectedStudents.size === students.length && students.length > 0;
 
@@ -67,14 +69,14 @@ export function StudentsTable({
                             />
                         </TableHead>
                     )}
-                    <TableHead className={`${showCheckboxes ? '' : 'pl-4'}`}>Nome</TableHead>
-                    <TableHead>Cognome</TableHead>
-                    <TableHead>Sesso</TableHead>
-                    {getClassName && <TableHead>Classe</TableHead>}
-                    <TableHead>Data di Nascita</TableHead>
-                    {showNotes && <TableHead>Note</TableHead>}
-                    {showYearAverage && <TableHead>Media Anno</TableHead>}
-                    <TableHead className="text-right pr-4">Azioni</TableHead>
+                    <TableHead className={`${showCheckboxes ? '' : 'pl-4'}`}>{t("students.firstName")}</TableHead>
+                    <TableHead>{t("students.lastName")}</TableHead>
+                    <TableHead>{t("students.gender")}</TableHead>
+                    {getClassName && <TableHead>{t("classes.studentsTab")}</TableHead>}
+                    <TableHead>{t("students.birthdate")}</TableHead>
+                    {showNotes && <TableHead>{t("common.notes")}</TableHead>}
+                    {showYearAverage && <TableHead>{t("students.averageGrade")}</TableHead>}
+                    <TableHead className="text-right pr-4">{t("common.actions")}</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,7 +118,7 @@ export function StudentsTable({
                                                         </TooltipTrigger>
                                                         <TooltipContent>
                                                             <p>
-                                                                Soglia giustifiche superata
+                                                                {t("students.maxJustificationsReached")}
                                                                 {getJustificationsCount && maxJustifications &&
                                                                     ` (${getJustificationsCount(student)}/${maxJustifications})`
                                                                 }
@@ -136,7 +138,7 @@ export function StudentsTable({
                                         student.gender === 'F' && "bg-pink-50 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
                                         !student.gender && "bg-gray-50 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
                                     )}>
-                                        {student.gender === 'M' ? 'M' : student.gender === 'F' ? 'F' : 'N/D'}
+                                    {student.gender === 'M' ? t("students.male") : student.gender === 'F' ? t("students.female") : t("common.na")}
                                     </span>
                                 </TableCell>
                                 {getClassName && (
@@ -181,7 +183,7 @@ export function StudentsTable({
                                                 {yearAvg.toFixed(1)}
                                             </span>
                                         ) : (
-                                            <span className="text-muted-foreground text-xs">N/D</span>
+                                            <span className="text-muted-foreground text-xs">{t("common.na")}</span>
                                         )}
                                     </TableCell>
                                 )}
@@ -196,13 +198,13 @@ export function StudentsTable({
                                             {onEdit && (
                                                 <DropdownMenuItem onSelect={() => onEdit(student)}>
                                                     <Pencil className="mr-2 h-4 w-4" />
-                                                    Modifica
+                                                    {t("common.edit")}
                                                 </DropdownMenuItem>
                                             )}
                                             {onTransfer && (
                                                 <DropdownMenuItem onSelect={() => onTransfer(student)}>
                                                     <ArrowRightLeft className="mr-2 h-4 w-4 text-primary" />
-                                                    Trasferisci Classe
+                                                    {t("classes.transferStudent")}
                                                 </DropdownMenuItem>
                                             )}
                                             {(onEdit || onTransfer) && onDelete && <DropdownMenuSeparator />}
@@ -215,7 +217,7 @@ export function StudentsTable({
                                                     className="text-destructive focus:text-destructive"
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" />
-                                                    Elimina
+                                                    {t("common.delete")}
                                                 </DropdownMenuItem>
                                             )}
                                         </DropdownMenuContent>
@@ -236,7 +238,7 @@ export function StudentsTable({
                             }
                             className="h-24 text-center text-muted-foreground"
                         >
-                            Nessuno studente disponibile
+                            {t("students.noStudents")}
                         </TableCell>
                     </TableRow>
                 )}

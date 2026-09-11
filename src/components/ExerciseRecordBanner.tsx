@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Archive, Medal, Award } from "lucide-react";
 import { ExerciseRecordsSummary, StudentRecordItem } from "@/utils/record-utils";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ExerciseRecordBannerProps {
     records: ExerciseRecordsSummary | null;
@@ -44,6 +45,8 @@ function StudentNameTooltip({
     isArchived?: boolean;
     maxWidthClass?: string;
 }) {
+    const { t } = useTranslation();
+
     return (
         <Tooltip delayDuration={150}>
             <TooltipTrigger asChild>
@@ -68,11 +71,11 @@ function StudentNameTooltip({
                     </p>
                     {(studentClass || schoolYear) && (
                         <p className="text-[11px] text-muted-foreground leading-normal flex items-center gap-1.5 flex-wrap">
-                            <span>Classe <strong className="text-foreground font-semibold">{studentClass}</strong></span>
-                            {schoolYear && <span>• Anno {schoolYear}</span>}
+                            <span>{t("banners.records.classLabel")} <strong className="text-foreground font-semibold">{studentClass}</strong></span>
+                            {schoolYear && <span>• {t("banners.records.yearLabel")} {schoolYear}</span>}
                             {isArchived && (
                                 <span className="inline-flex items-center text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border">
-                                    Archiviata
+                                    {t("banners.records.archivedBadge")}
                                 </span>
                             )}
                         </p>
@@ -84,6 +87,7 @@ function StudentNameTooltip({
 }
 
 export function ExerciseRecordBanner({ records, className }: ExerciseRecordBannerProps) {
+    const { t } = useTranslation();
     const [detailOpen, setDetailOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<"male" | "female">("male");
 
@@ -111,7 +115,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                             <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                                        Record Storici
+                                        {t("banners.records.historicalRecords")}
                                     </span>
                                     {hasHistoricalData && (
                                         <Badge
@@ -119,7 +123,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             className="text-[10px] h-4.5 px-1.5 font-normal text-muted-foreground gap-1 bg-muted/60"
                                         >
                                             <Archive className="h-2.5 w-2.5" />
-                                            Storico incluso
+                                            {t("banners.records.historicalIncluded")}
                                         </Badge>
                                     )}
                                 </div>
@@ -146,7 +150,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-baseline gap-1.5 flex-wrap">
                                         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                                            Maschile
+                                            {t("students.male")}
                                         </span>
                                         {male.record ? (
                                             <>
@@ -155,12 +159,12 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                 </span>
                                                 {!male.record.displayPerformance.startsWith("Voto") && male.record.score > 0 && (
                                                     <span className="text-[10px] text-muted-foreground font-medium">
-                                                        (voto {male.record.score}/10)
+                                                        ({t("banners.records.gradeLabel")} {male.record.score}/10)
                                                     </span>
                                                 )}
                                             </>
                                         ) : (
-                                            <span className="text-[11px] text-muted-foreground italic">Nessun record</span>
+                                            <span className="text-[11px] text-muted-foreground italic">{t("banners.records.noRecord")}</span>
                                         )}
                                     </div>
                                     {male.record && (
@@ -176,7 +180,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             <span className="shrink-0">{male.record.className} {male.record.schoolYear}</span>
                                             {male.record.isArchived && (
                                                 <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 text-muted-foreground border-border shrink-0">
-                                                    Archiviata
+                                                    {t("banners.records.archivedBadge")}
                                                 </Badge>
                                             )}
                                         </div>
@@ -192,7 +196,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-baseline gap-1.5 flex-wrap">
                                         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                                            Femminile
+                                            {t("students.female")}
                                         </span>
                                         {female.record ? (
                                             <>
@@ -201,12 +205,12 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                 </span>
                                                 {!female.record.displayPerformance.startsWith("Voto") && female.record.score > 0 && (
                                                     <span className="text-[10px] text-muted-foreground font-medium">
-                                                        (voto {female.record.score}/10)
+                                                        ({t("banners.records.gradeLabel")} {female.record.score}/10)
                                                     </span>
                                                 )}
                                             </>
                                         ) : (
-                                            <span className="text-[11px] text-muted-foreground italic">Nessun record</span>
+                                            <span className="text-[11px] text-muted-foreground italic">{t("banners.records.noRecord")}</span>
                                         )}
                                     </div>
                                     {female.record && (
@@ -222,7 +226,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             <span className="shrink-0">{female.record.className} {female.record.schoolYear}</span>
                                             {female.record.isArchived && (
                                                 <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 text-muted-foreground border-border shrink-0">
-                                                    Archiviata
+                                                    {t("banners.records.archivedBadge")}
                                                 </Badge>
                                             )}
                                         </div>
@@ -240,7 +244,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                 onClick={() => setDetailOpen(true)}
                             >
                                 <Medal className="h-3.5 w-3.5 text-amber-500" />
-                                <span>Dettagli Record</span>
+                                <span>{t("banners.records.detailsBtn")}</span>
                             </Button>
                         </div>
                     </div>
@@ -257,10 +261,10 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                             </div>
                             <div>
                                 <DialogTitle className="text-base sm:text-lg font-bold">
-                                    Record Storici: {exerciseName}
+                                    {t("banners.records.dialogTitle", { name: exerciseName })}
                                 </DialogTitle>
                                 <DialogDescription className="text-xs mt-0.5">
-                                    Migliori prestazioni registrate divise per genere (classi attive e archiviate)
+                                    {t("banners.records.dialogDesc")}
                                 </DialogDescription>
                             </div>
                         </div>
@@ -269,11 +273,11 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "male" | "female")} className="mt-2">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="male" className="text-xs gap-1.5">
-                                <span className="text-blue-500 font-bold">♂</span> Categoria Maschile
+                                <span className="text-blue-500 font-bold">♂</span> {t("banners.records.maleCategory")}
                                 {male.record && <Badge variant="secondary" className="text-[10px] ml-1 h-4">{male.topList.length}</Badge>}
                             </TabsTrigger>
                             <TabsTrigger value="female" className="text-xs gap-1.5">
-                                <span className="text-rose-500 font-bold">♀</span> Categoria Femminile
+                                <span className="text-rose-500 font-bold">♀</span> {t("banners.records.femaleCategory")}
                                 {female.record && <Badge variant="secondary" className="text-[10px] ml-1 h-4">{female.topList.length}</Badge>}
                             </TabsTrigger>
                         </TabsList>
@@ -286,11 +290,11 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     <div className="p-4 rounded-xl border bg-muted/30 relative">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                                                <span>🥇 Record Assoluto Maschile</span>
+                                                <span>{t("banners.records.maleAbsoluteRecord")}</span>
                                             </div>
                                             {male.record.isArchived && (
                                                 <Badge variant="outline" className="text-[10px] h-4.5 font-normal">
-                                                    Archiviata
+                                                    {t("banners.records.archivedBadge")}
                                                 </Badge>
                                             )}
                                         </div>
@@ -300,7 +304,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             </span>
                                             {!male.record.displayPerformance.startsWith("Voto") && male.record.score > 0 && (
                                                 <span className="text-sm font-semibold text-muted-foreground">
-                                                    (voto {male.record.score}/10)
+                                                    ({t("banners.records.gradeLabel")} {male.record.score}/10)
                                                 </span>
                                             )}
                                         </div>
@@ -309,9 +313,9 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                 {male.record.studentName}
                                             </span>
                                             <span>•</span>
-                                            <span>Classe {male.record.className}</span>
+                                            <span>{t("banners.records.classLabel")} {male.record.className}</span>
                                             <span>•</span>
-                                            <span>Anno {male.record.schoolYear}</span>
+                                            <span>{t("banners.records.yearLabel")} {male.record.schoolYear}</span>
                                         </div>
                                     </div>
 
@@ -319,7 +323,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     <div>
                                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
                                             <Award className="h-3.5 w-3.5" />
-                                            Top 5 Prestazioni Maschili
+                                            {t("banners.records.top5Male")}
                                         </h4>
                                         <div className="rounded-lg border overflow-hidden divide-y">
                                             {male.topList.map((item, idx) => (
@@ -341,12 +345,12 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                                 />
                                                                 {item.isArchived && (
                                                                     <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 text-muted-foreground shrink-0">
-                                                                        Archiviata
+                                                                        {t("banners.records.archivedBadge")}
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                                <span>Classe {item.className}</span>
+                                                                <span>{t("banners.records.classLabel")} {item.className}</span>
                                                                 <span>•</span>
                                                                 <span>{item.schoolYear}</span>
                                                             </div>
@@ -358,7 +362,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                         </div>
                                                         {!item.displayPerformance.startsWith("Voto") && item.score > 0 && (
                                                             <div className="text-[11px] text-muted-foreground">
-                                                                Voto {item.score}/10
+                                                                {t("banners.records.gradeLabel")} {item.score}/10
                                                             </div>
                                                         )}
                                                     </div>
@@ -370,7 +374,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     {/* Historical summary stats */}
                                     <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Media Prestazione</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.avgPerformance")}</div>
                                             <div className="font-bold text-sm mt-0.5">
                                                 {male.averagePerformance !== null && records.unit !== 'qualitativo'
                                                     ? `${male.averagePerformance} ${records.unit}`
@@ -378,22 +382,22 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             </div>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Media Voti</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.avgGrades")}</div>
                                             <div className="font-bold text-sm mt-0.5">
                                                 {male.averageScore > 0 ? `${male.averageScore}/10` : "-"}
                                             </div>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Prove Valutate</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.testedCount")}</div>
                                             <div className="font-bold text-sm mt-0.5">
-                                                {male.totalEvaluations} ({male.archivedEvaluationsCount} storiche)
+                                                {male.totalEvaluations} ({t("banners.records.historicalEvaluationsCount", { count: male.archivedEvaluationsCount })})
                                             </div>
                                         </div>
                                     </div>
                                 </>
                             ) : (
                                 <div className="py-8 text-center text-muted-foreground text-xs">
-                                    Nessuna valutazione registrata per la categoria maschile
+                                    {t("banners.records.noEvaluationsMale")}
                                 </div>
                             )}
                         </TabsContent>
@@ -406,11 +410,11 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     <div className="p-4 rounded-xl border bg-muted/30 relative">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
-                                                <span>🥇 Record Assoluto Femminile</span>
+                                                <span>{t("banners.records.femaleAbsoluteRecord")}</span>
                                             </div>
                                             {female.record.isArchived && (
                                                 <Badge variant="outline" className="text-[10px] h-4.5 font-normal">
-                                                    Archiviata
+                                                    {t("banners.records.archivedBadge")}
                                                 </Badge>
                                             )}
                                         </div>
@@ -420,7 +424,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             </span>
                                             {!female.record.displayPerformance.startsWith("Voto") && female.record.score > 0 && (
                                                 <span className="text-sm font-semibold text-muted-foreground">
-                                                    (voto {female.record.score}/10)
+                                                    ({t("banners.records.gradeLabel")} {female.record.score}/10)
                                                 </span>
                                             )}
                                         </div>
@@ -429,9 +433,9 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                 {female.record.studentName}
                                             </span>
                                             <span>•</span>
-                                            <span>Classe {female.record.className}</span>
+                                            <span>{t("banners.records.classLabel")} {female.record.className}</span>
                                             <span>•</span>
-                                            <span>Anno {female.record.schoolYear}</span>
+                                            <span>{t("banners.records.yearLabel")} {female.record.schoolYear}</span>
                                         </div>
                                     </div>
 
@@ -439,7 +443,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     <div>
                                         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1">
                                             <Award className="h-3.5 w-3.5" />
-                                            Top 5 Prestazioni Femminili
+                                            {t("banners.records.top5Female")}
                                         </h4>
                                         <div className="rounded-lg border overflow-hidden divide-y">
                                             {female.topList.map((item, idx) => (
@@ -461,12 +465,12 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                                 />
                                                                 {item.isArchived && (
                                                                     <Badge variant="outline" className="text-[9px] h-4 px-1 py-0 text-muted-foreground shrink-0">
-                                                                        Archiviata
+                                                                        {t("banners.records.archivedBadge")}
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                                <span>Classe {item.className}</span>
+                                                                <span>{t("banners.records.classLabel")} {item.className}</span>
                                                                 <span>•</span>
                                                                 <span>{item.schoolYear}</span>
                                                             </div>
@@ -478,7 +482,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                                         </div>
                                                         {!item.displayPerformance.startsWith("Voto") && item.score > 0 && (
                                                             <div className="text-[11px] text-muted-foreground">
-                                                                Voto {item.score}/10
+                                                                {t("banners.records.gradeLabel")} {item.score}/10
                                                             </div>
                                                         )}
                                                     </div>
@@ -490,7 +494,7 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                     {/* Historical summary stats */}
                                     <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Media Prestazione</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.avgPerformance")}</div>
                                             <div className="font-bold text-sm mt-0.5">
                                                 {female.averagePerformance !== null && records.unit !== 'qualitativo'
                                                     ? `${female.averagePerformance} ${records.unit}`
@@ -498,22 +502,22 @@ export function ExerciseRecordBanner({ records, className }: ExerciseRecordBanne
                                             </div>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Media Voti</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.avgGrades")}</div>
                                             <div className="font-bold text-sm mt-0.5">
                                                 {female.averageScore > 0 ? `${female.averageScore}/10` : "-"}
                                             </div>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-muted/30 border">
-                                            <div className="text-muted-foreground text-[10px]">Prove Valutate</div>
+                                            <div className="text-muted-foreground text-[10px]">{t("banners.records.testedCount")}</div>
                                             <div className="font-bold text-sm mt-0.5">
-                                                {female.totalEvaluations} ({female.archivedEvaluationsCount} storiche)
+                                                {female.totalEvaluations} ({t("banners.records.historicalEvaluationsCount", { count: female.archivedEvaluationsCount })})
                                             </div>
                                         </div>
                                     </div>
                                 </>
                             ) : (
                                 <div className="py-8 text-center text-muted-foreground text-xs">
-                                    Nessuna valutazione registrata per la categoria femminile
+                                    {t("banners.records.noEvaluationsFemale")}
                                 </div>
                             )}
                         </TabsContent>
@@ -534,10 +538,11 @@ export function ExerciseGenderRecordBadge({
     recordItem: StudentRecordItem | null;
     gender: "M" | "F" | "N";
 }) {
+    const { t } = useTranslation();
     if (!recordItem) return null;
 
     const isFemale = gender === "F";
-    const label = isFemale ? "Record Femminile" : "Record Maschile";
+    const label = isFemale ? t("banners.records.femaleRecord") : t("banners.records.maleRecord");
     const symbol = isFemale ? "♀" : "♂";
     const badgeColor = isFemale
         ? "bg-rose-500/10 text-rose-600 dark:text-rose-400"
@@ -559,7 +564,7 @@ export function ExerciseGenderRecordBadge({
                         </span>
                         {!recordItem.displayPerformance.startsWith("Voto") && recordItem.score > 0 && (
                             <span className="text-[10px] text-muted-foreground font-medium">
-                                (voto {recordItem.score}/10)
+                                ({t("banners.records.gradeLabel")} {recordItem.score}/10)
                             </span>
                         )}
                     </div>
@@ -575,7 +580,7 @@ export function ExerciseGenderRecordBadge({
                         <span className="shrink-0">{recordItem.className} {recordItem.schoolYear}</span>
                         {recordItem.isArchived && (
                             <Badge variant="outline" className="text-[8px] h-3.5 px-1 py-0 text-muted-foreground border-border shrink-0">
-                                Archiviata
+                                {t("banners.records.archivedBadge")}
                             </Badge>
                         )}
                     </div>

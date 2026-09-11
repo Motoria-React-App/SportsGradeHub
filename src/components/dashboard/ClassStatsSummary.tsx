@@ -6,6 +6,7 @@ import { Users, GraduationCap, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { scaleIn, cardHover, staggerContainer, staggerItem } from "@/lib/motion";
 import { useAnimatedValue } from "@/components/dashboard/StatsCards";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ClassStatsSummaryProps {
     selectedClassId: string;
@@ -14,6 +15,7 @@ interface ClassStatsSummaryProps {
 export function ClassStatsSummary({ selectedClassId }: ClassStatsSummaryProps) {
     const { uiClasses, students, evaluations } = useSchoolData();
     const { formatGrade, getGradeColor } = useGradeFormatter();
+    const { t } = useTranslation();
 
     const stats = useMemo(() => {
         if (!selectedClassId) {
@@ -58,11 +60,11 @@ export function ClassStatsSummary({ selectedClassId }: ClassStatsSummaryProps) {
             >
                 <Card>
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Statistiche Classe</CardTitle>
+                        <CardTitle className="text-base">{t("dashboard.classStats")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-sm text-muted-foreground text-center py-4">
-                            Nessuna classe selezionata
+                            {t("dashboard.noClassSelected")}
                         </p>
                     </CardContent>
                 </Card>
@@ -100,7 +102,7 @@ export function ClassStatsSummary({ selectedClassId }: ClassStatsSummaryProps) {
                                     <Users className="h-4 w-4 text-blue-500" />
                                 </motion.div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-muted-foreground">Studenti</p>
+                                    <p className="text-sm text-muted-foreground">{t("dashboard.studentsBtn")}</p>
                                     <motion.p
                                         className="text-lg font-semibold"
                                         initial={{ scale: 0.8, opacity: 0 }}
@@ -124,14 +126,14 @@ export function ClassStatsSummary({ selectedClassId }: ClassStatsSummaryProps) {
                                     <GraduationCap className="h-4 w-4 text-emerald-500" />
                                 </motion.div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-muted-foreground">Media Classe</p>
+                                    <p className="text-sm text-muted-foreground">{t("dashboard.averageGrade")}</p>
                                     <motion.p
                                         className={`text-lg font-semibold ${stats.averageGrade ? getGradeColor(stats.averageGrade) : ""}`}
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                                     >
-                                        {stats.averageGrade ? formatGrade(stats.averageGrade) : "N/A"}
+                                        {stats.averageGrade ? formatGrade(stats.averageGrade) : t("common.na")}
                                     </motion.p>
                                 </div>
                             </motion.div>
@@ -148,7 +150,7 @@ export function ClassStatsSummary({ selectedClassId }: ClassStatsSummaryProps) {
                                     <TrendingUp className="h-4 w-4 text-amber-500" />
                                 </motion.div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-muted-foreground">Valutazioni questo mese</p>
+                                    <p className="text-sm text-muted-foreground">{t("dashboard.monthlyEvaluations")}</p>
                                     <motion.p
                                         className="text-lg font-semibold"
                                         initial={{ scale: 0.8, opacity: 0 }}

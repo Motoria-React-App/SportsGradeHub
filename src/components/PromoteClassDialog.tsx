@@ -18,6 +18,7 @@ import { SchoolClass, SchoolClassExpanded, Student } from "@/types/types";
 import { GraduationCap, Loader2, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PromoteClassDialogProps {
     open: boolean;
@@ -34,7 +35,7 @@ function suggestNextClassName(name: string): string {
         const nextNum = parseInt(match[1], 10) + 1;
         return `${nextNum}${match[2]}`;
     }
-    return `${name} (Nuovo Anno)`;
+    return `${name} (Next Year)`;
 }
 
 export function PromoteClassDialog({
@@ -43,6 +44,7 @@ export function PromoteClassDialog({
     sourceClass,
     onSuccess,
 }: PromoteClassDialogProps) {
+    const { t } = useTranslation();
     const client = useClient();
     const navigate = useNavigate();
     const { students: allStudents, archiveClass, refreshClasses, refreshStudents } = useSchoolData();
@@ -98,11 +100,11 @@ export function PromoteClassDialog({
 
     const handlePromote = async () => {
         if (!newClassName.trim()) {
-            toast.error("Inserisci il nome per la nuova classe");
+            toast.error(t("dialogs.promoteClass.newClassName"));
             return;
         }
         if (selectedStudentIds.length === 0) {
-            toast.error("Seleziona almeno uno studente da trasferire nella nuova classe");
+            toast.error(t("dialogs.promoteClass.studentsSelection"));
             return;
         }
 
@@ -115,7 +117,7 @@ export function PromoteClassDialog({
             });
 
             if (!createRes.success || !createRes.data?.classId) {
-                toast.error("Errore durante la creazione della nuova classe");
+                toast.error(t("common.error"));
                 setIsSubmitting(false);
                 return;
             }
@@ -142,9 +144,7 @@ export function PromoteClassDialog({
 
             await Promise.all([refreshClasses(), refreshStudents()]);
 
-            toast.success(
-                `Classe "${newClassName}" creata con successo con ${selectedStudentIds.length} studenti promossi!`
-            );
+            toast.success(t("classes.promoteSuccess"));
 
             onOpenChange(false);
             if (onSuccess) {
@@ -154,7 +154,7 @@ export function PromoteClassDialog({
             }
         } catch (error) {
             console.error("Error promoting class:", error);
-            toast.error("Si è verificato un errore durante la promozione della classe");
+            toast.error(t("common.error"));
         } finally {
             setIsSubmitting(false);
         }
@@ -170,11 +170,11 @@ export function PromoteClassDialog({
                         </div>
                         <div>
                             <DialogTitle className="text-base sm:text-lg font-bold">
-                                Promuovi Studenti in Nuova Classe
+                                {t("dialogs.promoteClass.title")}
                             </DialogTitle>
                             <DialogDescription className="text-xs mt-0.5">
-                                Passaggio al nuovo anno scolastico per la classe{" "}
-                                <strong className="text-foreground">{sourceClass.className}</strong> ({sourceClass.schoolYear || "Anno precedente"}).
+                                {t("dialogs.promoteClass.desc")} (
+                                <strong className="text-foreground">{sourceClass.className}</strong>).
                             </DialogDescription>
                         </div>
                     </div>
@@ -185,7 +185,7 @@ export function PromoteClassDialog({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <Label htmlFor="newClassName" className="text-xs font-semibold">
-                                Nome Nuova Classe <span className="text-destructive">*</span>
+                                {t("dialogs.promoteClass.newClassName")} <span className="text-destructive">*</span>
                             </Label>
                             <Input
                                 id="newClassName"
@@ -197,7 +197,7 @@ export function PromoteClassDialog({
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="newSchoolYear" className="text-xs font-semibold">
-                                Nuovo Anno Scolastico
+                                {t("dialogs.promoteClass.newSchoolYear")}
                             </Label>
                             <Input
                                 id="newSchoolYear"
@@ -214,7 +214,7 @@ export function PromoteClassDialog({
                         <div className="flex items-center justify-between">
                             <div>
                                 <span className="font-semibold text-foreground">
-                                    Seleziona Studenti Promossi
+                                    {t("dialogs.promoteClass.studentsSelection")}
                                 </span>
                                 <span className="text-muted-foreground ml-1.5">
                                     ({selectedStudentIds.length}/{classStudents.length})
@@ -227,7 +227,7 @@ export function PromoteClassDialog({
                                 className="h-7 text-[11px] px-2 text-primary"
                                 onClick={handleSelectAll}
                             >
-                                {selectedStudentIds.length === classStudents.length ? "Deseleziona tutti" : "Seleziona tutti"}
+                                {selectedStudentIds.length === classStudents.length ? t("common.deselectAll") : t("common.selectAll")}
                             </Button>
                         </div>
 
@@ -235,7 +235,7 @@ export function PromoteClassDialog({
                             <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 flex items-center gap-2">
                                 <UserX className="h-4 w-4 shrink-0" />
                                 <span>
-                                    <strong>{excludedCount}</strong> {excludedCount === 1 ? "studente deselezionato (bocciato / escluso)" : "studenti deselezionati (bocciati / esclusi)"} e non inseriti nella nuova classe.
+                                    {t("dialogs.promoteClass.excludedCount", { count: excludedCount })}
                                 </span>
                             </div>
                         )}
@@ -243,7 +243,7 @@ export function PromoteClassDialog({
                         <div className="rounded-lg border divide-y max-h-52 overflow-y-auto">
                             {classStudents.length === 0 ? (
                                 <div className="p-4 text-center text-muted-foreground text-xs">
-                                    Nessuno studente iscritto a questa classe
+                                    {t("classes.noStudentsInClass")}
                                 </div>
                             ) : (
                                 classStudents.map((s: Student) => {
@@ -266,7 +266,7 @@ export function PromoteClassDialog({
                                                     </span>
                                                     {s.gender && (
                                                         <span className="text-[10px] text-muted-foreground">
-                                                            Genere: {s.gender}
+                                                            {t("students.gender")}: {s.gender}
                                                         </span>
                                                     )}
                                                 </div>
@@ -274,11 +274,11 @@ export function PromoteClassDialog({
                                             <div className="shrink-0 ml-2">
                                                 {isSelected ? (
                                                     <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20">
-                                                        Promosso
+                                                        {settings.language === 'en' ? 'Promoted' : 'Promosso'}
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-300 bg-rose-50/50 dark:bg-rose-950/20">
-                                                        Bocciato / Escluso
+                                                        {settings.language === 'en' ? 'Excluded / Retained' : 'Bocciato / Escluso'}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -299,10 +299,10 @@ export function PromoteClassDialog({
                         />
                         <div className="min-w-0">
                             <label htmlFor="archiveOldClass" className="font-semibold text-foreground cursor-pointer block">
-                                Archivia la classe precedente ({sourceClass.className})
+                                {t("dialogs.promoteClass.archiveOld")} ({sourceClass.className})
                             </label>
                             <p className="text-muted-foreground text-[11px] mt-0.5">
-                                La classe {sourceClass.className} verrà salvata nello storico per consultare i voti passati e non comparirà più tra le classi attive nella barra laterale.
+                                {t("classes.archiveConfirmDesc")}
                             </p>
                         </div>
                     </div>
@@ -316,7 +316,7 @@ export function PromoteClassDialog({
                         onClick={() => onOpenChange(false)}
                         disabled={isSubmitting}
                     >
-                        Annulla
+                        {t("common.cancel")}
                     </Button>
                     <Button
                         type="button"
@@ -328,12 +328,12 @@ export function PromoteClassDialog({
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                Creazione e trasferimento...
+                                {t("common.loading")}
                             </>
                         ) : (
                             <>
                                 <GraduationCap className="h-4 w-4" />
-                                Conferma Promozione ({selectedStudentIds.length})
+                                {t("dialogs.promoteClass.promoteBtn")} ({selectedStudentIds.length})
                             </>
                         )}
                     </Button>

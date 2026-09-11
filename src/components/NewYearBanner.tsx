@@ -6,12 +6,14 @@ import { useSchoolData } from "@/provider/clientProvider";
 import { useSettings, getCurrentSchoolYearLabel } from "@/provider/settingsProvider";
 import { GraduationCap, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const DISMISSED_DATE_KEY = "sportsgrade_newyear_dismissed_date";
 
 export function NewYearBanner() {
     const { activeClasses, archiveClassesBatch, refreshClasses } = useSchoolData();
     const { settings } = useSettings();
+    const { t } = useTranslation();
 
     const startMonth = settings.schoolYearStartMonth ?? 9;
     const startDay = settings.schoolYearStartDay ?? 1;
@@ -77,20 +79,20 @@ export function NewYearBanner() {
                     setAutoArchivedNames(updatedNames);
                     localStorage.setItem(storageKey, JSON.stringify(updatedNames));
                     toast.success(
-                        `${names.length} ${names.length === 1 ? "classe quinta archiviata" : "classi quinte archiviate"} automaticamente per il nuovo anno scolastico`
+                        t("banners.newYear.autoArchivedAlert", { count: names.length })
                     );
                 } else {
-                    toast.error("Errore durante l'archiviazione automatica delle classi quinte");
+                    toast.error(t("common.error"));
                 }
             } catch (error) {
-                console.error("Errore nell'archiviazione automatica delle quinte:", error);
+                console.error("Error in auto archiving:", error);
             } finally {
                 setIsArchiving(false);
             }
         };
 
         executeAutoArchive();
-    }, [isNewSchoolYearStarted, matchingClasses, isArchiving, archiveClassesBatch, refreshClasses, autoArchivedNames, storageKey]);
+    }, [isNewSchoolYearStarted, matchingClasses, isArchiving, archiveClassesBatch, refreshClasses, autoArchivedNames, storageKey, t]);
 
     const handleDismiss = () => {
         const todayStr = new Date().toISOString().split("T")[0];
@@ -120,19 +122,19 @@ export function NewYearBanner() {
                         <div className="min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="font-semibold text-sm text-foreground">
-                                    Inizio Nuovo Anno Scolastico ({currentYearLabel})
+                                    {t("banners.newYear.title")} ({currentYearLabel})
                                 </h4>
                                 <Badge variant="secondary" className="text-[10px] h-4.5 px-1.5 font-normal">
-                                    {isArchiving ? "Archiviazione in corso..." : "Classi Quinte Archiviate"}
+                                    {isArchiving ? t("common.loading") : t("classes.isArchivedBadge")}
                                 </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground leading-relaxed">
                                 {isArchiving ? (
-                                    <span>Archiviazione automatica delle classi quinte in corso...</span>
+                                    <span>{t("common.loading")}</span>
                                 ) : (
-                                    <>
-                                        Le classi quinte terminali (<strong className="text-foreground">{displayNames.join(", ")}</strong>) sono state archiviate automaticamente per l'inizio del nuovo anno. I dati e i record storici rimangono sempre accessibili tramite la ricerca.
-                                    </>
+                                    <span>
+                                        {t("banners.newYear.desc", { year: currentYearLabel, classes: displayNames.join(", ") })}
+                                    </span>
                                 )}
                             </p>
                         </div>
@@ -147,7 +149,7 @@ export function NewYearBanner() {
                                 onClick={handleDismiss}
                             >
                                 <Check className="h-3.5 w-3.5" />
-                                Ho capito
+                                {t("banners.newYear.dismiss")}
                             </Button>
                         </div>
                     )}

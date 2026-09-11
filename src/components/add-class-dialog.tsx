@@ -19,11 +19,11 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// import { useClient } from "@/provider/clientProvider" // TODO: Uncomment when createClass API is ready
 import { toast } from "sonner"
 import { Plus, Trash2, Users } from "lucide-react"
 import { Gender } from "@/types/types"
 import { useClient } from "@/provider/clientProvider"
+import { useTranslation } from "@/hooks/useTranslation"
 
 interface StudentEntry {
     id: string
@@ -39,7 +39,7 @@ interface AddClassDialogProps {
 }
 
 export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDialogProps) {
-    // const client = useClient() // TODO: Uncomment when createClass API is ready
+    const { t } = useTranslation()
     const [isLoading, setIsLoading] = React.useState(false)
     const [studentInputMode, setStudentInputMode] = React.useState<"manual" | "raw">("manual")
 
@@ -96,8 +96,8 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
 
             // Determine gender (undefined if not specified)
             let gender: Gender | undefined = undefined
-            if (genderPart === "F" || genderPart === "FEMMINA") gender = "F"
-            else if (genderPart === "M" || genderPart === "MASCHIO") gender = "M"
+            if (genderPart === "F" || genderPart === "FEMMINA" || genderPart === "FEMALE") gender = "F"
+            else if (genderPart === "M" || genderPart === "MASCHIO" || genderPart === "MALE") gender = "M"
 
             return {
                 id: generateId(),
@@ -112,12 +112,12 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
         e.preventDefault()
 
         if (!formData.className.trim()) {
-            toast.error("Il nome della classe è obbligatorio")
+            toast.error(t("dialogs.addClass.className"))
             return
         }
 
         if (!formData.schoolYear.trim()) {
-            toast.error("L'anno scolastico è obbligatorio")
+            toast.error(t("dialogs.addClass.schoolYear"))
             return
         }
 
@@ -126,16 +126,14 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
             ? students.filter(s => s.firstName.trim() || s.lastName.trim())
             : parseRawStudents()
 
-
         // Validate students have at least first or last name
         const invalidStudents = finalStudents.filter(s => !s.firstName.trim() && !s.lastName.trim())
         if (invalidStudents.length > 0) {
-            toast.error("Alcuni studenti non hanno nome o cognome")
+            toast.error(t("common.error"))
             return
         }
 
         try {
-
             setIsLoading(true)
 
             const res = await client.createClass({
@@ -149,10 +147,10 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
             if (res.success) {
                 toast.success(
                     `Classe "${formData.className}" creata con successo!` +
-                    (studentCount > 0 ? ` (${studentCount} studenti aggiunti)` : "")
+                    (studentCount > 0 ? ` (${studentCount} studenti)` : "")
                 )
             } else {
-                toast.error("Errore durante la creazione della classe")
+                toast.error(t("common.error"))
                 throw new Error(res.error?.message);
             }
 
@@ -168,7 +166,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
             onClassAdded?.()
 
         } catch (error) {
-            toast.error("Errore durante la creazione della classe")
+            toast.error(t("common.error"))
             console.error(error)
         } finally {
             setIsLoading(false)
@@ -209,9 +207,9 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[550px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Nuova Classe</DialogTitle>
+                    <DialogTitle>{t("dialogs.addClass.title")}</DialogTitle>
                     <DialogDescription>
-                        Inserisci i dettagli per creare una nuova classe.
+                        {t("dialogs.addClass.desc")}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -220,11 +218,11 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                         {/* Class Info Section */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="className">Nome Classe</Label>
+                                <Label htmlFor="className">{t("classes.title")}</Label>
                                 <Input
                                     id="className"
                                     name="className"
-                                    placeholder="Es: 5AIIN"
+                                    placeholder={t("dialogs.addClass.className")}
                                     value={formData.className}
                                     onChange={handleInputChange}
                                     disabled={isLoading}
@@ -233,11 +231,11 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="schoolYear">Anno Scolastico</Label>
+                                <Label htmlFor="schoolYear">{t("classes.schoolYear")}</Label>
                                 <Input
                                     id="schoolYear"
                                     name="schoolYear"
-                                    placeholder="Es: 2024/2025"
+                                    placeholder={t("dialogs.addClass.schoolYear")}
                                     value={formData.schoolYear}
                                     onChange={handleInputChange}
                                     disabled={isLoading}
@@ -250,20 +248,20 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                             <div className="flex items-center justify-between">
                                 <Label className="flex items-center gap-2">
                                     <Users className="size-4" />
-                                    Studenti
+                                    {t("students.title")}
                                 </Label>
                                 <span className="text-xs text-muted-foreground">
                                     {studentInputMode === "manual"
-                                        ? `${students.filter(s => s.firstName || s.lastName).length} studenti`
-                                        : `${rawStudentsText.trim().split("\n").filter(l => l.trim()).length} righe`
+                                        ? `${students.filter(s => s.firstName || s.lastName).length} ${t("dashboard.studentsCount")}`
+                                        : `${rawStudentsText.trim().split("\n").filter(l => l.trim()).length} lines`
                                     }
                                 </span>
                             </div>
 
                             <Tabs value={studentInputMode} onValueChange={(v) => setStudentInputMode(v as "manual" | "raw")}>
                                 <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="manual">Aggiungi Singolarmente</TabsTrigger>
-                                    <TabsTrigger value="raw">Importa da Testo</TabsTrigger>
+                                    <TabsTrigger value="manual">{t("dialogs.addClass.manualMode")}</TabsTrigger>
+                                    <TabsTrigger value="raw">{t("dialogs.addClass.rawMode")}</TabsTrigger>
                                 </TabsList>
 
                                 {/* Manual Entry Tab */}
@@ -273,14 +271,14 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                                             <div key={student.id} className="flex items-center gap-2">
                                                 <span className="text-xs text-muted-foreground w-5">{index + 1}.</span>
                                                 <Input
-                                                    placeholder="Nome"
+                                                    placeholder={t("students.firstName")}
                                                     value={student.firstName}
                                                     onChange={(e) => updateStudent(student.id, "firstName", e.target.value)}
                                                     disabled={isLoading}
                                                     className="flex-1"
                                                 />
                                                 <Input
-                                                    placeholder="Cognome"
+                                                    placeholder={t("students.lastName")}
                                                     value={student.lastName}
                                                     onChange={(e) => updateStudent(student.id, "lastName", e.target.value)}
                                                     disabled={isLoading}
@@ -321,7 +319,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                                             className="w-full mt-2"
                                         >
                                             <Plus className="size-4 mr-2" />
-                                            Aggiungi Studente
+                                            {t("dialogs.addClass.addStudentRow")}
                                         </Button>
                                     </div>
                                 </TabsContent>
@@ -330,7 +328,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                                 <TabsContent value="raw" className="mt-3">
                                     <div className="space-y-2">
                                         <Textarea
-                                            placeholder={`Inserisci uno studente per riga`}
+                                            placeholder={t("dialogs.addClass.rawPlaceholder")}
                                             value={rawStudentsText}
                                             onChange={(e) => setRawStudentsText(e.target.value)}
                                             disabled={isLoading}
@@ -338,7 +336,7 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                                             className="font-mono text-sm"
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Formato: <code className="bg-muted px-1 rounded py-[0.5px]">Nome; Cognome; M/F [opzionale]</code> (una riga per studente)
+                                            {t("dialogs.addClass.rawHint")}
                                         </p>
                                     </div>
                                 </TabsContent>
@@ -353,10 +351,10 @@ export function AddClassDialog({ open, onOpenChange, onClassAdded }: AddClassDia
                             onClick={() => onOpenChange(false)}
                             disabled={isLoading}
                         >
-                            Annulla
+                            {t("common.cancel")}
                         </Button>
                         <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Creazione..." : "Crea Classe"}
+                            {isLoading ? t("dialogs.addClass.creating") : t("dialogs.addClass.createBtn")}
                         </Button>
                     </DialogFooter>
                 </form>

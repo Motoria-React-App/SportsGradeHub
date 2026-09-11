@@ -6,6 +6,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Exercise, SchoolClass } from '@/types/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface LeaderboardContainerProps {
   classes: SchoolClass[];
@@ -24,18 +25,20 @@ export function LeaderboardContainer({
   onClassChange,
   onExerciseChange,
 }: LeaderboardContainerProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-4 mb-2 max-w-2xl">
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Class Selector */}
         <div className="flex-1">
-          <label className="block text-sm font-medium mb-2">Classe</label>
+          <label className="block text-sm font-medium mb-2">{t("leaderboards.selectClass")}</label>
           <Select value={selectedClassId} onValueChange={onClassChange}>
             <SelectTrigger>
-              <SelectValue placeholder="Seleziona una classe" />
+              <SelectValue placeholder={t("dashboard.selectClassPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tutte le Classi</SelectItem>
+              <SelectItem value="all">{t("common.all")} {t("sidebar.classes")}</SelectItem>
               {classes.map((cls) => (
                 <SelectItem key={cls.id} value={cls.id}>
                   {cls.className} ({cls.schoolYear})
@@ -47,10 +50,10 @@ export function LeaderboardContainer({
 
         {/* Exercise Selector */}
         <div className="flex-1">
-          <label className="block text-sm font-medium mb-2">Esercizio</label>
+          <label className="block text-sm font-medium mb-2">{t("leaderboards.selectExercise")}</label>
           <Select value={selectedExerciseId} onValueChange={onExerciseChange} disabled={!selectedClassId}>
             <SelectTrigger>
-              <SelectValue placeholder="Seleziona un esercizio" />
+              <SelectValue placeholder={t("common.select") + " " + t("dashboard.exercise").toLowerCase()} />
             </SelectTrigger>
             <SelectContent>
               {exercises

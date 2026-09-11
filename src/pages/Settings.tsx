@@ -495,9 +495,9 @@ export default function Settings() {
                     <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div className="grid w-full gap-2">
-                    <h1 className="text-3xl font-semibold">Impostazioni</h1>
+                    <h1 className="text-3xl font-semibold">{t("settings.title")}</h1>
                     <p className="text-muted-foreground">
-                        Gestisci le preferenze dell'applicazione, l'aspetto e l'account.
+                        {t("settings.subtitle")}
                     </p>
                 </div>
             </motion.div>
@@ -575,28 +575,28 @@ export default function Settings() {
                     {/* Grading Settings */}
                     <TabsContent value="grading" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Preferenze Valutazioni</h2>
-                            <p className="text-sm text-muted-foreground">Configura come vengono calcolati e visualizzati i voti.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.grading.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.grading.desc")}</p>
                         </div>
                         <Separator />
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Criteri di Valutazione</CardTitle>
-                                <CardDescription>Definisci i parametri per i voti e le medie.</CardDescription>
+                                <CardTitle>{t("settings.grading.criteriaTitle")}</CardTitle>
+                                <CardDescription>{t("settings.grading.criteriaDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Voto Minimo (Sufficienza)</Label>
-                                        <p className="text-sm text-muted-foreground">La soglia per considerare una prova sufficiente.</p>
+                                        <Label className="text-base">{t("settings.grading.passingGrade")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.grading.passingGradeDesc")}</p>
                                     </div>
                                     <Select
                                         value={settings.passingGrade.toString()}
                                         onValueChange={(val) => updateSettings({ passingGrade: parseFloat(val) })}
                                     >
                                         <SelectTrigger className="w-[120px]">
-                                            <SelectValue placeholder="Seleziona" />
+                                            <SelectValue placeholder={t("common.select")} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="5.5">5.5</SelectItem>
@@ -610,61 +610,35 @@ export default function Settings() {
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Arrotondamento</Label>
-                                        <p className="text-sm text-muted-foreground">Come arrotondare le medie dei voti finali.</p>
+                                        <Label className="text-base">{t("settings.grading.roundingMode")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.grading.roundingModeDesc")}</p>
                                     </div>
                                     <Select
                                         value={settings.roundingMode}
                                         onValueChange={(val: any) => updateSettings({ roundingMode: val })}
                                     >
                                         <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Seleziona" />
+                                            <SelectValue placeholder={t("common.select")} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="nearest">Matematico (0.5)</SelectItem>
-                                            <SelectItem value="up">Per eccesso</SelectItem>
+                                            <SelectItem value="nearest">{t("settings.grading.nearest")}</SelectItem>
+                                            <SelectItem value="up">{t("settings.grading.up")}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                {/* <Separator />
-
-                                <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-base">Punto Base (1-10)</Label>
-                                        <p className="text-sm text-muted-foreground">Abilita il sistema di voto con base 1 (1 punto base + max 9 punti).</p>
-                                    </div>
-                                    <div className="flex items-center gap-4">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleRecalculateGrades}
-                                            disabled={isRecalculating}
-                                            title="Ricalcola tutti i voti degli esercizi a criteri in base all'impostazione attuale"
-                                        >
-                                            {isRecalculating ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <RefreshCw className="h-3 w-3 mr-2" />}
-                                            Ricalcola Voti
-                                        </Button>
-                                        <Switch
-                                            checked={settings.enableBasePoint}
-                                            onCheckedChange={(checked) => updateSettings({ enableBasePoint: checked })}
-                                        />
-                                    </div>
-                                </div>
-                                */}
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Visualizzazione voti</CardTitle>
-                                <CardDescription>Come appaiono i voti nell'interfaccia.</CardDescription>
+                                <CardTitle>{t("settings.grading.showDecimals")}</CardTitle>
+                                <CardDescription>{t("settings.grading.desc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="show-decimals" className="text-base">Mostra decimali</Label>
-                                        <p className="text-sm text-muted-foreground">Visualizza i voti con cifre decimali (es. 7.5).</p>
+                                        <Label htmlFor="show-decimals" className="text-base">{t("settings.grading.showDecimals")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.grading.showDecimalsDesc")}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Switch
@@ -679,8 +653,8 @@ export default function Settings() {
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="highlight-fail" className="text-base">Evidenzia insufficienze</Label>
-                                        <p className="text-sm text-muted-foreground">Mostra i voti insufficienti in rosso.</p>
+                                        <Label htmlFor="highlight-fail" className="text-base">{t("settings.grading.highlightFailing")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.grading.highlightFailingDesc")}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Switch
@@ -695,14 +669,14 @@ export default function Settings() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Gruppi Esercizi</CardTitle>
-                                <CardDescription>Abilita l'organizzazione degli esercizi in gruppi tematici.</CardDescription>
+                                <CardTitle>{t("settings.grading.exerciseGroups")}</CardTitle>
+                                <CardDescription>{t("settings.grading.exerciseGroupsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="enable-groups" className="text-base">Abilita Gruppi Esercizi</Label>
-                                        <p className="text-sm text-muted-foreground">Organizza gli esercizi in gruppi per disciplina, livello o categoria. Quando disabilitato, gli esercizi non richiederanno l'assegnazione a un gruppo. Le assegnazioni esistenti verranno preservate.</p>
+                                        <Label htmlFor="enable-groups" className="text-base">{t("settings.grading.exerciseGroups")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.grading.exerciseGroupsDesc")}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Switch
@@ -719,15 +693,15 @@ export default function Settings() {
                     {/* Display Settings */}
                     <TabsContent value="display" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Visualizzazione</h2>
-                            <p className="text-sm text-muted-foreground">Personalizza l'aspetto dell'applicazione.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.display.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.display.desc")}</p>
                         </div>
                         <Separator />
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Tema</CardTitle>
-                                <CardDescription>Scegli il tema dell'interfaccia.</CardDescription>
+                                <CardTitle>{t("settings.display.themeTitle")}</CardTitle>
+                                <CardDescription>{t("settings.display.themeDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="grid grid-cols-3 gap-4 max-w-sm">
@@ -737,7 +711,7 @@ export default function Settings() {
                                         onClick={() => setTheme("light")}
                                     >
                                         <Sun className="h-6 w-6" />
-                                        <span>Chiaro</span>
+                                        <span>{t("settings.display.lightTheme")}</span>
                                     </Button>
                                     <Button
                                         variant={theme === "dark" ? "default" : "outline"}
@@ -745,7 +719,7 @@ export default function Settings() {
                                         onClick={() => setTheme("dark")}
                                     >
                                         <Moon className="h-6 w-6" />
-                                        <span>Scuro</span>
+                                        <span>{t("settings.display.darkTheme")}</span>
                                     </Button>
                                     <Button
                                         variant={theme === "system" ? "default" : "outline"}
@@ -753,7 +727,7 @@ export default function Settings() {
                                         onClick={() => setTheme("system")}
                                     >
                                         <SettingsIcon className="h-6 w-6" />
-                                        <span>Sistema</span>
+                                        <span>{t("settings.display.systemTheme")}</span>
                                     </Button>
                                 </div>
                             </CardContent>
@@ -761,57 +735,36 @@ export default function Settings() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Interfaccia Utente</CardTitle>
-                                <CardDescription>Opzioni generali di visualizzazione.</CardDescription>
+                                <CardTitle>{t("settings.display.title")}</CardTitle>
+                                <CardDescription>{t("settings.display.desc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Pagina Iniziale</Label>
-                                        <p className="text-sm text-muted-foreground">La pagina da mostrare dopo il login.</p>
+                                        <Label className="text-base">{t("settings.display.defaultView")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.display.defaultViewDesc")}</p>
                                     </div>
                                     <Select
                                         value={settings.defaultView}
                                         onValueChange={(val: any) => updateSettings({ defaultView: val })}
                                     >
                                         <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Seleziona" />
+                                            <SelectValue placeholder={t("common.select")} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="dashboard">Dashboard</SelectItem>
-                                            <SelectItem value="valutazioni">Valutazioni</SelectItem>
-                                            <SelectItem value="exercises">Esercizi</SelectItem>
+                                            <SelectItem value="dashboard">{t("settings.display.views.dashboard")}</SelectItem>
+                                            <SelectItem value="valutazioni">{t("settings.display.views.valutazioni")}</SelectItem>
+                                            <SelectItem value="exercises">{t("settings.display.views.exercises")}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                {/* <Separator /> */}
-
-                                {/* <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-base">Formato Data</Label>
-                                        <p className="text-sm text-muted-foreground">Come visualizzare le date.</p>
-                                    </div>
-                                    <Select
-                                        value={settings.dateFormat}
-                                        onValueChange={(val: any) => updateSettings({ dateFormat: val })}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Seleziona" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="DD/MM/YYYY">31/01/2025</SelectItem>
-                                            <SelectItem value="YYYY-MM-DD">2025-01-31</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div> */}
 
                                 <Separator />
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label htmlFor="collapsible-classes" className="text-base">Raggruppa Classi nella sidebar</Label>
-                                        <p className="text-sm text-muted-foreground">Mostra le classi in un menu a discesa comprimibile.</p>
+                                        <Label htmlFor="collapsible-classes" className="text-base">{t("settings.display.collapsibleClasses")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.display.collapsibleClassesDesc")}</p>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <Switch
@@ -828,8 +781,8 @@ export default function Settings() {
                     {/* Schedule Settings */}
                     <TabsContent value="schedule" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Orario Settimanale</h2>
-                            <p className="text-sm text-muted-foreground">Gestisci l'orario delle lezioni per la pagina di benvenuto.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.schedule.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.schedule.desc")}</p>
                         </div>
                         <Separator />
 
@@ -837,8 +790,8 @@ export default function Settings() {
                         {/* Import/Export Schedule */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Importa/Esporta Orario</CardTitle>
-                                <CardDescription>Gestisci l'orario massivamente tramite file Excel o CSV.</CardDescription>
+                                <CardTitle>{t("settings.schedule.importSchedule")} / {t("settings.schedule.exportSchedule")}</CardTitle>
+                                <CardDescription>{t("settings.export.optionsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col sm:flex-row gap-4">
@@ -850,20 +803,20 @@ export default function Settings() {
                                         accept=".csv,.xlsx,.xls"
                                     />
                                     <Button variant="outline" onClick={handleImportClick}>
-                                        <Download className="h-4 w-4 mr-2 rotate-180" /> {/* Rotate for upload icon effect or use Upload icon if available */}
-                                        Importa da File
+                                        <Download className="h-4 w-4 mr-2 rotate-180" />
+                                        {t("settings.schedule.importSchedule")}
                                     </Button>
                                     <Button variant="secondary" onClick={downloadTemplate}>
                                         <FileText className="h-4 w-4 mr-2" />
-                                        Scarica Modello
+                                        {t("settings.export.downloadFile")}
                                     </Button>
                                 </div>
                                 <div className="text-sm text-muted-foreground p-3 bg-secondary/30 rounded-md border border-secondary">
-                                    <p className="font-medium mb-1">Istruzioni:</p>
+                                    <p className="font-medium mb-1">{t("common.details")}:</p>
                                     <ul className="list-disc list-inside space-y-1">
-                                        <li>Usa il modello per assicurarti che il formato sia corretto.</li>
-                                        <li>Le colonne richieste sono: <strong>Giorno, Ora Inizio, Ora Fine, Classe</strong>.</li>
-                                        <li>I nomi delle classi devono corrispondere esattamente a quelli nel sistema.</li>
+                                        <li>{settings.language === 'en' ? "Use the template to ensure the formatting is correct." : "Usa il modello per assicurarti che il formato sia corretto."}</li>
+                                        <li>{settings.language === 'en' ? "Required columns: Day, Start Time, End Time, Class." : "Le colonne richieste sono: Giorno, Ora Inizio, Ora Fine, Classe."}</li>
+                                        <li>{settings.language === 'en' ? "Class names must match exactly with those in the system." : "I nomi delle classi devono corrispondere esattamente a quelli nel sistema."}</li>
                                     </ul>
                                 </div>
                             </CardContent>
@@ -872,26 +825,26 @@ export default function Settings() {
                         {/* Add new slot */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Aggiungi Lezione</CardTitle>
-                                <CardDescription>Inserisci un nuovo slot nell'orario settimanale.</CardDescription>
+                                <CardTitle>{t("settings.schedule.addSlot")}</CardTitle>
+                                <CardDescription>{t("settings.schedule.desc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Giorno</Label>
+                                        <Label>{t("settings.schedule.day")}</Label>
                                         <Select value={newSlotDay} onValueChange={(val) => setNewSlotDay(val as DayOfWeek)}>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {DAYS_ORDER.map((day) => (
-                                                    <SelectItem key={day} value={day}>{DAY_LABELS[day]}</SelectItem>
+                                                    <SelectItem key={day} value={day}>{t(`days.${day}`)}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Ora Inizio</Label>
+                                        <Label>{t("settings.schedule.startTime")}</Label>
                                         <Input
                                             type="time"
                                             value={newSlotStart}
@@ -899,7 +852,7 @@ export default function Settings() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Ora Fine</Label>
+                                        <Label>{t("settings.schedule.endTime")}</Label>
                                         <Input
                                             type="time"
                                             value={newSlotEnd}
@@ -907,7 +860,7 @@ export default function Settings() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Classe</Label>
+                                        <Label>{t("settings.schedule.selectClass")}</Label>
                                         <Select value={newSlotClass} onValueChange={setNewSlotClass}>
                                             <SelectTrigger>
                                                 <SelectValue />
@@ -922,7 +875,7 @@ export default function Settings() {
                                 </div>
                                 <Button onClick={handleAddSlot} className="w-full md:w-auto">
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Aggiungi Slot
+                                    {t("settings.schedule.addSlotBtn")}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -930,8 +883,8 @@ export default function Settings() {
                         {/* Current schedule by day */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Orario Attuale</CardTitle>
-                                <CardDescription>{schedule.length} lezioni programmate</CardDescription>
+                                <CardTitle>{t("dashboard.weeklySchedule")}</CardTitle>
+                                <CardDescription>{schedule.length} {settings.language === 'en' ? "lessons scheduled" : "lezioni programmate"}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {DAYS_ORDER.map((day) => {
@@ -941,7 +894,7 @@ export default function Settings() {
                                     return (
                                         <div key={day} className="space-y-2">
                                             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                                                {DAY_LABELS[day]}
+                                                {t(`days.${day}`)}
                                             </h4>
                                             <div className="grid gap-2">
                                                 {daySlots.map((slot) => {
@@ -953,8 +906,8 @@ export default function Settings() {
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                                    <Clock className="h-4 w-4" />
-                                                                    {slot.startTime} - {slot.endTime}
+                                                                  <Clock className="h-4 w-4" />
+                                                                  {slot.startTime} - {slot.endTime}
                                                                 </div>
                                                                 <div className="font-medium">
                                                                     {classInfo?.className || slot.classId}
@@ -979,8 +932,8 @@ export default function Settings() {
                                 {schedule.length === 0 && (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>Nessuna lezione programmata</p>
-                                        <p className="text-sm">Aggiungi il tuo primo slot sopra</p>
+                                        <p>{t("dashboard.noSchedule")}</p>
+                                        <p className="text-sm">{t("dashboard.noScheduleDesc")}</p>
                                     </div>
                                 )}
                             </CardContent>
@@ -989,13 +942,13 @@ export default function Settings() {
                         {/* Reset schedule */}
                         <Card className="border-destructive/50">
                             <CardHeader>
-                                <CardTitle className="text-destructive">Reset Orario</CardTitle>
-                                <CardDescription>Ripristina l'orario predefinito di esempio.</CardDescription>
+                                <CardTitle className="text-destructive">{t("settings.schedule.resetSchedule")}</CardTitle>
+                                <CardDescription>{t("settings.schedule.confirmResetSchedule")}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Button variant="destructive" onClick={resetSchedule}>
                                     <RefreshCw className="h-4 w-4 mr-2" />
-                                    Ripristina Orario Default
+                                    {t("settings.schedule.resetSchedule")}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -1004,29 +957,29 @@ export default function Settings() {
                     {/* Justifications Settings */}
                     <TabsContent value="justifications" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Giustifiche e Periodi</h2>
-                            <p className="text-sm text-muted-foreground">Configura la soglia massima di giustifiche e i periodi scolastici.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.justifications.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.justifications.desc")}</p>
                         </div>
                         <Separator />
 
                         {/* Max Justifications */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Soglia Giustifiche</CardTitle>
-                                <CardDescription>Numero massimo di giustifiche consentite per periodo. Oltre questa soglia verrà mostrato un avviso.</CardDescription>
+                                <CardTitle>{t("settings.justifications.limitsTitle")}</CardTitle>
+                                <CardDescription>{t("settings.justifications.maxJustificationsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Massimo Giustifiche</Label>
-                                        <p className="text-sm text-muted-foreground">Soglia per periodo scolastico.</p>
+                                        <Label className="text-base">{t("settings.justifications.maxJustifications")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.justifications.limitsDesc")}</p>
                                     </div>
                                     <Select
                                         value={settings.maxJustifications.toString()}
                                         onValueChange={(val) => updateSettings({ maxJustifications: parseInt(val) })}
                                     >
                                         <SelectTrigger className="w-[120px]">
-                                            <SelectValue placeholder="Seleziona" />
+                                            <SelectValue placeholder={t("common.select")} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
@@ -1041,21 +994,21 @@ export default function Settings() {
                         {/* Add new period */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Aggiungi Periodo Scolastico</CardTitle>
-                                <CardDescription>Definisci i periodi dell'anno scolastico (es. Trimestre, Pentamestre).</CardDescription>
+                                <CardTitle>{t("settings.justifications.addPeriod")}</CardTitle>
+                                <CardDescription>{t("settings.justifications.periodsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div className="space-y-2">
-                                        <Label>Nome Periodo</Label>
+                                        <Label>{t("settings.justifications.periodName")}</Label>
                                         <Input
-                                            placeholder="es. Trimestre"
+                                            placeholder={settings.language === 'en' ? "e.g. 1st Semester" : "es. Trimestre"}
                                             value={newPeriodName}
                                             onChange={(e) => setNewPeriodName(e.target.value)}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Data Inizio</Label>
+                                        <Label>{t("settings.justifications.startDate")}</Label>
                                         <Input
                                             type="text"
                                             placeholder="GG/MM/AAAA"
@@ -1065,7 +1018,7 @@ export default function Settings() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Data Fine</Label>
+                                        <Label>{t("settings.justifications.endDate")}</Label>
                                         <Input
                                             type="text"
                                             placeholder="GG/MM/AAAA"
@@ -1077,7 +1030,7 @@ export default function Settings() {
                                     <div className="flex items-end">
                                         <Button onClick={handleAddPeriod} className="w-full" disabled={!newPeriodName || newPeriodStart.length !== 10 || newPeriodEnd.length !== 10}>
                                             <Plus className="h-4 w-4 mr-2" />
-                                            Aggiungi
+                                            {t("common.add")}
                                         </Button>
                                     </div>
                                 </div>
@@ -1087,18 +1040,18 @@ export default function Settings() {
                         {/* Current periods */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Periodi Configurati</CardTitle>
+                                <CardTitle>{t("settings.justifications.periodsTitle")}</CardTitle>
                                 <CardDescription>
-                                    {settings.schoolPeriods.length} periodi configurati.
-                                    {settings.currentPeriodId && ` Periodo attivo: ${settings.schoolPeriods.find(p => p.id === settings.currentPeriodId)?.name || 'Nessuno'}`}
+                                    {settings.schoolPeriods.length} {settings.language === 'en' ? "periods configured." : "periodi configurati."}
+                                    {settings.currentPeriodId && ` ${t("settings.justifications.activePeriod")}: ${settings.schoolPeriods.find(p => p.id === settings.currentPeriodId)?.name || (settings.language === 'en' ? 'None' : 'Nessuno')}`}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {settings.schoolPeriods.length === 0 ? (
                                     <div className="text-center py-8 text-muted-foreground">
                                         <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                        <p>Nessun periodo configurato</p>
-                                        <p className="text-sm">Aggiungi il tuo primo periodo sopra</p>
+                                        <p>{t("settings.justifications.noPeriods")}</p>
+                                        <p className="text-sm">{settings.language === 'en' ? "Add your first period above" : "Aggiungi il tuo primo periodo sopra"}</p>
                                     </div>
                                 ) : (
                                     <div className="grid gap-3">
@@ -1118,7 +1071,7 @@ export default function Settings() {
                                                                 {period.name}
                                                                 {isActive && (
                                                                     <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                                                                        Attivo
+                                                                        {t("classes.activeBadge")}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -1149,33 +1102,32 @@ export default function Settings() {
                     {/* Export Settings */}
                     <TabsContent value="export" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Esportazione</h2>
-                            <p className="text-sm text-muted-foreground">Configura come esportare i dati.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.export.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.export.desc")}</p>
                         </div>
                         <Separator />
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Preferenze Esportazione</CardTitle>
-                                <CardDescription>Formati e contenuti per i report.</CardDescription>
+                                <CardTitle>{t("settings.export.optionsTitle")}</CardTitle>
+                                <CardDescription>{t("settings.export.optionsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Formato Predefinito</Label>
-                                        <p className="text-sm text-muted-foreground">Il formato file preferito per i download.</p>
+                                        <Label className="text-base">{t("settings.export.exportFormat")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.export.exportFormatDesc")}</p>
                                     </div>
                                     <Select
                                         value={settings.exportFormat}
                                         onValueChange={(val: any) => updateSettings({ exportFormat: val })}
                                     >
                                         <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Seleziona" />
+                                            <SelectValue placeholder={t("common.select")} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="csv">CSV (Excel, Sheets)</SelectItem>
                                             <SelectItem value="excel">Excel (.xlsx)</SelectItem>
-                                            {/* <SelectItem value="pdf">PDF (Documento)</SelectItem> */}
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -1184,8 +1136,8 @@ export default function Settings() {
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <Label htmlFor="export-notes" className="flex flex-col justify-start items-start space-y-0.5">
-                                        <span>Includi Note</span>
-                                        <span className="font-normal text-sm text-muted-foreground">Includi i commenti testuali nelle esportazioni.</span>
+                                        <span>{t("settings.export.includeNotes")}</span>
+                                        <span className="font-normal text-sm text-muted-foreground">{t("settings.export.includeNotesDesc")}</span>
                                     </Label>
                                     <Switch
                                         id="export-notes"
@@ -1198,8 +1150,8 @@ export default function Settings() {
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Esportazione Rapida</CardTitle>
-                                <CardDescription>Scarica i tuoi dati immediatamente nel formato selezionato ({settings.exportFormat.toUpperCase()}).</CardDescription>
+                                <CardTitle>{t("settings.export.actionsTitle")}</CardTitle>
+                                <CardDescription>{t("settings.export.actionsDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4">
                                 <Button
@@ -1216,7 +1168,7 @@ export default function Settings() {
                                     }}
                                 >
                                     <Download className="mr-2 h-4 w-4" />
-                                    {isExporting ? "Esportazione..." : `Esporta tutte le valutazioni`}
+                                    {isExporting ? t("common.loading") : t("settings.export.exportEvaluations")}
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -1232,7 +1184,7 @@ export default function Settings() {
                                     }}
                                 >
                                     <Download className="mr-2 h-4 w-4" />
-                                    {isExporting ? "Esportazione..." : `Esporta elenco studenti completo`}
+                                    {isExporting ? t("common.loading") : t("settings.export.exportStudents")}
                                 </Button>
                             </CardContent>
                         </Card>
@@ -1241,15 +1193,15 @@ export default function Settings() {
                     {/* Data Management */}
                     <TabsContent value="data" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Gestione Dati</h2>
-                            <p className="text-sm text-muted-foreground">Gestisci la cache locale e la sincronizzazione.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.data.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.data.desc")}</p>
                         </div>
                         <Separator />
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Sincronizzazione</CardTitle>
-                                <CardDescription>Stato della sincronizzazione con il server.</CardDescription>
+                                <CardTitle>{t("settings.data.syncTitle")}</CardTitle>
+                                <CardDescription>{t("settings.data.syncDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex items-center justify-between p-4 border rounded-lg bg-orange-50 dark:bg-orange-950/20 border-orange-100 dark:border-orange-900">
@@ -1258,13 +1210,13 @@ export default function Settings() {
                                             <RefreshCw className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                                         </div>
                                         <div>
-                                            <p className="font-medium">Ultima sincronizzazione</p>
+                                            <p className="font-medium">{t("settings.data.lastSync")}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {lastSync ? lastSync.toLocaleString() : "Mai"}
+                                                {lastSync ? lastSync.toLocaleString() : t("settings.data.neverSynced")}
                                             </p>
                                         </div>
                                     </div>
-                                    <Button variant="outline" size="sm">Sincronizza Ora</Button>
+                                    <Button variant="outline" size="sm">{t("settings.data.syncNow")}</Button>
                                 </div>
 
                                 <div className="rounded-md bg-blue-50 dark:bg-blue-950/20 p-4">
@@ -1273,9 +1225,9 @@ export default function Settings() {
                                             <Database className="h-5 w-5 text-blue-400" aria-hidden="true" />
                                         </div>
                                         <div className="ml-3">
-                                            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">Stato Database</h3>
+                                            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">{settings.language === 'en' ? "Database Status" : "Stato Database"}</h3>
                                             <div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
-                                                <p>Tutti i dati sono salvati localmente e sincronizzati quando online.</p>
+                                                <p>{settings.language === 'en' ? "All data is securely stored locally and synced when online." : "Tutti i dati sono salvati localmente e sincronizzati quando online."}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1288,19 +1240,19 @@ export default function Settings() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <GraduationCap className="h-5 w-5 text-primary" />
-                                    Inizio Anno Scolastico & Classi Terminali (Quinte)
+                                    {t("settings.data.graduatedTitle")}
                                 </CardTitle>
                                 <CardDescription>
-                                    Configura la data di inizio del nuovo anno scolastico e i prefissi per individuare le classi dell'ultimo anno da archiviare (es. "5" per 5A, 5B...).
+                                    {t("settings.data.graduatedDesc")}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {/* Start Date of the School Year */}
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-3.5 rounded-lg border bg-muted/30">
                                     <div className="space-y-0.5">
-                                        <Label className="text-sm font-semibold">Data di Inizio Anno Scolastico</Label>
+                                        <Label className="text-sm font-semibold">{settings.language === 'en' ? "School Year Start Date" : "Data di Inizio Anno Scolastico"}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Data in cui scatta l'avviso di inizio anno e il ciclo delle classi nella Dashboard.
+                                            {settings.language === 'en' ? "Date when the new school year reminder banner activates." : "Data in cui scatta l'avviso di inizio anno e il ciclo delle classi nella Dashboard."}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1309,17 +1261,17 @@ export default function Settings() {
                                             onValueChange={(val) => updateSettings({ schoolYearStartMonth: parseInt(val, 10) })}
                                         >
                                             <SelectTrigger className="w-[140px] bg-background text-xs">
-                                                <SelectValue placeholder="Mese" />
+                                                <SelectValue placeholder={settings.language === 'en' ? "Month" : "Mese"} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="8">Agosto</SelectItem>
-                                                <SelectItem value="9">Settembre</SelectItem>
-                                                <SelectItem value="10">Ottobre</SelectItem>
+                                                <SelectItem value="8">{settings.language === 'en' ? "August" : "Agosto"}</SelectItem>
+                                                <SelectItem value="9">{settings.language === 'en' ? "September" : "Settembre"}</SelectItem>
+                                                <SelectItem value="10">{settings.language === 'en' ? "October" : "Ottobre"}</SelectItem>
                                             </SelectContent>
                                         </Select>
 
                                         <div className="flex items-center gap-1">
-                                            <span className="text-xs text-muted-foreground">Giorno:</span>
+                                            <span className="text-xs text-muted-foreground">{settings.language === 'en' ? "Day:" : "Giorno:"}</span>
                                             <Input
                                                 type="number"
                                                 min={1}
@@ -1340,9 +1292,9 @@ export default function Settings() {
                                 {/* Prefixes for Graduating Classes */}
                                 <div className="space-y-3 p-3.5 rounded-lg border bg-muted/30">
                                     <div className="space-y-0.5">
-                                        <Label className="text-sm font-semibold">Prefissi Classi Terminali / Quinte</Label>
+                                        <Label className="text-sm font-semibold">{t("settings.data.prefixes")}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Le classi attive il cui nome inizia con uno di questi prefissi verranno proposte per l'archiviazione guidata all'inizio dell'anno.
+                                            {t("settings.data.graduatedDesc")}
                                         </p>
                                     </div>
 
@@ -1354,12 +1306,12 @@ export default function Settings() {
                                                 variant="secondary"
                                                 className="text-xs py-1 px-2.5 gap-1.5 flex items-center bg-background border"
                                             >
-                                                <span>Inizia con "<strong>{prefix}</strong>"</span>
+                                                <span>{settings.language === 'en' ? "Starts with" : "Inizia con"} "<strong>{prefix}</strong>"</span>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemovePrefix(prefix)}
                                                     className="text-muted-foreground hover:text-destructive transition-colors ml-0.5 font-bold"
-                                                    title="Rimuovi prefisso"
+                                                    title={t("common.remove")}
                                                 >
                                                     ×
                                                 </button>
@@ -1370,7 +1322,7 @@ export default function Settings() {
                                     {/* Add Prefix Input */}
                                     <div className="flex items-center gap-2 pt-1">
                                         <Input
-                                            placeholder="Nuovo prefisso (es. 5, V)..."
+                                            placeholder={t("settings.data.prefixPlaceholder")}
                                             value={newPrefixInput}
                                             onChange={(e) => setNewPrefixInput(e.target.value)}
                                             onKeyDown={(e) => {
@@ -1389,19 +1341,19 @@ export default function Settings() {
                                             onClick={handleAddPrefix}
                                         >
                                             <Plus className="h-3.5 w-3.5" />
-                                            Aggiungi
+                                            {t("common.add")}
                                         </Button>
                                     </div>
 
                                     {/* Live matching preview */}
                                     <div className="text-xs pt-1 text-muted-foreground border-t mt-2">
-                                        Classi attive attualmente corrispondenti:{" "}
+                                        {settings.language === 'en' ? "Currently matching active classes: " : "Classi attive attualmente corrispondenti: "}
                                         {matchingGraduatingClasses.length > 0 ? (
                                             <span className="font-semibold text-foreground">
                                                 {matchingGraduatingClasses.map(c => c.className).join(", ")} ({matchingGraduatingClasses.length})
                                             </span>
                                         ) : (
-                                            <span className="italic">nessuna classe attiva corrisponde ai prefissi</span>
+                                            <span className="italic">{settings.language === 'en' ? "no active classes match prefix" : "nessuna classe attiva corrisponde ai prefissi"}</span>
                                         )}
                                     </div>
                                 </div>
@@ -1409,7 +1361,7 @@ export default function Settings() {
                                 {/* Reset prompt button */}
                                 <div className="flex items-center justify-between pt-1">
                                     <div className="text-xs text-muted-foreground">
-                                        Hai posticipato il promemoria e vuoi farlo riapparire subito nella Dashboard?
+                                        {t("settings.data.resetBannerDesc")}
                                     </div>
                                     <Button
                                         type="button"
@@ -1419,7 +1371,7 @@ export default function Settings() {
                                         onClick={handleResetBannerToday}
                                     >
                                         <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
-                                        Ripristina Avviso
+                                        {t("settings.data.resetBannerBtn")}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -1430,10 +1382,10 @@ export default function Settings() {
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <Archive className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                                    Chiusura Anno Scolastico & Archivio Classi
+                                    {t("settings.data.yearEndTitle")}
                                 </CardTitle>
                                 <CardDescription>
-                                    Archivia le classi completate al termine dell'anno scolastico. Tutti i dati, voti e valutazioni rimangono conservati per la consultazione e il confronto storico.
+                                    {t("settings.data.yearEndDesc")}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -1442,23 +1394,23 @@ export default function Settings() {
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="space-y-1">
                                             <h4 className="font-semibold text-sm text-foreground flex items-center gap-2">
-                                                Archiviazione Fine Anno
+                                                {t("settings.data.yearEndTitle")}
                                             </h4>
                                             <p className="text-xs text-muted-foreground">
-                                                Seleziona un anno scolastico per archiviare tutte le relative classi attive in un colpo solo.
+                                                {t("settings.data.yearEndDesc")}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <Select value={selectedYearToArchive} onValueChange={setSelectedYearToArchive}>
                                                 <SelectTrigger className="w-[170px] bg-background">
-                                                    <SelectValue placeholder="Scegli anno..." />
+                                                    <SelectValue placeholder={t("settings.data.selectYearToArchive")} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {activeSchoolYears.map((year) => {
                                                         const count = activeList.filter(c => c.schoolYear === year).length;
                                                         return (
                                                             <SelectItem key={year} value={year}>
-                                                                {year} ({count} {count === 1 ? 'classe' : 'classi'})
+                                                                {year} ({count} {count === 1 ? (settings.language === 'en' ? 'class' : 'classe') : (settings.language === 'en' ? 'classes' : 'classi')})
                                                             </SelectItem>
                                                         );
                                                     })}
@@ -1472,14 +1424,14 @@ export default function Settings() {
                                                 onClick={() => setBatchArchiveConfirmOpen(true)}
                                             >
                                                 <Archive className="w-4 h-4" />
-                                                Archivia Anno
+                                                {t("settings.data.archiveYearBtn")}
                                             </Button>
                                         </div>
                                     </div>
 
                                     {selectedYearToArchive && classesInSelectedYear.length > 0 && (
                                         <div className="text-xs text-amber-800 dark:text-amber-300 bg-background/70 p-2.5 rounded border border-amber-200/70 dark:border-amber-900/40">
-                                            Classi che verranno archiviate ({classesInSelectedYear.length}):{" "}
+                                            {settings.language === 'en' ? `Classes that will be archived (${classesInSelectedYear.length}): ` : `Classi che verranno archiviate (${classesInSelectedYear.length}): `}
                                             <span className="font-semibold">
                                                 {classesInSelectedYear.map(c => c.className).join(", ")}
                                             </span>
@@ -1491,7 +1443,7 @@ export default function Settings() {
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h4 className="text-sm font-semibold flex items-center gap-2">
-                                            Classi Archiviate ({archivedList.length})
+                                            {settings.language === 'en' ? `Archived Classes (${archivedList.length})` : `Classi Archiviate (${archivedList.length})`}
                                         </h4>
                                         {archivedList.length > 0 && (
                                             <Button
@@ -1501,14 +1453,14 @@ export default function Settings() {
                                                 onClick={() => navigate('/valutazioni')}
                                             >
                                                 <ClipboardCheck className="w-3.5 h-3.5" />
-                                                Vai alle Valutazioni
+                                                {t("sidebar.evaluations")}
                                             </Button>
                                         )}
                                     </div>
 
                                     {archivedList.length === 0 ? (
                                         <div className="text-center py-6 text-muted-foreground text-sm border border-dashed rounded-lg">
-                                            Nessuna classe archiviata al momento.
+                                            {settings.language === 'en' ? "No archived classes at this time." : "Nessuna classe archiviata al momento."}
                                         </div>
                                     ) : (
                                         <div className="grid gap-2 max-h-[300px] overflow-y-auto pr-1">
@@ -1529,7 +1481,7 @@ export default function Settings() {
                                                                 </span>
                                                             </div>
                                                             <div className="text-xs text-muted-foreground">
-                                                                {cls.students.length} studenti • {cls.exerciseGroups.length} gruppi esercizi
+                                                                {cls.students.length} {t("dashboard.studentsCount")} • {cls.exerciseGroups.length} {t("classes.groupExercises")}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1540,7 +1492,7 @@ export default function Settings() {
                                                             className="text-xs gap-1 h-8"
                                                             onClick={() => navigate(`/classes/${cls.id}`)}
                                                         >
-                                                            Vedi Scheda
+                                                            {t("common.details")}
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -1549,7 +1501,7 @@ export default function Settings() {
                                                             onClick={() => navigate(`/valutazioni/${cls.id}/all`)}
                                                         >
                                                             <ClipboardCheck className="w-3 h-3" />
-                                                            Valutazioni
+                                                            {t("sidebar.evaluations")}
                                                         </Button>
                                                         <Button
                                                             variant="ghost"
@@ -1558,7 +1510,7 @@ export default function Settings() {
                                                             onClick={() => handleUnarchiveSingleClass(cls.id, cls.className)}
                                                         >
                                                             <RotateCcw className="w-3 h-3" />
-                                                            Ripristina
+                                                            {t("common.unarchive")}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -1571,18 +1523,18 @@ export default function Settings() {
 
                         <Card className="border-destructive/50">
                             <CardHeader>
-                                <CardTitle className="text-destructive">Zona Pericolosa</CardTitle>
-                                <CardDescription>Azioni che rimuovono dati locali.</CardDescription>
+                                <CardTitle className="text-destructive">{settings.language === 'en' ? "Danger Zone" : "Zona Pericolosa"}</CardTitle>
+                                <CardDescription>{settings.language === 'en' ? "Actions that clear local or cached data." : "Azioni che rimuovono dati locali."}</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Svuota Cache Locale</Label>
-                                        <p className="text-sm text-muted-foreground">Rimuove i dati salvati nel browser. Utile se l'app è lenta.</p>
+                                        <Label className="text-base">{t("settings.data.clearCacheBtn")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.data.cacheDesc")}</p>
                                     </div>
                                     <Button variant="destructive" onClick={clearCache}>
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Svuota Cache
+                                        {t("settings.data.clearCacheBtn")}
                                     </Button>
                                 </div>
 
@@ -1590,11 +1542,11 @@ export default function Settings() {
 
                                 <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
                                     <div className="space-y-0.5">
-                                        <Label className="text-base">Ripristina Impostazioni</Label>
-                                        <p className="text-sm text-muted-foreground">Riporta tutte le impostazioni ai valori predefiniti.</p>
+                                        <Label className="text-base">{t("settings.data.resetSettingsTitle")}</Label>
+                                        <p className="text-sm text-muted-foreground">{t("settings.data.resetSettingsDesc")}</p>
                                     </div>
                                     <Button variant="outline" onClick={resetSettings}>
-                                        Ripristina Default
+                                        {t("settings.data.resetSettingsBtn")}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -1604,8 +1556,8 @@ export default function Settings() {
                     {/* Account Settings */}
                     <TabsContent value="account" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Profilo Utente</h2>
-                            <p className="text-sm text-muted-foreground">Gestisci le tue informazioni personali e la sicurezza dell'account.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.account.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.account.desc")}</p>
                         </div>
                         <Separator />
 
@@ -1623,7 +1575,7 @@ export default function Settings() {
                                             size="icon"
                                             variant="secondary"
                                             className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-lg border border-background opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title="Cambia avatar"
+                                            title={t("settings.account.avatar")}
                                         >
                                             <Palette className="h-4 w-4" />
                                         </Button>
@@ -1632,10 +1584,10 @@ export default function Settings() {
                                         <h3 className="text-2xl capitalize font-bold tracking-tight">{firstName} {lastName}</h3>
                                         <div className="flex items-center justify-center sm:justify-start gap-2 pt-2">
                                             <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                                                Account Attivo
+                                                {t("common.activeAccount")}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                                Ultimo accesso: {lastSync ? formatDate(lastSync.toISOString()) : "Oggi"}
+                                                {t("settings.data.lastSync")} {lastSync ? formatDate(lastSync.toISOString()) : t("common.today")}
                                             </span>
                                         </div>
                                     </div>
@@ -1645,20 +1597,20 @@ export default function Settings() {
                                 <div className="grid gap-6">
                                     <div className="grid gap-4 sm:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label htmlFor="firstName" className="text-sm font-semibold">Nome</Label>
+                                            <Label htmlFor="firstName" className="text-sm font-semibold">{t("students.firstName")}</Label>
                                             <Input
                                                 id="firstName"
-                                                placeholder="Il tuo nome"
+                                                placeholder={t("students.firstName")}
                                                 value={firstName}
                                                 onChange={(e) => setFirstName(e.target.value)}
                                                 className="bg-secondary/20 focus-visible:ring-primary"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="lastName" className="text-sm font-semibold">Cognome</Label>
+                                            <Label htmlFor="lastName" className="text-sm font-semibold">{t("students.lastName")}</Label>
                                             <Input
                                                 id="lastName"
-                                                placeholder="Il tuo cognome"
+                                                placeholder={t("students.lastName")}
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
                                                 className="bg-secondary/20 focus-visible:ring-primary"
@@ -1668,7 +1620,7 @@ export default function Settings() {
 
                                     <div className="grid gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="email" className="text-sm font-semibold">Email (Non modificabile)</Label>
+                                            <Label htmlFor="email" className="text-sm font-semibold">{t("settings.account.email")} ({settings.language === 'en' ? 'Read-only' : 'Non modificabile'})</Label>
                                             <Input
                                                 id="email"
                                                 value={user?.user.email || ""}
@@ -1682,19 +1634,19 @@ export default function Settings() {
 
                                     <div className="bg-amber-50 dark:bg-amber-950/20 rounded-xl p-4 border border-amber-100 dark:border-amber-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
                                         <div className="space-y-1 text-center sm:text-left">
-                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">Sicurezza Account</h4>
+                                            <h4 className="text-sm font-bold text-amber-900 dark:text-amber-200">{settings.language === 'en' ? "Account Security" : "Sicurezza Account"}</h4>
                                             <p className="text-xs text-amber-800/70 dark:text-amber-300/60">
-                                                È consigliabile cambiare la password regolarmente per mantenere l'account sicuro.
+                                                {settings.language === 'en' ? "Regular password updates help keep your account secure." : "È consigliabile cambiare la password regolarmente per mantenere l'account sicuro."}
                                             </p>
                                         </div>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             className="border-amber-200 bg-white text-amber-900 hover:bg-amber-50 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200"
-                                            onClick={() => toast.info("Funzionalità di reset password in arrivo")}
+                                            onClick={() => toast.info(settings.language === 'en' ? "Password reset feature coming soon" : "Funzionalità di reset password in arrivo")}
                                         >
                                             <RefreshCw className="mr-2 h-4 w-4" />
-                                            Reset Password
+                                            {settings.language === 'en' ? "Reset Password" : "Reset Password"}
                                         </Button>
                                     </div>
                                 </div>
@@ -1707,17 +1659,16 @@ export default function Settings() {
                                     onClick={() => setDeleteDialogOpen(true)}
                                 >
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    Esci dall'Account
+                                    {t("sidebar.logout")}
                                 </Button>
 
                                 <Button
                                     className="w-full sm:w-auto order-1 sm:order-2 shadow-lg shadow-primary/20"
                                     onClick={() => {
-                                        // Mock saving
-                                        toast.success("Modifiche salvate con successo!");
+                                        toast.success(t("common.saveChanges"));
                                     }}
                                 >
-                                    Salva Modifiche
+                                    {t("common.saveChanges")}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -1726,17 +1677,17 @@ export default function Settings() {
                     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Sei sicuro di voler uscire dall'account?</AlertDialogTitle>
+                                <AlertDialogTitle>{settings.language === 'en' ? "Are you sure you want to sign out?" : "Sei sicuro di voler uscire dall'account?"}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Sicuro
+                                    {t("settings.account.logoutDesc")}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction onClick={async () => {
                                     await client.logout()
                                 }} className="bg-destructive hover:bg-destructive/90">
-                                    Logout
+                                    {t("sidebar.logout")}
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -1745,8 +1696,8 @@ export default function Settings() {
                     {/* About */}
                     <TabsContent value="about" className="space-y-6 mt-0">
                         <div className="space-y-1">
-                            <h2 className="text-xl font-semibold">Informazioni</h2>
-                            <p className="text-sm text-muted-foreground">Dettagli sull'applicazione.</p>
+                            <h2 className="text-xl font-semibold">{t("settings.about.title")}</h2>
+                            <p className="text-sm text-muted-foreground">{t("settings.about.desc")}</p>
                         </div>
                         <Separator />
 
@@ -1756,8 +1707,8 @@ export default function Settings() {
                                     <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mb-2 overflow-hidden shadow-sm">
                                         <img src="/logoSGH.png" alt="SportsGradeHub Logo" className="h-full w-full object-cover" />
                                     </div>
-                                    <h3 className="text-2xl font-bold">SportsGradeHub</h3>
-                                    <p className="text-muted-foreground">Versione 1.0.0</p>
+                                    <h3 className="text-2xl font-bold">{t("settings.about.appName")}</h3>
+                                    <p className="text-muted-foreground">{t("settings.about.appVersion")}</p>
                                 </div>
 
                                 <div className="grid gap-4 border-t border-b py-4 my-4">
@@ -1766,17 +1717,17 @@ export default function Settings() {
                                         <span className="text-muted-foreground">2025.12.10</span>
                                     </div>
                                     <div className="flex justify-between py-2">
-                                        <span className="font-medium">Anno Scolastico</span>
+                                        <span className="font-medium">{t("classes.schoolYear")}</span>
                                         <span className="text-muted-foreground">2025/2026</span>
                                     </div>
                                     <div className="flex justify-between py-2">
-                                        <span className="font-medium">Licenza</span>
+                                        <span className="font-medium">{settings.language === 'en' ? "License" : "Licenza"}</span>
                                         <span className="text-muted-foreground">-</span>
                                     </div>
                                 </div>
 
                                 <div className="text-sm text-center text-muted-foreground">
-                                    <p>© 2025 SportsGradeHub. Tutti i diritti riservati.</p>
+                                    <p>© 2025 SportsGradeHub. {t("settings.about.copyright")}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -1805,7 +1756,7 @@ export default function Settings() {
                                         type="button"
                                         onClick={() => {
                                             updateSettings({ language: "it" });
-                                            toast.success("Lingua aggiornata con successo!");
+                                            toast.success(t("settings.language.saved"));
                                         }}
                                         className={`relative flex flex-col items-center gap-3 rounded-xl border-2 p-6 text-left transition-all duration-200 hover:shadow-md cursor-pointer ${
                                             settings.language === "it"
@@ -1858,22 +1809,27 @@ export default function Settings() {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2">
                             <Archive className="w-5 h-5 text-amber-600" />
-                            Archiviare tutte le classi dell'anno {selectedYearToArchive}?
+                            {settings.language === 'en'
+                                ? `Archive all classes from school year ${selectedYearToArchive}?`
+                                : `Archiviare tutte le classi dell'anno ${selectedYearToArchive}?`}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="space-y-2">
                             <p>
-                                Verranno archiviate <strong>{classesInSelectedYear.length}</strong> classi:{" "}
+                                {settings.language === 'en' ? "Will archive " : "Verranno archiviate "}
+                                <strong>{classesInSelectedYear.length}</strong> {settings.language === 'en' ? "classes: " : "classi: "}
                                 <span className="text-foreground font-medium">
                                     {classesInSelectedYear.map(c => c.className).join(", ")}
                                 </span>.
                             </p>
                             <p className="text-xs text-muted-foreground">
-                                Le classi verranno spostate nell'archivio storico e rimosse dal menu attivo delle lezioni. Tutti i voti, le valutazioni e la storia degli studenti rimarranno intatti per consultazioni e confronti. Potrai ripristinarle in qualunque momento.
+                                {settings.language === 'en'
+                                    ? "Classes will be moved to historical archive and removed from the active classes menu. All grades, evaluations, and student records are preserved for review and comparison. You can restore them at any time."
+                                    : "Le classi verranno spostate nell'archivio storico e rimosse dal menu attivo delle lezioni. Tutti i voti, le valutazioni e la storia degli studenti rimarranno intatti per consultazioni e confronti. Potrai ripristinarle in qualunque momento."}
                             </p>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isBatchArchiving}>Annulla</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isBatchArchiving}>{t("common.cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -1882,7 +1838,9 @@ export default function Settings() {
                             disabled={isBatchArchiving}
                             className="bg-amber-600 hover:bg-amber-700 text-white"
                         >
-                            {isBatchArchiving ? "Archiviazione in corso..." : "Conferma Archiviazione Anno"}
+                            {isBatchArchiving
+                                ? (settings.language === 'en' ? "Archiving..." : "Archiviazione in corso...")
+                                : (settings.language === 'en' ? "Confirm Year Archive" : "Conferma Archiviazione Anno")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

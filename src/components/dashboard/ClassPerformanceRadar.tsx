@@ -13,6 +13,7 @@ import { useSchoolData } from "@/provider/clientProvider";
 import { Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import { scaleIn, cardHover } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ClassPerformanceRadarProps {
     selectedClassId: string;
@@ -20,6 +21,7 @@ interface ClassPerformanceRadarProps {
 
 export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadarProps) {
     const { classes, evaluations, exercises, exerciseGroups } = useSchoolData();
+    const { t } = useTranslation();
 
     // Calculate metrics
     const radarData = useMemo(() => {
@@ -58,7 +60,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
         // Format data for Recharts
         const data = Object.keys(groupScores).map((groupId) => {
             const group = exerciseGroups.find((g) => g.id === groupId);
-            const groupName = group ? group.groupName : "Altri";
+            const groupName = group ? group.groupName : t("common.all");
             // Shorten very long names if needed
             const displayName = groupName.length > 15 ? groupName.substring(0, 15) + "..." : groupName;
 
@@ -71,9 +73,8 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
         });
 
         // Filter out groups with very few evaluations if needed, or just show all
-        // Sort by subject name or keep specific order? Alphabetical is fine.
         return data.sort((a, b) => a.subject.localeCompare(b.subject));
-    }, [selectedClassId, classes, evaluations, exercises, exerciseGroups]);
+    }, [selectedClassId, classes, evaluations, exercises, exerciseGroups, t]);
 
     if (!selectedClassId) return null;
 
@@ -95,7 +96,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
                             >
                                 <Activity className="w-4 h-4 text-primary" />
                             </motion.div>
-                            Profilo Atletico
+                            {t("dashboard.radarTitle")}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -121,7 +122,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
                                                 axisLine={false}
                                             />
                                             <Radar
-                                                name="Media Classe"
+                                                name={t("dashboard.averageGrade")}
                                                 dataKey="A"
                                                 stroke="#3b82f6"
                                                 fill="#3b82f6"
@@ -144,7 +145,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
                                                                     {data.fullSubject}
                                                                 </p>
                                                                 <p className="text-sm text-muted-foreground">
-                                                                    Media Voto: <span className="font-bold text-foreground">{data.A}</span>
+                                                                    {t("dashboard.averageGrade")}: <span className="font-bold text-foreground">{data.A}</span>
                                                                 </p>
                                                             </motion.div>
                                                         );
@@ -162,8 +163,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.3 }}
                                 >
-                                    <p>Dati insufficienti per il grafico radar.</p>
-                                    <p className="text-sm mt-2">Servono valutazioni in almeno 3 gruppi di esercizi diversi.</p>
+                                    <p>{t("dashboard.noDataRadar")}</p>
                                 </motion.div>
                             ) : (
                                 <motion.div
@@ -172,8 +172,7 @@ export function ClassPerformanceRadar({ selectedClassId }: ClassPerformanceRadar
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.3 }}
                                 >
-                                    <p>Nessun dato di valutazione disponibile.</p>
-                                    <p className="text-sm mt-2">Valuta gli esercizi per vedere il profilo della classe.</p>
+                                    <p>{t("common.noData")}</p>
                                 </motion.div>
                             )}
                         </div>

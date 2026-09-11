@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { SchoolClass } from "@/types/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { slideDown, staggerContainer, staggerItem } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ClassSelectorProps {
     classes: SchoolClass[];
@@ -14,6 +15,7 @@ interface ClassSelectorProps {
 export function ClassSelector({ classes, selectedClassId, onSelectClass }: ClassSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     const selectedClass = classes.find((c) => c.id === selectedClassId) || classes[0];
 
@@ -57,7 +59,7 @@ export function ClassSelector({ classes, selectedClassId, onSelectClass }: Class
                 </motion.div>
 
                 <div className="flex flex-col items-start mr-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Classe</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("evaluations.selectClass")}</span>
                     <span className="text-base font-bold leading-none">{selectedClass?.className} <span className="text-muted-foreground font-normal text-xs ml-1">{selectedClass?.schoolYear}</span></span>
                 </div>
 
@@ -83,7 +85,7 @@ export function ClassSelector({ classes, selectedClassId, onSelectClass }: Class
                     >
                         <div className="bg-white dark:bg-zinc-950 border border-border/50 rounded-xl shadow-xl backdrop-blur-xl">
                             <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                                Seleziona una classe
+                                {t("dashboard.selectClassPlaceholder")}
                             </div>
                             <motion.div
                                 className="space-y-1"
@@ -122,7 +124,7 @@ export function ClassSelector({ classes, selectedClassId, onSelectClass }: Class
                                         <div className="flex flex-col items-start flex-1">
                                             <span>{cls.className}</span>
                                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Users className="w-3 h-3" /> {cls.students.length} studenti
+                                                <Users className="w-3 h-3" /> {cls.students.length} {t("dashboard.studentsCount")}
                                             </span>
                                         </div>
 
