@@ -605,10 +605,10 @@ export default function Classes() {
 
             {/* Main Content Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full md:w-[400px] grid-cols-3">
-                    <TabsTrigger value="students">{t("classes.studentsTab")}</TabsTrigger>
-                    <TabsTrigger value="exercises">{t("nav.exercises")}</TabsTrigger>
-                    <TabsTrigger value="analytics">{t("analytics.title")}</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="students" className="text-xs sm:text-sm">{t("classes.studentsTab")}</TabsTrigger>
+                    <TabsTrigger value="exercises" className="text-xs sm:text-sm">{t("nav.exercises")}</TabsTrigger>
+                    <TabsTrigger value="analytics" className="text-xs sm:text-sm">{t("analytics.title")}</TabsTrigger>
                 </TabsList>
 
                 <div className="mt-6">

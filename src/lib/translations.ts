@@ -83,6 +83,10 @@ export const translations = {
       previousYearTooltip: "Classe dell'anno precedente ({year}): da archiviare o trasferire",
       sportsGradeHub: "SportsGradeHub",
     },
+    nav: {
+      exercises: "Esercizi",
+      evaluations: "Valutazioni",
+    },
     days: {
       lunedi: "Lunedì",
       martedi: "Martedì",
@@ -418,6 +422,7 @@ export const translations = {
       clearEvaluation: "Azzera valutazione",
       autoScore: "Voto calcolato automaticamente",
       manualScore: "Voto manuale",
+      assignExercise: "Assegna Esercizio",
     },
     leaderboards: {
       title: "Leaderboards & Record",
@@ -1053,6 +1058,10 @@ export const translations = {
       previousYearTooltip: "Previous year class ({year}): to be archived or promoted",
       sportsGradeHub: "SportsGradeHub",
     },
+    nav: {
+      exercises: "Exercises",
+      evaluations: "Evaluations",
+    },
     days: {
       lunedi: "Monday",
       martedi: "Tuesday",
@@ -1388,6 +1397,7 @@ export const translations = {
       clearEvaluation: "Clear evaluation",
       autoScore: "Automatically calculated grade",
       manualScore: "Manual grade override",
+      assignExercise: "Assign Exercise",
     },
     leaderboards: {
       title: "Leaderboards & Records",
