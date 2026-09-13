@@ -14,6 +14,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import type { Student, Exercise, Evaluation, SchoolClass, SortMode, ScoreRange } from "@/types/types";
 import { User, Grid3X3, Check, MousePointerClick, History } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 
 interface ValutazioniGridViewProps {
@@ -80,6 +81,7 @@ interface InlineCellProps {
 }
 
 function InlineCell({ value, onCommit, unit, isSaving, justSaved }: InlineCellProps) {
+    const { t } = useTranslation();
     const [editing, setEditing] = useState(false);
     const [localValue, setLocalValue] = useState(formatNumber(value));
     const inputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +111,7 @@ function InlineCell({ value, onCommit, unit, isSaving, justSaved }: InlineCellPr
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = e.target.value;
         if (/[^0-9,.\-]/.test(val)) {
-            toast.error("Inserire solo valori numerici");
+            toast.error(t("common.numericOnly", { defaultValue: "Inserire solo valori numerici" }));
             return;
         }
         setLocalValue(val);
@@ -172,6 +174,7 @@ export default function ValutazioniGridView({
     onSaveEvaluation,
     enableBasePoint,
 }: ValutazioniGridViewProps) {
+    const { t } = useTranslation();
 
     // Track saving state and "just saved" flash per cell
     const [savingCells, setSavingCells] = useState<Set<string>>(new Set());
@@ -260,10 +263,10 @@ export default function ValutazioniGridView({
         // Default: range-based with single performance column
         return [{
             key: "__performance",
-            label: `Prestazione (${exercise.unit})`,
+            label: `${t("evaluations.performance")} (${exercise.unit})`,
             unit: exercise.unit,
         }];
-    }, [exercise]);
+    }, [exercise, t]);
 
     // ─── Compute final score for a student ──────────────────────────────────
     const computeFinalScore = useCallback((
@@ -621,9 +624,9 @@ export default function ValutazioniGridView({
         return {
             score: past.score,
             performanceValue: past.performanceValue,
-            className: pastClass?.className || "Classe passata",
+            className: pastClass?.className || t("students.pastClasses"),
             schoolYear: pastClass?.schoolYear || "",
-            date: new Date(past.createdAt).toLocaleDateString("it-IT"),
+            date: new Date(past.createdAt).toLocaleDateString(),
         };
     };
 
@@ -634,9 +637,9 @@ export default function ValutazioniGridView({
                 <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                     <MousePointerClick className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Seleziona un esercizio</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("evaluations.selectExercisePrompt", { defaultValue: "Seleziona un esercizio" })}</h3>
                 <p className="text-muted-foreground max-w-sm">
-                    Per utilizzare la vista griglia, seleziona un esercizio specifico dal filtro in alto.
+                    {t("evaluations.selectExercisePromptDesc", { defaultValue: "Per utilizzare la vista griglia, seleziona un esercizio specifico dal filtro in alto." })}
                 </p>
             </div>
         );
@@ -648,9 +651,9 @@ export default function ValutazioniGridView({
                 <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                     <Grid3X3 className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">Nessun criterio</h3>
+                <h3 className="text-lg font-semibold mb-2">{t("exercises.noCriteria")}</h3>
                 <p className="text-muted-foreground">
-                    Questo esercizio non ha criteri configurati.
+                    {t("exercises.noCriteriaConfigured")}
                 </p>
             </div>
         );
@@ -662,19 +665,19 @@ export default function ValutazioniGridView({
             <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-1.5">
                     <div className="h-3 w-3 rounded-sm bg-slate-300 dark:bg-slate-600" />
-                    <span className="text-xs text-muted-foreground">Non Valutato</span>
+                    <span className="text-xs text-muted-foreground">{t("evaluations.unrated")}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="h-3 w-3 rounded-sm bg-yellow-400 dark:bg-yellow-500" />
-                    <span className="text-xs text-muted-foreground">Parziale</span>
+                    <span className="text-xs text-muted-foreground">{t("common.partial", { defaultValue: "Parziale" })}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <div className="h-3 w-3 rounded-sm bg-green-500" />
-                    <span className="text-xs text-muted-foreground">Valutato</span>
+                    <span className="text-xs text-muted-foreground">{t("evaluations.rated")}</span>
                 </div>
                 <div className="ml-auto text-xs text-muted-foreground italic flex items-center gap-1.5">
                     <MousePointerClick className="h-3.5 w-3.5" />
-                    Clicca su una cella per modificarla
+                    {t("evaluations.clickCellToEdit", { defaultValue: "Clicca su una cella per modificarla" })}
                 </div>
             </div>
 
@@ -684,7 +687,7 @@ export default function ValutazioniGridView({
                     <TableHeader>
                         <TableRow className="bg-muted/30">
                             <TableHead className="sticky left-0 z-10 bg-muted/80 backdrop-blur-sm min-w-[200px] border-r">
-                                Studente
+                                {t("evaluations.student")}
                             </TableHead>
                             {columns.map(col => (
                                 <TableHead key={col.key} className="text-center min-w-[100px]">
@@ -696,14 +699,14 @@ export default function ValutazioniGridView({
                                         </TooltipTrigger>
                                         <TooltipContent>
                                             <p>{col.label}</p>
-                                            {col.unit && <p className="text-muted-foreground">Unità: {col.unit}</p>}
-                                            {col.maxScore !== undefined && <p className="text-muted-foreground">Max: {col.maxScore}</p>}
+                                            {col.unit && <p className="text-muted-foreground">{t("exercises.unit")}: {col.unit}</p>}
+                                            {col.maxScore !== undefined && <p className="text-muted-foreground">{t("exercises.max")}: {col.maxScore}</p>}
                                         </TooltipContent>
                                     </Tooltip>
                                 </TableHead>
                             ))}
                             <TableHead className="text-center min-w-[80px] border-l bg-muted/50 font-bold">
-                                Voto
+                                {t("evaluations.grade")}
                             </TableHead>
                         </TableRow>
                     </TableHeader>
@@ -714,7 +717,7 @@ export default function ValutazioniGridView({
                                     colSpan={columns.length + 2}
                                     className="text-center text-muted-foreground py-8"
                                 >
-                                    Nessuno studente trovato.
+                                    {t("students.noStudentsFound")}
                                 </TableCell>
                             </TableRow>
                         ) : (
@@ -767,19 +770,19 @@ export default function ValutazioniGridView({
                                                                     <TooltipTrigger asChild>
                                                                         <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-300/40 dark:border-blue-800 cursor-help">
                                                                             <History className="size-2.5" />
-                                                                            Storico: {formatGrade(past.score)}
+                                                                            {t("evaluations.history")}: {formatGrade(past.score)}
                                                                         </span>
                                                                     </TooltipTrigger>
                                                                     <TooltipContent side="right" className="text-xs space-y-1 p-2">
-                                                                        <p className="font-semibold text-foreground">Storico esercizio precedente:</p>
+                                                                        <p className="font-semibold text-foreground">{t("evaluations.pastHistoryTitle", { defaultValue: "Storico esercizio precedente:" })}</p>
                                                                         <p className="text-muted-foreground">
-                                                                            Classe {past.className} {past.schoolYear ? `(${past.schoolYear})` : ""}
+                                                                            {past.className} {past.schoolYear ? `(${past.schoolYear})` : ""}
                                                                         </p>
                                                                         <p>
-                                                                            Voto: <strong className="text-primary">{formatGrade(past.score)}</strong>
-                                                                            {past.performanceValue && ` • Valore: ${past.performanceValue}`}
+                                                                            {t("evaluations.grade")}: <strong className="text-primary">{formatGrade(past.score)}</strong>
+                                                                            {past.performanceValue && ` • ${t("evaluations.performance")}: ${past.performanceValue}`}
                                                                         </p>
-                                                                        <p className="text-[10px] text-muted-foreground">Data: {past.date}</p>
+                                                                        <p className="text-[10px] text-muted-foreground">{t("common.date", { defaultValue: "Data" })}: {past.date}</p>
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             );

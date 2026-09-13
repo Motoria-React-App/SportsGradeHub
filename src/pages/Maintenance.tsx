@@ -2,8 +2,11 @@ import { Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { pageTransition, slideUp, scaleIn, buttonPress } from "@/lib/motion";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Maintenance() {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-background text-foreground space-y-8"
@@ -32,11 +35,10 @@ export default function Maintenance() {
         variants={slideUp}
       >
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
-          Sito in Manutenzione
+          {t("maintenance.title")}
         </h1>
         <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-          Stiamo eseguendo degli aggiornamenti importanti per migliorare la tua esperienza. 
-          Il servizio tornerà online al più presto. Ci scusiamo per il disagio!😜
+          {t("maintenance.description")}
         </p>
       </motion.div>
 
@@ -47,7 +49,7 @@ export default function Maintenance() {
       >
         <motion.div {...buttonPress}>
           <Button onClick={() => window.location.reload()} size="lg" className="rounded-full px-8 py-6 h-auto text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
-            Riprova a connetterti
+            {t("maintenance.retry")}
           </Button>
         </motion.div>
       </motion.div>

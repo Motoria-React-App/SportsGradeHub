@@ -57,7 +57,7 @@ export function useTranslation() {
     return result;
   };
 
-  return { t, lang };
+  return { t, lang, i18n: { language: lang } };
 }
 
 export type UseTranslationReturn = ReturnType<typeof useTranslation>;

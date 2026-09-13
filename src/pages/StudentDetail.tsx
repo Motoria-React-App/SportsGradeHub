@@ -50,6 +50,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TransferStudentDialog } from '@/components/TransferStudentDialog';
 import { pageTransition, slideUp, modalVariants, overlayVariants } from '@/lib/motion';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function StudentDetail() {
     const { id } = useParams<{ id: string }>();
@@ -58,6 +59,7 @@ export default function StudentDetail() {
     const client = useClient();
     const { formatGrade } = useGradeFormatter();
     const { formatDate } = useDateFormatter();
+    const { t } = useTranslation();
 
     const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
 
@@ -261,11 +263,11 @@ export default function StudentDetail() {
     if (!student) {
         return (
             <div className="flex flex-1 flex-col items-center justify-center p-4 md:p-6">
-                <p className="text-muted-foreground">Studente non trovato</p>
+                <p className="text-muted-foreground">{t("students.noStudents")}</p>
                 <Button asChild variant="outline" className="mt-4">
                     <Link to="/students">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Torna agli studenti
+                        {t("common.goBack")}
                     </Link>
                 </Button>
             </div>
@@ -308,11 +310,11 @@ export default function StudentDetail() {
                                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                             >
                                 <Badge variant="outline" className="text-sm">
-                                    {studentClass?.className || 'Nessuna classe'}
+                                    {studentClass?.className || t("students.noClass")}
                                 </Badge>
                             </motion.div>
                             <span className="text-sm text-muted-foreground flex items-center gap-1">
-                                {student.gender === 'M' ? 'Maschio' : student.gender === 'F' ? 'Femmina' : 'N/D'}
+                                {student.gender === 'M' ? t("students.male") : student.gender === 'F' ? t("students.female") : t("common.na")}
                             </span>
                             {student.birthdate && (
                                 <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -332,7 +334,7 @@ export default function StudentDetail() {
                         onClick={() => setTransferDialogOpen(true)}
                     >
                         <ArrowRightLeft className="h-4 w-4 text-primary" />
-                        Trasferisci Classe
+                        {t("classes.transferStudent")}
                     </Button>
                 </div>
             </motion.div>
@@ -376,10 +378,10 @@ export default function StudentDetail() {
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <History className="h-5 w-5 text-primary" />
-                                Cronologia delle Classi
+                                {t("students.classHistory")}
                             </CardTitle>
                             <CardDescription>
-                                Classi frequentate dallo studente negli anni scolastici (attive e archiviate).
+                                {t("studentDetail.classHistoryDesc")}
                             </CardDescription>
                         </div>
                         <Button
@@ -389,22 +391,22 @@ export default function StudentDetail() {
                             onClick={() => setTransferDialogOpen(true)}
                         >
                             <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
-                            Trasferisci
+                            {t("classes.transferStudent")}
                         </Button>
                     </div>
                 </CardHeader>
                 <CardContent>
                     {allStudentClasses.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-6 text-xs">Nessuna cronologia disponibile</p>
+                        <p className="text-muted-foreground text-center py-6 text-xs">{t("studentDetail.noHistory")}</p>
                     ) : (
                         <div className="rounded-lg border overflow-hidden">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Classe</TableHead>
-                                        <TableHead>Anno Scolastico</TableHead>
-                                        <TableHead>Stato Iscrizione</TableHead>
-                                        <TableHead className="text-right">Azioni</TableHead>
+                                        <TableHead>{t("classes.studentsTab")}</TableHead>
+                                        <TableHead>{t("classes.schoolYear")}</TableHead>
+                                        <TableHead>{t("common.status")}</TableHead>
+                                        <TableHead className="text-right">{t("common.actions")}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -414,22 +416,22 @@ export default function StudentDetail() {
                                                 {entry.className}
                                             </TableCell>
                                             <TableCell className="text-xs text-muted-foreground">
-                                                {entry.schoolYear || 'N/D'}
+                                                {entry.schoolYear || t("common.na")}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-1.5 flex-wrap">
                                                     {entry.isCurrent && (
                                                         <Badge variant="default" className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
-                                                            Classe Attuale
+                                                            {t("studentDetail.currentClass")}
                                                         </Badge>
                                                     )}
                                                     {entry.isArchived ? (
                                                         <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                                                            Archiviata
+                                                            {t("classes.archivedBadge")}
                                                         </Badge>
                                                     ) : !entry.isCurrent ? (
                                                         <Badge variant="secondary" className="text-[10px]">
-                                                            Attiva
+                                                            {t("classes.activeBadge")}
                                                         </Badge>
                                                     ) : null}
                                                 </div>
@@ -437,7 +439,7 @@ export default function StudentDetail() {
                                             <TableCell className="text-right">
                                                 <Button asChild variant="ghost" size="sm" className="h-7 text-xs gap-1">
                                                     <Link to={`/classes/${entry.classId}`}>
-                                                        <span>Apri classe</span>
+                                                        <span>{t("studentDetail.openClass")}</span>
                                                         <ExternalLink className="h-3 w-3" />
                                                     </Link>
                                                 </Button>
@@ -456,10 +458,10 @@ export default function StudentDetail() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5" />
-                        Andamento Valutazioni
+                        {t("studentDetail.evaluationTrend")}
                     </CardTitle>
                     <CardDescription>
-                        Visualizza l'andamento complessivo o filtra per esercizio
+                        {t("studentDetail.evaluationTrendDesc")}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -478,7 +480,7 @@ export default function StudentDetail() {
                     {filteredEvaluations.length > 0 ? (
                         selectedExerciseId && filteredEvaluations.length === 1 ? (
                             <div className="text-center py-8">
-                                <p className="text-muted-foreground mb-2">Solo una valutazione disponibile:</p>
+                                <p className="text-muted-foreground mb-2">{t("studentDetail.singleEvaluation")}:</p>
                                 <div className="text-2xl font-bold">{formatGrade(filteredEvaluations[0].score)}</div>
                                 <p className="text-sm text-muted-foreground mt-1">{formatDate(filteredEvaluations[0].createdAt)}</p>
                             </div>
@@ -606,7 +608,7 @@ export default function StudentDetail() {
                             </div>
                         )
                     ) : (
-                        <p className="text-muted-foreground text-center py-12">Nessuna valutazione presente</p>
+                        <p className="text-muted-foreground text-center py-12">{t("students.noEvaluationsRecorded")}</p>
                     )}
                 </CardContent>
             </Card>
@@ -614,19 +616,19 @@ export default function StudentDetail() {
             {/* Media Annuale e Numero Valutazioni */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Statistiche Annuali</CardTitle>
-                    <CardDescription>Media voti e numero di valutazioni per anno</CardDescription>
+                    <CardTitle>{t("studentDetail.yearlyStats")}</CardTitle>
+                    <CardDescription>{t("studentDetail.yearlyStatsDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {yearlyStats.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-8">Nessuna valutazione registrata</p>
+                        <p className="text-muted-foreground text-center py-8">{t("students.noEvaluationsRecorded")}</p>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Anno</TableHead>
-                                    <TableHead>Media</TableHead>
-                                    <TableHead>Valutazioni</TableHead>
+                                    <TableHead>{t("common.date")}</TableHead>
+                                    <TableHead>{t("analytics.average")}</TableHead>
+                                    <TableHead>{t("evaluations.title")}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -688,6 +690,7 @@ function JustificationsCard({
     isAddingJustification,
     setIsAddingJustification,
 }: JustificationsCardProps) {
+    const { t } = useTranslation();
 
     const justifications = student.justifications || [];
 
@@ -730,7 +733,7 @@ function JustificationsCard({
     const handleAddJustification = async () => {
         // Basic validation for DD/MM/YYYY
         if (newJustificationDate.length !== 10) {
-            toast.error('Inserisci una data valida (GG/MM/AAAA)');
+            toast.error(t("studentDetail.invalidDate"));
             return;
         }
 
@@ -776,9 +779,9 @@ function JustificationsCard({
             setNewJustificationDate(`${dd}/${mm}/${yyyy}`);
 
             setNewJustificationNote('');
-            toast.success('Giustifica aggiunta con successo');
+            toast.success(t("studentDetail.justificationAdded"));
         } catch (error) {
-            toast.error('Errore durante l\'aggiunta della giustifica');
+            toast.error(t("studentDetail.justificationAddError"));
             console.error(error);
         } finally {
             setIsAddingJustification(false);
@@ -803,9 +806,9 @@ function JustificationsCard({
                 await refreshStudents();
             }
 
-            toast.success('Giustifica rimossa');
+            toast.success(t("studentDetail.justificationRemoved"));
         } catch (error) {
-            toast.error('Errore durante la rimozione');
+            toast.error(t("common.error"));
             console.error(error);
         }
     };
@@ -818,20 +821,20 @@ function JustificationsCard({
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 <AlertTriangle className={`h-5 w-5 ${isOverLimit ? 'text-destructive' : 'text-muted-foreground'}`} />
-                                Giustifiche
+                                {t("students.justificationsTitle")}
                                 {currentPeriod && (
                                     <Badge variant="outline" className="ml-2">{currentPeriod.name}</Badge>
                                 )}
                             </CardTitle>
                             <CardDescription>
                                 {currentPeriod
-                                    ? `Periodo: ${formatDate(currentPeriod.startDate)} - ${formatDate(currentPeriod.endDate)}`
+                                    ? `${t("studentDetail.period")}: ${formatDate(currentPeriod.startDate)} - ${formatDate(currentPeriod.endDate)}`
                                     : (
                                         <span className="flex items-center gap-2">
-                                            Nessun periodo selezionato.{' '}
+                                            {t("studentDetail.noPeriod")}{' '}
                                             <Link to="/settings" className="text-primary hover:underline inline-flex items-center gap-1">
                                                 <Settings className="h-3 w-3" />
-                                                Vai alle impostazioni
+                                                {t("studentDetail.goToSettings")}
                                             </Link>
                                         </span>
                                     )
@@ -841,10 +844,10 @@ function JustificationsCard({
                         <Button
                             onClick={() => setJustificationDialogOpen(true)}
                             disabled={!currentPeriod}
-                            title={!currentPeriod ? 'Prima devi impostare un periodo nelle impostazioni' : undefined}
+                            title={!currentPeriod ? t("studentDetail.noPeriodHint") : undefined}
                         >
                             <Plus className="h-4 w-4 mr-2" />
-                            Aggiungi
+                            {t("students.addJustification")}
                         </Button>
                     </div>
                 </CardHeader>
@@ -855,13 +858,13 @@ function JustificationsCard({
                             <div>
                                 <div className="text-3xl font-bold">{justificationCount}</div>
                                 <div className="text-sm text-muted-foreground">
-                                    di {settings.maxJustifications} giustifiche massime
+                                    {t("studentDetail.ofMaxJustifications", { max: settings.maxJustifications })}
                                 </div>
                             </div>
                             {isOverLimit && (
                                 <div className="text-destructive font-medium flex items-center gap-2">
                                     <AlertTriangle className="h-5 w-5" />
-                                    Soglia superata!
+                                    {t("studentDetail.thresholdExceeded")}
                                 </div>
                             )}
                         </div>
@@ -870,7 +873,7 @@ function JustificationsCard({
                     {/* Justifications List */}
                     {justificationsInPeriod.length === 0 ? (
                         <p className="text-muted-foreground text-center py-4">
-                            Nessuna giustifica registrata {currentPeriod ? 'in questo periodo' : ''}
+                            {t("students.noJustifications")} {currentPeriod ? t("studentDetail.inThisPeriod") : ''}
                         </p>
                     ) : (
                         <div className="space-y-2">
@@ -917,9 +920,9 @@ function JustificationsCard({
                                 exit="exit"
                             >
                                 <DialogHeader>
-                                    <DialogTitle>Aggiungi Giustifica</DialogTitle>
+                                    <DialogTitle>{t("students.addJustification")}</DialogTitle>
                                     <DialogDescription>
-                                        Registra una nuova giustifica per {student.firstName} {student.lastName}
+                                        {t("studentDetail.addJustificationFor", { name: `${student.firstName} ${student.lastName}` })}
                                     </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
@@ -945,10 +948,10 @@ function JustificationsCard({
                                 </div>
                                   <DialogFooter>
                                       <Button variant="outline" onClick={() => setJustificationDialogOpen(false)}>
-                                          Annulla
+                                          {t("common.cancel")}
                                       </Button>
                                       <Button onClick={handleAddJustification} disabled={isAddingJustification}>
-                                          {isAddingJustification ? 'Aggiunta...' : 'Aggiungi'}
+                                          {isAddingJustification ? t("common.saving") : t("students.addJustification")}
                                       </Button>
                                   </DialogFooter>
                               </motion.div>

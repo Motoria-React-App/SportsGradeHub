@@ -1,4 +1,5 @@
 import { useNavigate, Navigate, Link } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth, useSchoolData } from "@/provider/clientProvider";
 import { useSchedule } from "@/provider/scheduleProvider";
 import { useSettings } from "@/provider/settingsProvider";
@@ -10,11 +11,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { pageTransition, slideUp, scaleIn } from "@/lib/motion";
 import LoadingPage from "./Loading";
 
-
-
 const LAST_CLASS_KEY = "sportsgrade_last_class";
 
 export default function WelcomePage() {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth();
     const { getCurrentClass, isLoading } = useSchedule();
@@ -22,7 +22,6 @@ export default function WelcomePage() {
     const { settings } = useSettings();
 
     // Redirect to login if not authenticated
-
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
@@ -73,6 +72,14 @@ export default function WelcomePage() {
 
     // If there's a scheduled class, show the focused welcome view
     if (scheduledClass) {
+        const isEn = i18n.language.startsWith("en");
+        const plural = isEn
+            ? (studentsOverLimit.length > 1 ? "s" : "")
+            : (studentsOverLimit.length > 1 ? "i" : "e");
+        const pluralVerb = isEn
+            ? (studentsOverLimit.length > 1 ? "have" : "has")
+            : (studentsOverLimit.length > 1 ? "nno" : "");
+
         return (
             <motion.div
                 className="relative flex flex-col items-center justify-center min-h-screen bg-background p-4 overflow-hidden"
@@ -121,9 +128,12 @@ export default function WelcomePage() {
                         className="text-center mb-10 w-full"
                         variants={slideUp}
                     >
-                        <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">Benvenuto</p>
+                        <p className="text-xs font-semibold tracking-widest text-primary uppercase mb-2">
+                            {t("welcome.greeting", { defaultValue: "Benvenuto" })}
+                        </p>
                         <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground">
-                            Prof. <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{displayName}</span>
+                            {t("welcome.profTitle", { defaultValue: "Prof." })}{" "}
+                            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">{displayName}</span>
                         </h1>
                     </motion.div>
 
@@ -134,7 +144,7 @@ export default function WelcomePage() {
                         transition={{ delay: 0.1 }}
                     >
                         <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase mb-4">
-                            Classe In Corso
+                            {t("welcome.currentClass", { defaultValue: "Classe In Corso" })}
                         </p>
                         <div className="flex flex-col items-center gap-3">
                             <motion.div
@@ -155,7 +165,7 @@ export default function WelcomePage() {
                                 </motion.h2>
                                 <p className="text-xs font-medium text-muted-foreground flex items-center justify-center gap-1">
                                     <Users className="w-3.5 h-3.5" />
-                                    {scheduledClass.studentCount} studenti registrati
+                                    {t("welcome.registeredStudents", { count: scheduledClass.studentCount, defaultValue: `${scheduledClass.studentCount} studenti registrati` })}
                                 </p>
                             </div>
                         </div>
@@ -180,10 +190,15 @@ export default function WelcomePage() {
                                             >
                                                 <AlertTriangle className="h-4 w-4" />
                                             </motion.div>
-                                            Attenzione Giustifiche
+                                            {t("welcome.justificationAlert", { defaultValue: "Attenzione Giustifiche" })}
                                         </CardTitle>
                                         <CardDescription className="text-xs text-destructive/80 font-medium">
-                                            {studentsOverLimit.length} student{studentsOverLimit.length > 1 ? 'i' : 'e'} ha{studentsOverLimit.length > 1 ? 'nno' : ''} superato la soglia di giustifiche:
+                                            {t("welcome.justificationExceeded", {
+                                                count: studentsOverLimit.length,
+                                                plural,
+                                                pluralVerb,
+                                                defaultValue: `${studentsOverLimit.length} student${plural} ha${pluralVerb} superato la soglia di giustifiche:`
+                                            })}
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="pt-0">
@@ -205,7 +220,7 @@ export default function WelcomePage() {
                                             ))}
                                             {studentsOverLimit.length > 5 && (
                                                 <span className="text-xs text-muted-foreground px-2 py-1 font-medium bg-muted/50 rounded-full border border-muted-foreground/5">
-                                                    +{studentsOverLimit.length - 5} altri
+                                                    {t("welcome.othersCount", { count: studentsOverLimit.length - 5, defaultValue: `+${studentsOverLimit.length - 5} altri` })}
                                                 </span>
                                             )}
                                         </div>
@@ -226,7 +241,7 @@ export default function WelcomePage() {
                             onClick={() => handleStartEvaluation(scheduledClass.id)}
                             className="w-full py-6 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group flex items-center justify-center gap-2"
                         >
-                            Cominciamo a valutare!
+                            {t("welcome.startEvaluatingBtn", { defaultValue: "Cominciamo a valutare!" })}
                             <motion.div
                                 animate={{ x: [0, 4, 0] }}
                                 transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
@@ -246,7 +261,7 @@ export default function WelcomePage() {
                             onClick={handleGoToDashboard}
                             className="text-xs font-semibold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-all"
                         >
-                            Oppure vai al dashboard →
+                            {t("welcome.orGoToDashboard", { defaultValue: "Oppure vai alla dashboard →" })}
                         </button>
                     </motion.div>
                 </motion.div>

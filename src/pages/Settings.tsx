@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSettings, SchoolPeriod } from "@/provider/settingsProvider";
-import { useSchedule, DAYS_ORDER, DAY_LABELS } from "@/provider/scheduleProvider";
+import { useSchedule, DAYS_ORDER } from "@/provider/scheduleProvider";
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

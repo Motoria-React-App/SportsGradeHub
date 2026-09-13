@@ -486,7 +486,7 @@ export default function Classes() {
                                         onClick={() => setPromoteDialogOpen(true)}
                                     >
                                         <GraduationCap className="w-4 h-4" />
-                                        Promuovi Classe
+                                        {t("classes.promoteClass")}
                                     </Button>
                                 </motion.div>
                             )}
@@ -497,7 +497,7 @@ export default function Classes() {
                                     onClick={() => setArchiveDialogOpen(true)}
                                 >
                                     <Archive className="w-4 h-4" />
-                                    Archivia
+                                    {t("classes.archive")}
                                 </Button>
                             </motion.div>
                             <motion.div {...buttonPress}>
@@ -510,13 +510,13 @@ export default function Classes() {
                                     }}
                                 >
                                     <Link2 className="w-4 h-4" />
-                                    Collega Esercizi
+                                    {t("classes.linkExercises")}
                                 </Button>
                             </motion.div>
                             <motion.div {...buttonPress}>
                                 <Button className="gap-2" onClick={() => { setSelectedStudent(null); setStudentDialogOpen(true); }}>
                                     <Users className="w-4 h-4" />
-                                    Aggiungi Studente
+                                    {t("students.addStudent")}
                                 </Button>
                             </motion.div>
                         </>

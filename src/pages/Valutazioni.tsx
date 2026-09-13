@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useGradeFormatter } from "@/hooks/useGradeFormatter";
 import { useSettings } from "@/provider/settingsProvider";
 import { useParams, useLocation } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -93,6 +94,7 @@ function parseInputNumber(val: string): number {
 }
 
 export default function Valutazioni() {
+    const { t } = useTranslation();
     const {
         students,
         classes,
@@ -598,7 +600,7 @@ export default function Valutazioni() {
                     <div className="p-3 space-y-3">
                         {items.length === 0 ? (
                             <div className="text-center text-muted-foreground py-8 text-sm">
-                                Nessuno studente
+                                {t("evaluations.noStudents", { defaultValue: "Nessuno studente" })}
                             </div>
                         ) : (
                             <AnimatePresence mode="popLayout">
@@ -649,7 +651,7 @@ export default function Valutazioni() {
                                                         {student.firstName} {student.lastName}
                                                     </p>
                                                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5 opacity-70">
-                                                        Classe {getClassName(student.currentClassId)}
+                                                        {getClassName(student.currentClassId)}
                                                     </p>
                                                     {(() => {
                                                         const pastEvals = evaluations.filter(e =>
@@ -664,7 +666,7 @@ export default function Valutazioni() {
                                                             <div className="mt-1">
                                                                 <span className="inline-flex items-center gap-1 text-[9px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.2 rounded border border-blue-300/30">
                                                                     <History className="h-2.5 w-2.5" />
-                                                                    Storico: {formatGrade(latestPast.score)}
+                                                                    {t("evaluations.history")}: {formatGrade(latestPast.score)}
                                                                 </span>
                                                             </div>
                                                         );
@@ -763,9 +765,9 @@ export default function Valutazioni() {
                     variants={slideUp}
                 >
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Valutazioni</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">{t("evaluations.title")}</h1>
                         <p className="text-muted-foreground">
-                            Gestisci le valutazioni degli studenti
+                            {t("evaluations.subtitle")}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -779,19 +781,19 @@ export default function Valutazioni() {
                         >
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <ToggleGroupItem value="kanban" aria-label="Vista Kanban">
+                                    <ToggleGroupItem value="kanban" aria-label={t("evaluations.kanbanView")}>
                                         <Columns3 className="h-4 w-4" />
                                     </ToggleGroupItem>
                                 </TooltipTrigger>
-                                <TooltipContent>Vista Kanban</TooltipContent>
+                                <TooltipContent>{t("evaluations.kanbanView")}</TooltipContent>
                             </Tooltip>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <ToggleGroupItem value="grid" aria-label="Vista Griglia">
+                                    <ToggleGroupItem value="grid" aria-label={t("evaluations.gridView")}>
                                         <Grid3X3 className="h-4 w-4" />
                                     </ToggleGroupItem>
                                 </TooltipTrigger>
-                                <TooltipContent>Vista Griglia</TooltipContent>
+                                <TooltipContent>{t("evaluations.gridView")}</TooltipContent>
                             </Tooltip>
                         </ToggleGroup>
 
@@ -803,14 +805,14 @@ export default function Valutazioni() {
                                     onClick={() => setIsResetDialogOpen(true)}
                                 >
                                     <RotateCcw className="h-4 w-4" />
-                                    Nuova Sessione
+                                    {t("evaluations.newSession", { defaultValue: "Nuova Sessione" })}
                                 </Button>
                             </motion.div>
                         )}
                         <motion.div {...buttonPress}>
                             <Button className="gap-2" onClick={() => setIsAssignModalOpen(true)} disabled>
                                 <Plus className="h-4 w-4" />
-                                Assegna Esercizio
+                                {t("evaluations.assignExercise", { defaultValue: "Assegna Esercizio" })}
                             </Button>
                         </motion.div>
                     </div>
@@ -821,23 +823,23 @@ export default function Valutazioni() {
                     <div className="flex items-center gap-3">
                         <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                             <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Filtra per classe" />
+                                <SelectValue placeholder={t("students.filterByClass")} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tutte le classi</SelectItem>
+                                <SelectItem value="all">{t("evaluations.allClasses")}</SelectItem>
                                 {classes.map((cls) => (
                                     <SelectItem key={cls.id} value={cls.id}>
-                                        Classe {cls.className}
+                                        {cls.className}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                         <Select value={selectedExerciseId} onValueChange={setSelectedExerciseId}>
                             <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Filtra per esercizio" />
+                                <SelectValue placeholder={t("evaluations.selectExercise")} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tutti gli esercizi</SelectItem>
+                                <SelectItem value="all">{t("evaluations.allExercises")}</SelectItem>
                                 {filteredExercises.map((ex) => (
                                     <SelectItem key={ex.id} value={ex.id}>
                                         {ex.name}
@@ -853,14 +855,14 @@ export default function Valutazioni() {
                             <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
                             <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
                                 <SelectTrigger className="w-[180px] h-8 text-xs">
-                                    <SelectValue placeholder="Ordina per..." />
+                                    <SelectValue placeholder={t("evaluations.sortMode")} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="alpha-asc">Alfabetico A→Z</SelectItem>
-                                    <SelectItem value="alpha-desc">Alfabetico Z→A</SelectItem>
-                                    <SelectItem value="grade-high">Voto più alto</SelectItem>
-                                    <SelectItem value="grade-low">Voto più basso</SelectItem>
-                                    <SelectItem value="completion">Completamento</SelectItem>
+                                    <SelectItem value="alpha-asc">{t("evaluations.alphaAsc")}</SelectItem>
+                                    <SelectItem value="alpha-desc">{t("evaluations.alphaDesc")}</SelectItem>
+                                    <SelectItem value="grade-high">{t("evaluations.gradeHigh")}</SelectItem>
+                                    <SelectItem value="grade-low">{t("evaluations.gradeLow")}</SelectItem>
+                                    <SelectItem value="completion">{t("evaluations.completion")}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -868,7 +870,7 @@ export default function Valutazioni() {
                         {totalEvaluations > 0 && (
                             <div className="flex items-center gap-2 text-sm">
                                 <Badge variant="outline" className="text-base px-3 py-1">
-                                    {completedEvaluations}/{totalEvaluations} valutati
+                                    {completedEvaluations}/{totalEvaluations} {t("evaluations.rated").toLowerCase()}
                                 </Badge>
                                 <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
                                     <div
@@ -894,7 +896,7 @@ export default function Valutazioni() {
                         /* Kanban Columns */
                         <div className="flex-1 flex gap-4 overflow-x-auto pb-4 h-full">
                             <Column
-                                title="Non Valutato"
+                                title={t("evaluations.unrated")}
                                 status="non-valutato"
                                 icon={AlertCircle}
                                 colorClass="text-slate-600 dark:text-slate-400"
@@ -902,7 +904,7 @@ export default function Valutazioni() {
                                 size="small"
                             />
                             <Column
-                                title="Valutando"
+                                title={t("evaluations.inProgress")}
                                 status="valutando"
                                 icon={Clock}
                                 colorClass="text-yellow-600 dark:text-yellow-400"
@@ -910,7 +912,7 @@ export default function Valutazioni() {
                                 size="small"
                             />
                             <Column
-                                title="Valutato"
+                                title={t("evaluations.rated")}
                                 status="valutato"
                                 icon={Check}
                                 colorClass="text-green-600 dark:text-green-400"
@@ -954,7 +956,7 @@ export default function Valutazioni() {
                                 <Card className="w-[400px] shadow-xl border-2 flex flex-col max-h-[calc(100vh-120px)] p-0 gap-0 overflow-hidden">
                                     <CardHeader className="pb-2 p-6 shrink-0 bg-background z-10">
                                         <div className="flex items-center justify-between">
-                                            <CardTitle className="text-lg">Valutazione</CardTitle>
+                                            <CardTitle className="text-lg">{t("evaluations.gradeEntryModal")}</CardTitle>
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -982,7 +984,7 @@ export default function Valutazioni() {
                                     <div className="px-6 pb-2 shrink-0">
                                         {/* Status badge - moved out of scroll area for visibility */}
                                         <div className="flex items-center gap-2">
-                                            <span className="text-sm text-muted-foreground">Stato:</span>
+                                            <span className="text-sm text-muted-foreground">{t("common.status", { defaultValue: "Stato" })}:</span>
                                             <Badge
                                                 variant={
                                                     gradingStatus === "valutato"
@@ -996,9 +998,9 @@ export default function Valutazioni() {
                                                     gradingStatus === "valutando" && "bg-yellow-500 text-black"
                                                 )}
                                             >
-                                                {gradingStatus === "non-valutato" && "Non Valutato"}
-                                                {gradingStatus === "valutando" && "Valutando"}
-                                                {gradingStatus === "valutato" && "Valutato"}
+                                                {gradingStatus === "non-valutato" && t("evaluations.unrated")}
+                                                {gradingStatus === "valutando" && t("evaluations.inProgress")}
+                                                {gradingStatus === "valutato" && t("evaluations.rated")}
                                             </Badge>
                                         </div>
                                     </div>
@@ -1022,23 +1024,23 @@ export default function Valutazioni() {
                                                 <div className="flex items-center justify-between">
                                                     <span className="font-semibold text-xs text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
                                                         <History className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                                                        Storico Classi Precedenti
+                                                        {t("students.pastClasses")}
                                                     </span>
                                                     <Badge variant="outline" className="text-[10px] text-blue-700 dark:text-blue-300 border-blue-300">
-                                                        {gradingPastAttempts.length} {gradingPastAttempts.length === 1 ? "valutazione passata" : "valutazioni passate"}
+                                                        {gradingPastAttempts.length} {gradingPastAttempts.length === 1 ? t("evaluations.pastEvaluation", { defaultValue: "valutazione passata" }) : t("evaluations.pastEvaluations", { defaultValue: "valutazioni passate" })}
                                                     </Badge>
                                                 </div>
                                                 <div className="space-y-1.5 max-h-32 overflow-y-auto">
                                                     {gradingPastAttempts.map((past) => {
-                                                        const pastDate = new Date(past.createdAt).toLocaleDateString("it-IT");
+                                                        const pastDate = new Date(past.createdAt).toLocaleDateString();
                                                         return (
                                                             <div key={past.id} className="flex items-center justify-between p-2 rounded-md bg-background/90 border text-xs">
                                                                 <div>
                                                                     <span className="font-medium text-foreground">
-                                                                        Data: {pastDate}
+                                                                        {t("common.date", { defaultValue: "Data" })}: {pastDate}
                                                                     </span>
                                                                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                                                                        Prestazione: {past.performanceValue !== "" ? `${past.performanceValue} ${gradingExercise.unit || ""}` : "N/D"}
+                                                                        {t("evaluations.performance")}: {past.performanceValue !== "" ? `${past.performanceValue} ${gradingExercise.unit || ""}` : "N/D"}
                                                                         {past.comments && ` • ${past.comments}`}
                                                                     </div>
                                                                 </div>
@@ -1056,13 +1058,13 @@ export default function Valutazioni() {
                                         {gradingExercise.evaluationType === 'criteria' && gradingExercise.evaluationCriteria && gradingExercise.evaluationCriteria.length > 0 ? (
                                             /* Criteria-based evaluation */
                                             <div className="space-y-3">
-                                                <Label>Punteggi per Criterio</Label>
+                                                <Label>{t("evaluations.criteriaScores")}</Label>
                                                 <div className="space-y-2">
                                                     {gradingExercise.evaluationCriteria.map((criterion) => (
                                                         <div key={criterion.name} className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
                                                             <div className="flex-1">
                                                                 <p className="text-sm font-medium">{criterion.name}</p>
-                                                                <p className="text-xs text-muted-foreground">Max: {criterion.maxScore}</p>
+                                                                <p className="text-xs text-muted-foreground">{t("exercises.max")}: {criterion.maxScore}</p>
                                                             </div>
                                                             <DecimalInput
                                                                 value={criteriaScores[criterion.name] || 0}
@@ -1097,7 +1099,7 @@ export default function Valutazioni() {
                                                     return (
                                                         <div className="p-4 rounded-lg bg-muted/50 text-center">
                                                             <p className="text-sm text-muted-foreground mb-1">
-                                                                Punteggio: {totalScored} / {totalMax}
+                                                                {t("exercises.score")}: {totalScored} / {totalMax}
                                                             </p>
                                                             <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
                                                                 {formatGrade(roundedGrade)}
@@ -1109,7 +1111,7 @@ export default function Valutazioni() {
                                         ) : gradingExercise.evaluationType === 'criteria-ranges' && gradingExercise.evaluationCriteriaWithRanges && gradingExercise.evaluationCriteriaWithRanges.length > 0 ? (
                                             /* Criteria with Ranges evaluation */
                                             <div className="space-y-3">
-                                                <Label>Prestazioni per Criterio</Label>
+                                                <Label>{t("evaluations.criteriaPerformances", { defaultValue: "Prestazioni per Criterio" })}</Label>
                                                 <div className="space-y-2">
                                                     {gradingExercise.evaluationCriteriaWithRanges.map((criterion) => {
                                                         const performance = criteriaPerformances[criterion.name];
@@ -1133,7 +1135,7 @@ export default function Valutazioni() {
                                                                 <div className="flex items-center justify-between">
                                                                     <div className="flex-1">
                                                                         <p className="text-sm font-medium">{criterion.name}</p>
-                                                                        <p className="text-xs text-muted-foreground">Max: {criterion.maxScore} punti</p>
+                                                                        <p className="text-xs text-muted-foreground">{t("exercises.max")}: {criterion.maxScore} pt</p>
                                                                     </div>
                                                                     {calculatedScore !== null && (
                                                                         <Badge variant="secondary" className="ml-2">
@@ -1143,7 +1145,7 @@ export default function Valutazioni() {
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     <DecimalInput
-                                                                        placeholder={`Inserisci ${criterion.unit}`}
+                                                                        placeholder={`${t("evaluations.enterValue")} ${criterion.unit}`}
                                                                         value={criteriaPerformances[criterion.name] ?? 0}
                                                                         onChange={(val) => {
                                                                             setCriteriaPerformances({
@@ -1195,7 +1197,7 @@ export default function Valutazioni() {
                                                     return (
                                                         <div className="p-4 rounded-lg bg-muted/50 text-center">
                                                             <p className="text-sm text-muted-foreground mb-1">
-                                                                Punteggio: {totalScored} / {totalMax}
+                                                                {t("exercises.score")}: {totalScored} / {totalMax}
                                                             </p>
                                                             <p className={cn("text-3xl font-bold", getGradeColor(roundedGrade))}>
                                                                 {formatGrade(roundedGrade)}
@@ -1208,10 +1210,10 @@ export default function Valutazioni() {
                                             /* Range-based evaluation */
                                             <>
                                                 <div className="space-y-2">
-                                                    <Label>Prestazione ({gradingExercise.unit})</Label>
+                                                    <Label>{t("evaluations.performance")} ({gradingExercise.unit})</Label>
                                                     <Input
                                                         type="text"
-                                                        placeholder={`Inserisci ${gradingExercise.unit}`}
+                                                        placeholder={`${t("evaluations.enterValue")} ${gradingExercise.unit}`}
                                                         value={performanceInputValue}
                                                         onChange={(e) => setPerformanceInputValue(e.target.value)}
                                                     />
@@ -1220,7 +1222,7 @@ export default function Valutazioni() {
                                                 {/* Score preview */}
                                                 {gradingPreviewScore !== null ? (
                                                     <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                        <p className="text-sm text-muted-foreground mb-1">Voto Provvisorio</p>
+                                                        <p className="text-sm text-muted-foreground mb-1">{t("evaluations.provisionalGrade", { defaultValue: "Voto Provvisorio" })}</p>
                                                         <p
                                                             className={cn(
                                                                 "text-3xl font-bold",
@@ -1232,15 +1234,14 @@ export default function Valutazioni() {
                                                     </div>
                                                 ) : (
                                                     <div className="p-4 rounded-lg bg-muted/50 text-center">
-                                                        <p className="text-sm text-muted-foreground">Inserisci un valore per vedere il voto</p>
+                                                        <p className="text-sm text-muted-foreground">{t("evaluations.enterValueToSeeGrade", { defaultValue: "Inserisci un valore per vedere il voto" })}</p>
                                                     </div>
                                                 )}
 
 
                                                 {!gradingExercise.evaluationRanges && (
                                                     <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-md text-sm text-yellow-800 dark:text-yellow-200">
-                                                        ⚠️ Questo esercizio non ha fasce di valutazione configurate.
-                                                        Vai alla pagina Esercizi per configurarle.
+                                                        {t("evaluations.noRangesWarning", { defaultValue: "⚠️ Questo esercizio non ha fasce di valutazione configurate. Vai alla pagina Esercizi per configurarle." })}
                                                     </div>
                                                 )}
                                             </>
@@ -1248,11 +1249,11 @@ export default function Valutazioni() {
 
                                         {/* Notes */}
                                         <div className="space-y-2">
-                                            <Label>Note</Label>
+                                            <Label>{t("students.notes")}</Label>
                                             <Textarea
                                                 value={notesValue}
                                                 onChange={(e) => setNotesValue(e.target.value)}
-                                                placeholder="Aggiungi note sulla prestazione..."
+                                                placeholder={t("evaluations.commentPlaceholder")}
                                                 rows={3}
                                             />
                                         </div>
@@ -1282,7 +1283,7 @@ export default function Valutazioni() {
                                                         ) : (
                                                             <Save className="mr-2 h-4 w-4" />
                                                         )}
-                                                        Salva Bozza
+                                                        {t("evaluations.saveDraft", { defaultValue: "Salva Bozza" })}
                                                     </Button>
                                                     <Button
                                                         onClick={() => handleSaveEvaluation(true)}
@@ -1293,7 +1294,7 @@ export default function Valutazioni() {
                                                         ) : (
                                                             <Check className="mr-2 h-4 w-4" />
                                                         )}
-                                                        Conferma Voto
+                                                        {t("evaluations.saveGrade")}
                                                     </Button>
                                                 </div>
                                             );
@@ -1307,7 +1308,7 @@ export default function Valutazioni() {
                                             disabled={isDeleting}
                                         >
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            Elimina Valutazione
+                                            {t("evaluations.deleteEvaluation", { defaultValue: "Elimina Valutazione" })}
                                         </Button>
                                     </CardFooter>
                                 </Card>
@@ -1322,13 +1323,13 @@ export default function Valutazioni() {
                         <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                             <Plus className="h-8 w-8 text-muted-foreground" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">Nessuna valutazione</h3>
+                        <h3 className="text-lg font-semibold mb-2">{t("evaluations.noEvaluations")}</h3>
                         <p className="text-muted-foreground mb-4">
-                            Inizia assegnando un esercizio a una classe o a degli studenti
+                            {t("evaluations.emptyDesc", { defaultValue: "Inizia assegnando un esercizio a una classe o a degli studenti" })}
                         </p>
                         <Button onClick={() => setIsAssignModalOpen(true)} disabled>
                             <Plus className="h-4 w-4 mr-2" />
-                            Assegna Esercizio
+                            {t("evaluations.assignExercise", { defaultValue: "Assegna Esercizio" })}
                         </Button>
                     </div>
                 )}
@@ -1338,15 +1339,15 @@ export default function Valutazioni() {
             <Dialog open={isAssignModalOpen} onOpenChange={setIsAssignModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Assegna Esercizio</DialogTitle>
+                        <DialogTitle>{t("evaluations.assignExercise", { defaultValue: "Assegna Esercizio" })}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         {/* Exercise selection */}
                         <div className="space-y-2">
-                            <Label>Esercizio</Label>
+                            <Label>{t("evaluations.selectExercise")}</Label>
                             <Select value={assignExerciseId} onValueChange={setAssignExerciseId}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Seleziona esercizio" />
+                                    <SelectValue placeholder={t("evaluations.selectExercise")} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {exercises.map((ex) => (
@@ -1360,7 +1361,7 @@ export default function Valutazioni() {
 
                         {/* Student multi-select */}
                         <div className="space-y-2">
-                            <Label>Studenti</Label>
+                            <Label>{t("students.title")}</Label>
                             <ScrollArea className="h-[200px] border rounded-md p-3">
                                 <div className="space-y-2">
                                     {students.map((student) => (
@@ -1393,7 +1394,7 @@ export default function Valutazioni() {
                             </ScrollArea>
                             {assignStudentIds.length > 0 && (
                                 <p className="text-sm text-muted-foreground">
-                                    {assignStudentIds.length} studenti selezionati
+                                    {assignStudentIds.length} {t("students.selectedStudents", { defaultValue: "studenti selezionati" })}
                                 </p>
                             )}
                         </div>
@@ -1401,7 +1402,7 @@ export default function Valutazioni() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAssignModalOpen(false)}>
-                            Annulla
+                            {t("common.cancel")}
                         </Button>
                         <Button
                             onClick={handleAssignExercise}
@@ -1412,7 +1413,7 @@ export default function Valutazioni() {
                             }
                         >
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Assegna
+                            {t("evaluations.assign", { defaultValue: "Assegna" })}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -1422,17 +1423,15 @@ export default function Valutazioni() {
             <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Nuova Sessione di Valutazione</AlertDialogTitle>
+                        <AlertDialogTitle>{t("evaluations.newSessionTitle", { defaultValue: "Nuova Sessione di Valutazione" })}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Vuoi iniziare una nuova sessione di valutazione?
-                            Le valutazioni esistenti rimarranno salvate nel sistema.
-                            Puoi riassegnare l'esercizio alla classe per ricominciare.
+                            {t("evaluations.newSessionDesc", { defaultValue: "Vuoi iniziare una nuova sessione di valutazione? Le valutazioni esistenti rimarranno salvate nel sistema. Puoi riassegnare l'esercizio alla classe per ricominciare." })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Annulla</AlertDialogCancel>
+                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleResetSession}>
-                            Conferma
+                            {t("common.confirm")}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1442,14 +1441,13 @@ export default function Valutazioni() {
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Eliminare questa valutazione?</AlertDialogTitle>
+                        <AlertDialogTitle>{t("evaluations.deleteConfirmTitle", { defaultValue: "Eliminare questa valutazione?" })}</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Stai per eliminare la valutazione per questo studente.
-                            Questa azione non può essere annullata.
+                            {t("evaluations.deleteConfirmDesc", { defaultValue: "Stai per eliminare la valutazione per questo studente. Questa azione non può essere annullata." })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             disabled={isDeleting}
@@ -1458,18 +1456,18 @@ export default function Valutazioni() {
                                 handleDeleteEvaluation();
                             }}
                         >
-                               {isDeleting ? (
-                                   <>
-                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                       Eliminazione...
-                                   </>
-                               ) : (
-                                   "Elimina"
-                               )}
-                           </AlertDialogAction>
-                       </AlertDialogFooter>
-                   </AlertDialogContent>
-               </AlertDialog>
-           </>
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    {t("common.loading")}
+                                </>
+                            ) : (
+                                t("common.delete")
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

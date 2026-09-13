@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -122,11 +123,11 @@ function computeClassMetrics(
 
     const total = classEvals.length;
     const gradeDistribution = [
-        { range: "< 6", label: "Insuff. (<6)", count: b1, percentage: total > 0 ? Math.round((b1 / total) * 100) : 0 },
-        { range: "6 - 6.9", label: "Suff. (6-6.9)", count: b2, percentage: total > 0 ? Math.round((b2 / total) * 100) : 0 },
-        { range: "7 - 7.9", label: "Discreto (7-7.9)", count: b3, percentage: total > 0 ? Math.round((b3 / total) * 100) : 0 },
-        { range: "8 - 8.9", label: "Buono (8-8.9)", count: b4, percentage: total > 0 ? Math.round((b4 / total) * 100) : 0 },
-        { range: "9 - 10", label: "Ottimo (9-10)", count: b5, percentage: total > 0 ? Math.round((b5 / total) * 100) : 0 },
+        { range: "< 6", label: "< 6", count: b1, percentage: total > 0 ? Math.round((b1 / total) * 100) : 0 },
+        { range: "6 - 6.9", label: "6 - 6.9", count: b2, percentage: total > 0 ? Math.round((b2 / total) * 100) : 0 },
+        { range: "7 - 7.9", label: "7 - 7.9", count: b3, percentage: total > 0 ? Math.round((b3 / total) * 100) : 0 },
+        { range: "8 - 8.9", label: "8 - 8.9", count: b4, percentage: total > 0 ? Math.round((b4 / total) * 100) : 0 },
+        { range: "9 - 10", label: "9 - 10", count: b5, percentage: total > 0 ? Math.round((b5 / total) * 100) : 0 },
     ];
 
     // Group averages
@@ -173,6 +174,7 @@ function computeClassMetrics(
 }
 
 export default function Analytics() {
+    const { t, i18n } = useTranslation();
     const [searchParams, setSearchParams] = useSearchParams();
     const { classes, activeClasses, archivedClasses, students, evaluations, exercises, exerciseGroups } = useSchoolData();
     const { settings } = useSettings();
@@ -317,7 +319,10 @@ export default function Analytics() {
 
     // Monthly Evaluation Trends
     const monthlyTrendData = useMemo(() => {
-        const monthNames = ["Set", "Ott", "Nov", "Dic", "Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago"];
+        const isEn = i18n.language.startsWith("en");
+        const monthNames = isEn
+            ? ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
+            : ["Set", "Ott", "Nov", "Dic", "Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago"];
         const monthMap = new Map<number, { count: number; totalScore: number }>();
         for (let i = 0; i < 12; i++) {
             monthMap.set(i, { count: 0, totalScore: 0 });
@@ -345,7 +350,7 @@ export default function Analytics() {
                 media: avg,
             };
         });
-    }, [evaluations]);
+    }, [evaluations, i18n.language]);
 
     // Group comparison data for Discipline chart
     const groupChartData = useMemo(() => {
@@ -372,11 +377,11 @@ export default function Analytics() {
     const distributionChartData = useMemo(() => {
         if (!metricsA && !metricsB) return [];
         const brackets = [
-            { range: "< 6", label: "< 6 (Insuff.)" },
-            { range: "6 - 6.9", label: "6 - 6.9 (Suff.)" },
-            { range: "7 - 7.9", label: "7 - 7.9 (Discreto)" },
-            { range: "8 - 8.9", label: "8 - 8.9 (Buono)" },
-            { range: "9 - 10", label: "9 - 10 (Ottimo)" },
+            { range: "< 6", label: t("analytics.insufficientBracket", { defaultValue: "< 6 (Insuff.)" }) },
+            { range: "6 - 6.9", label: t("analytics.sufficientBracket", { defaultValue: "6 - 6.9 (Suff.)" }) },
+            { range: "7 - 7.9", label: t("analytics.discreteBracket", { defaultValue: "7 - 7.9 (Discreto)" }) },
+            { range: "8 - 8.9", label: t("analytics.goodBracket", { defaultValue: "8 - 8.9 (Buono)" }) },
+            { range: "9 - 10", label: t("analytics.excellentBracket", { defaultValue: "9 - 10 (Ottimo)" }) },
         ];
 
         return brackets.map((b, idx) => {
@@ -388,7 +393,7 @@ export default function Analytics() {
                 classeB: pB,
             };
         });
-    }, [metricsA, metricsB]);
+    }, [metricsA, metricsB, t]);
 
     // Exercise Detailed Comparison Table data
     const exerciseComparisonList = useMemo(() => {
@@ -452,22 +457,22 @@ export default function Analytics() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                         <BarChart3 className="h-8 w-8 text-primary" />
-                        Analisi & Confronto Dati
+                        {t("analytics.title")}
                     </h1>
                     <p className="text-muted-foreground">
-                        Statistiche dell'istituto, monitoraggio dell'andamento e confronto dettagliato con lo storico delle classi archiviate
+                        {t("analytics.subtitle")}
                     </p>
                 </div>
             </motion.div>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-3 max-w-md">
-                    <TabsTrigger value="generale">Panoramica</TabsTrigger>
+                    <TabsTrigger value="generale">{t("analytics.overviewTab")}</TabsTrigger>
                     <TabsTrigger value="classi" className="flex items-center gap-1.5">
                         <ArrowLeftRight className="h-4 w-4" />
-                        Confronto Classi
+                        {t("analytics.comparisonTab")}
                     </TabsTrigger>
-                    <TabsTrigger value="andamento">Valutazioni</TabsTrigger>
+                    <TabsTrigger value="andamento">{t("analytics.evaluationsTab")}</TabsTrigger>
                 </TabsList>
 
                 <div className="relative">
@@ -492,18 +497,18 @@ export default function Analytics() {
                                             <motion.div {...cardHover}>
                                                 <Card>
                                                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                                                        <CardTitle className="text-sm font-medium">Totale Classi</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.totalClasses")}</CardTitle>
                                                         <Layers className="h-4 w-4 text-muted-foreground" />
                                                     </CardHeader>
                                                     <CardContent>
                                                         <div className="text-3xl font-bold">{globalStats.totalClasses}</div>
                                                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                                                             <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
-                                                                ● {globalStats.activeClassesCount} attive
+                                                                ● {t("analytics.activeClassesCount", { count: globalStats.activeClassesCount })}
                                                             </span>
                                                             <span>•</span>
                                                             <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
-                                                                <Archive className="h-3 w-3" /> {globalStats.archivedClassesCount} archiviate
+                                                                <Archive className="h-3 w-3" /> {t("analytics.archivedClassesCount", { count: globalStats.archivedClassesCount })}
                                                             </span>
                                                         </div>
                                                     </CardContent>
@@ -515,13 +520,13 @@ export default function Analytics() {
                                             <motion.div {...cardHover}>
                                                 <Card>
                                                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                                                        <CardTitle className="text-sm font-medium">Totale Studenti</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.totalStudents")}</CardTitle>
                                                         <Users className="h-4 w-4 text-muted-foreground" />
                                                     </CardHeader>
                                                     <CardContent>
                                                         <div className="text-3xl font-bold">{globalStats.totalStudents}</div>
                                                         <p className="text-xs text-muted-foreground mt-2">
-                                                            Iscritti nelle classi del registro
+                                                            {t("analytics.totalStudentsDesc")}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -532,13 +537,13 @@ export default function Analytics() {
                                             <motion.div {...cardHover}>
                                                 <Card>
                                                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                                                        <CardTitle className="text-sm font-medium">Valutazioni Registrate</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.totalEvaluations")}</CardTitle>
                                                         <Award className="h-4 w-4 text-muted-foreground" />
                                                     </CardHeader>
                                                     <CardContent>
                                                         <div className="text-3xl font-bold">{globalStats.totalEvaluations}</div>
                                                         <p className="text-xs text-muted-foreground mt-2">
-                                                            Prove ed esercizi registrati
+                                                            {t("analytics.testsRecorded")}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -549,7 +554,7 @@ export default function Analytics() {
                                             <motion.div {...cardHover}>
                                                 <Card>
                                                     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                                                        <CardTitle className="text-sm font-medium">Media d'Istituto</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.schoolAverage")}</CardTitle>
                                                         <GraduationCap className="h-4 w-4 text-muted-foreground" />
                                                     </CardHeader>
                                                     <CardContent>
@@ -557,7 +562,8 @@ export default function Analytics() {
                                                             {globalStats.globalAverage > 0 ? `${globalStats.globalAverage}/10` : "N/D"}
                                                         </div>
                                                         <p className="text-xs text-muted-foreground mt-2">
-                                                            Tasso sufficienze: <strong className="text-foreground">{globalStats.globalPassingRate}%</strong>
+                                                            {t("analytics.passingRateLabel")}{" "}
+                                                            <strong className="text-foreground">{globalStats.globalPassingRate}%</strong>
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -569,8 +575,8 @@ export default function Analytics() {
                                     <div className="grid gap-6 md:grid-cols-2">
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="text-base">Studenti per Classe</CardTitle>
-                                                <CardDescription>Distribuzione tra classi attive e archiviate</CardDescription>
+                                                <CardTitle className="text-base">{t("analytics.studentsPerClass")}</CardTitle>
+                                                <CardDescription>{t("analytics.studentsPerClassDesc")}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 {generalClassList.length > 0 ? (
@@ -591,22 +597,22 @@ export default function Analytics() {
                                                                         borderRadius: "8px",
                                                                     }}
                                                                     formatter={(val: any, _: any, item: any) => [
-                                                                        `${val} studenti (${item.payload.year}${item.payload.isArchived ? " - Archiviata" : ""})`,
-                                                                        "Iscritti",
+                                                                        `${val} ${t("common.students", { defaultValue: "studenti" })} (${item.payload.year}${item.payload.isArchived ? ` - ${t("classes.archivedBadge", { defaultValue: "Archiviata" })}` : ""})`,
+                                                                        t("analytics.enrolled", { defaultValue: "Iscritti" }),
                                                                     ]}
                                                                 />
                                                                 <Bar
                                                                     dataKey="studentCount"
                                                                     fill="hsl(var(--primary))"
                                                                     radius={[4, 4, 0, 0]}
-                                                                    name="Studenti"
+                                                                    name={t("common.students", { defaultValue: "Studenti" })}
                                                                 />
                                                             </BarChart>
                                                         </ResponsiveContainer>
                                                     </div>
                                                 ) : (
                                                     <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                                                        Nessuna classe disponibile
+                                                        {t("analytics.noClassesAvailable")}
                                                     </div>
                                                 )}
                                             </CardContent>
@@ -614,8 +620,8 @@ export default function Analytics() {
 
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="text-base">Media Voti per Classe</CardTitle>
-                                                <CardDescription>Rendimento medio complessivo per ogni classe</CardDescription>
+                                                <CardTitle className="text-base">{t("analytics.avgGradePerClass")}</CardTitle>
+                                                <CardDescription>{t("analytics.avgGradePerClassDesc")}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 {generalClassList.length > 0 ? (
@@ -636,22 +642,22 @@ export default function Analytics() {
                                                                         borderRadius: "8px",
                                                                     }}
                                                                     formatter={(val: any, _: any, item: any) => [
-                                                                        `${val} / 10 (${item.payload.year}${item.payload.isArchived ? " - Archiviata" : ""})`,
-                                                                        "Media",
+                                                                        `${val} / 10 (${item.payload.year}${item.payload.isArchived ? ` - ${t("classes.archivedBadge", { defaultValue: "Archiviata" })}` : ""})`,
+                                                                        t("analytics.average", { defaultValue: "Media" }),
                                                                     ]}
                                                                 />
                                                                 <Bar
                                                                     dataKey="avgGrade"
                                                                     fill="#10b981"
                                                                     radius={[4, 4, 0, 0]}
-                                                                    name="Media Voti"
+                                                                    name={t("analytics.averageGrade", { defaultValue: "Media Voti" })}
                                                                 />
                                                             </BarChart>
                                                         </ResponsiveContainer>
                                                     </div>
                                                 ) : (
                                                     <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                                                        Nessuna valutazione registrata
+                                                        {t("analytics.noEvaluationsRecorded")}
                                                     </div>
                                                 )}
                                             </CardContent>
@@ -669,14 +675,14 @@ export default function Analytics() {
                                             <CardTitle className="text-lg flex items-center justify-between">
                                                 <span className="flex items-center gap-2">
                                                     <ArrowLeftRight className="h-5 w-5 text-primary" />
-                                                    Selettore di Confronto
+                                                    {t("analytics.comparisonSelector")}
                                                 </span>
                                                 <span className="text-xs text-muted-foreground font-normal">
-                                                    Confronta qualsiasi classe attiva o storico archiviato
+                                                    {t("analytics.comparisonSelectorSubtitle")}
                                                 </span>
                                             </CardTitle>
                                             <CardDescription>
-                                                Seleziona una classe di riferimento (Classe A) e una classe con cui confrontarla (Classe B, ad es. l'anno precedente archiviato).
+                                                {t("analytics.comparisonSelectorDesc")}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
@@ -684,23 +690,23 @@ export default function Analytics() {
                                                 {/* Select Class A */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                                                        <span>Classe A (Riferimento / Nuova)</span>
+                                                        <span>{t("analytics.classALabel")}</span>
                                                         {classA && (
                                                             <Badge variant={classA.isArchived ? "outline" : "default"} className="text-[10px] h-5 gap-1">
                                                                 {classA.isArchived ? <Archive className="h-2.5 w-2.5" /> : "●"}
-                                                                {classA.isArchived ? "Archiviata" : "Attiva"}
+                                                                {classA.isArchived ? t("analytics.archived") : t("classes.activeBadge", { defaultValue: "Attiva" })}
                                                             </Badge>
                                                         )}
                                                     </label>
                                                     <Select value={classAId} onValueChange={handleSelectClassA}>
                                                         <SelectTrigger className="w-full bg-background">
-                                                            <SelectValue placeholder="Seleziona Classe A..." />
+                                                            <SelectValue placeholder={t("analytics.selectClassAPlaceholder")} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {activeClasses.length > 0 && (
                                                                 <SelectGroup>
                                                                     <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
-                                                                        Classi Attive
+                                                                        {t("analytics.activeClasses")}
                                                                     </SelectLabel>
                                                                     {activeClasses.map(c => (
                                                                         <SelectItem key={c.id} value={c.id}>
@@ -712,11 +718,11 @@ export default function Analytics() {
                                                             {archivedClasses.length > 0 && (
                                                                 <SelectGroup>
                                                                     <SelectLabel className="font-semibold text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                                                                        <Archive className="h-3 w-3" /> Classi Archiviate
+                                                                        <Archive className="h-3 w-3" /> {t("analytics.archivedClasses")}
                                                                     </SelectLabel>
                                                                     {archivedClasses.map(c => (
                                                                         <SelectItem key={c.id} value={c.id}>
-                                                                            {c.className} ({c.schoolYear}) [Archiviata]
+                                                                            {c.className} ({c.schoolYear}) [{t("analytics.archived")}]
                                                                         </SelectItem>
                                                                     ))}
                                                                 </SelectGroup>
@@ -733,7 +739,7 @@ export default function Analytics() {
                                                         className="rounded-full shadow-sm hover:bg-primary/10 hover:text-primary transition-colors"
                                                         onClick={handleSwapClasses}
                                                         disabled={!classAId || !classBId}
-                                                        title="Inverti Classi"
+                                                        title={t("analytics.swapClasses")}
                                                     >
                                                         <ArrowLeftRight className="h-4 w-4" />
                                                     </Button>
@@ -742,27 +748,27 @@ export default function Analytics() {
                                                 {/* Select Class B */}
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                                                        <span>Classe B (Confronto / Storico)</span>
+                                                        <span>{t("analytics.classBLabel")}</span>
                                                         {classB && (
                                                             <Badge variant={classB.isArchived ? "outline" : "secondary"} className="text-[10px] h-5 gap-1">
                                                                 {classB.isArchived ? <Archive className="h-2.5 w-2.5" /> : "●"}
-                                                                {classB.isArchived ? "Archiviata" : "Attiva"}
+                                                                {classB.isArchived ? t("analytics.archived") : t("classes.activeBadge", { defaultValue: "Attiva" })}
                                                             </Badge>
                                                         )}
                                                     </label>
                                                     <Select value={classBId} onValueChange={handleSelectClassB}>
                                                         <SelectTrigger className="w-full bg-background">
-                                                            <SelectValue placeholder="Seleziona Classe B (storica o attiva)..." />
+                                                            <SelectValue placeholder={t("analytics.selectClassBPlaceholder")} />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {archivedClasses.length > 0 && (
                                                                 <SelectGroup>
                                                                     <SelectLabel className="font-semibold text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                                                                        <Archive className="h-3 w-3" /> Classi Archiviate (Storico)
+                                                                        <Archive className="h-3 w-3" /> {t("analytics.archivedClassesHistory")}
                                                                     </SelectLabel>
                                                                     {archivedClasses.map(c => (
                                                                         <SelectItem key={c.id} value={c.id} disabled={c.id === classAId}>
-                                                                            {c.className} ({c.schoolYear}) [Archiviata]
+                                                                            {c.className} ({c.schoolYear}) [{t("analytics.archived")}]
                                                                         </SelectItem>
                                                                     ))}
                                                                 </SelectGroup>
@@ -770,7 +776,7 @@ export default function Analytics() {
                                                             {activeClasses.length > 0 && (
                                                                 <SelectGroup>
                                                                     <SelectLabel className="font-semibold text-xs text-muted-foreground uppercase tracking-wider">
-                                                                        Classi Attive
+                                                                        {t("analytics.activeClasses")}
                                                                     </SelectLabel>
                                                                     {activeClasses.map(c => (
                                                                         <SelectItem key={c.id} value={c.id} disabled={c.id === classAId}>
@@ -789,7 +795,7 @@ export default function Analytics() {
                                                 <div className="pt-2 border-t flex flex-wrap items-center gap-2 text-xs">
                                                     <span className="text-muted-foreground flex items-center gap-1">
                                                         <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                                                        Confronto rapido consigliato:
+                                                        {t("analytics.quickCompareSuggested")}
                                                     </span>
                                                     {suggestedComparisons.map(arch => (
                                                         <Button
@@ -816,9 +822,9 @@ export default function Analytics() {
                                                     <ArrowLeftRight className="h-7 w-7" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <h3 className="font-semibold text-lg">Seleziona due classi da confrontare</h3>
+                                                    <h3 className="font-semibold text-lg">{t("analytics.selectTwoClassesTitle")}</h3>
                                                     <p className="text-sm text-muted-foreground">
-                                                        Scegli la Classe A (ad es. la classe attuale) e la Classe B (ad es. la stessa classe dell'anno scorso archiviata) per vedere il confronto delle performance motorie, medie voti e radar delle abilità.
+                                                        {t("analytics.selectTwoClassesDesc")}
                                                     </p>
                                                 </div>
                                                 {archivedClasses.length > 0 && activeClasses.length > 0 && (
@@ -832,7 +838,11 @@ export default function Analytics() {
                                                         }}
                                                     >
                                                         <History className="h-4 w-4 text-amber-600" />
-                                                        Confronta {activeClasses[0].className} con {archivedClasses[0].className} ({archivedClasses[0].schoolYear})
+                                                        {t("analytics.compareClassesButton", {
+                                                            a: activeClasses[0].className,
+                                                            b: archivedClasses[0].className,
+                                                            year: archivedClasses[0].schoolYear,
+                                                        })}
                                                     </Button>
                                                 )}
                                             </CardContent>
@@ -847,16 +857,16 @@ export default function Analytics() {
                                                     <CardContent className="pt-5 pb-4">
                                                         <div className="flex items-center justify-between">
                                                             <div>
-                                                                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Classe A</span>
+                                                                <span className="text-xs font-semibold text-primary uppercase tracking-wider">{t("analytics.classA")}</span>
                                                                 <h2 className="text-2xl font-bold tracking-tight">{classA.className}</h2>
                                                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                                                     <Calendar className="h-3 w-3" />
-                                                                    Anno Scolastico: {classA.schoolYear}
+                                                                    {t("analytics.schoolYear", { year: classA.schoolYear })}
                                                                 </p>
                                                             </div>
                                                             <Badge variant={classA.isArchived ? "outline" : "default"} className="gap-1">
                                                                 {classA.isArchived ? <Archive className="h-3 w-3 text-amber-600" /> : "●"}
-                                                                {classA.isArchived ? "Archiviata" : "In Corso"}
+                                                                {classA.isArchived ? t("analytics.archived") : t("analytics.inProgress")}
                                                             </Badge>
                                                         </div>
                                                     </CardContent>
@@ -867,16 +877,16 @@ export default function Analytics() {
                                                     <CardContent className="pt-5 pb-4">
                                                         <div className="flex items-center justify-between">
                                                             <div>
-                                                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Classe B (Confronto)</span>
+                                                                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">{t("analytics.classB")}</span>
                                                                 <h2 className="text-2xl font-bold tracking-tight">{classB.className}</h2>
                                                                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                                                     <Calendar className="h-3 w-3" />
-                                                                    Anno Scolastico: {classB.schoolYear}
+                                                                    {t("analytics.schoolYear", { year: classB.schoolYear })}
                                                                 </p>
                                                             </div>
                                                             <Badge variant={classB.isArchived ? "outline" : "secondary"} className="gap-1">
                                                                 {classB.isArchived ? <Archive className="h-3 w-3 text-amber-600" /> : "●"}
-                                                                {classB.isArchived ? "Archiviata" : "In Corso"}
+                                                                {classB.isArchived ? t("analytics.archived") : t("analytics.inProgress")}
                                                             </Badge>
                                                         </div>
                                                     </CardContent>
@@ -889,7 +899,7 @@ export default function Analytics() {
                                                 <Card>
                                                     <CardHeader className="pb-2">
                                                         <div className="flex items-center justify-between">
-                                                            <CardTitle className="text-sm font-medium">Media Generale</CardTitle>
+                                                            <CardTitle className="text-sm font-medium">{t("analytics.generalAverage")}</CardTitle>
                                                             {deltaAvg !== null && (
                                                                 <Badge
                                                                     variant="outline"
@@ -931,10 +941,10 @@ export default function Analytics() {
                                                         </div>
                                                         <p className="text-[11px] text-muted-foreground mt-3">
                                                             {deltaAvg !== null && deltaAvg > 0
-                                                                ? "La classe attuale ha una media superiore rispetto allo storico"
+                                                                ? t("analytics.higherAvgDesc")
                                                                 : deltaAvg !== null && deltaAvg < 0
-                                                                ? "La classe attuale ha una media inferiore rispetto allo storico"
-                                                                : "Prestazioni allineate tra le due classi"}
+                                                                ? t("analytics.lowerAvgDesc")
+                                                                : t("analytics.alignedAvgDesc")}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -943,7 +953,7 @@ export default function Analytics() {
                                                 <Card>
                                                     <CardHeader className="pb-2">
                                                         <div className="flex items-center justify-between">
-                                                            <CardTitle className="text-sm font-medium">Tasso Sufficienza (≥ 6)</CardTitle>
+                                                            <CardTitle className="text-sm font-medium">{t("analytics.passingRateThreshold", { grade: settings.passingGrade || 6 })}</CardTitle>
                                                             {deltaPassing !== null && (
                                                                 <Badge
                                                                     variant="outline"
@@ -977,7 +987,7 @@ export default function Analytics() {
                                                             </div>
                                                         </div>
                                                         <p className="text-[11px] text-muted-foreground mt-3">
-                                                            Soglia minima di sufficienza impostata: {settings.passingGrade || 6}.0
+                                                            {t("analytics.passingThresholdSet", { grade: settings.passingGrade || 6 })}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -985,7 +995,7 @@ export default function Analytics() {
                                                 {/* Metric 3: Studenti */}
                                                 <Card>
                                                     <CardHeader className="pb-2">
-                                                        <CardTitle className="text-sm font-medium">Studenti Iscritti</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.enrolledStudentsLabel")}</CardTitle>
                                                     </CardHeader>
                                                     <CardContent>
                                                         <div className="flex items-baseline justify-between mt-1">
@@ -1004,7 +1014,7 @@ export default function Analytics() {
                                                             </div>
                                                         </div>
                                                         <p className="text-[11px] text-muted-foreground mt-3">
-                                                            Differenza: {Math.abs((metricsA?.studentCount || 0) - (metricsB?.studentCount || 0))} studenti
+                                                            {t("analytics.studentDifference", { diff: Math.abs((metricsA?.studentCount || 0) - (metricsB?.studentCount || 0)) })}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -1012,7 +1022,7 @@ export default function Analytics() {
                                                 {/* Metric 4: Valutazioni */}
                                                 <Card>
                                                     <CardHeader className="pb-2">
-                                                        <CardTitle className="text-sm font-medium">Valutazioni Registrate</CardTitle>
+                                                        <CardTitle className="text-sm font-medium">{t("analytics.totalEvaluations")}</CardTitle>
                                                     </CardHeader>
                                                     <CardContent>
                                                         <div className="flex items-baseline justify-between mt-1">
@@ -1031,7 +1041,7 @@ export default function Analytics() {
                                                             </div>
                                                         </div>
                                                         <p className="text-[11px] text-muted-foreground mt-3">
-                                                            Totale voti registrati nelle schede
+                                                            {t("analytics.totalGradesInSheets")}
                                                         </p>
                                                     </CardContent>
                                                 </Card>
@@ -1043,9 +1053,9 @@ export default function Analytics() {
                                                 <Card>
                                                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                                                         <div>
-                                                            <CardTitle className="text-base">Confronto per Gruppi di Esercizi</CardTitle>
+                                                            <CardTitle className="text-base">{t("analytics.exerciseGroupComparison")}</CardTitle>
                                                             <CardDescription>
-                                                                Medie nelle diverse abilità e discipline motorie (scala 1-10)
+                                                                {t("analytics.exerciseGroupComparisonDesc")}
                                                             </CardDescription>
                                                         </div>
                                                         <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-xs">
@@ -1055,7 +1065,7 @@ export default function Analytics() {
                                                                 className="h-6 px-2 text-xs"
                                                                 onClick={() => setDisciplineChartMode("bars")}
                                                             >
-                                                                Barre
+                                                                {t("analytics.bars")}
                                                             </Button>
                                                             <Button
                                                                 variant={disciplineChartMode === "radar" ? "secondary" : "ghost"}
@@ -1063,7 +1073,7 @@ export default function Analytics() {
                                                                 className="h-6 px-2 text-xs"
                                                                 onClick={() => setDisciplineChartMode("radar")}
                                                             >
-                                                                Radar
+                                                                {t("analytics.radar")}
                                                             </Button>
                                                         </div>
                                                     </CardHeader>
@@ -1135,7 +1145,7 @@ export default function Analytics() {
                                                             </div>
                                                         ) : (
                                                             <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
-                                                                Dati insufficienti per il confronto delle discipline
+                                                                {t("analytics.insufficientGroupData")}
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -1144,9 +1154,9 @@ export default function Analytics() {
                                                 {/* Chart 2: Grade Distribution Comparison */}
                                                 <Card>
                                                     <CardHeader>
-                                                        <CardTitle className="text-base">Distribuzione dei Voti (% su totale)</CardTitle>
+                                                        <CardTitle className="text-base">{t("analytics.gradeDistributionPercent")}</CardTitle>
                                                         <CardDescription>
-                                                            Ripartizione percentuale dei voti per fasce di rendimento
+                                                            {t("analytics.gradeDistributionPercentDesc")}
                                                         </CardDescription>
                                                     </CardHeader>
                                                     <CardContent>
@@ -1184,7 +1194,7 @@ export default function Analytics() {
                                                             </div>
                                                         ) : (
                                                             <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
-                                                                Nessuna valutazione registrata
+                                                                {t("analytics.noEvaluationsRecorded")}
                                                             </div>
                                                         )}
                                                     </CardContent>
@@ -1197,17 +1207,17 @@ export default function Analytics() {
                                                     <div>
                                                         <CardTitle className="text-lg flex items-center gap-2">
                                                             <Award className="h-5 w-5 text-primary" />
-                                                            Dettaglio Singoli Esercizi
+                                                            {t("analytics.singleExercisesTitle")}
                                                         </CardTitle>
                                                         <CardDescription>
-                                                            Confronto prestazione esercizio per esercizio tra le due classi
+                                                            {t("analytics.singleExercisesDesc")}
                                                         </CardDescription>
                                                     </div>
                                                     <div className="flex items-center gap-2 w-full md:w-64">
                                                         <div className="relative w-full">
                                                             <Search className="h-4 w-4 absolute left-2.5 top-2.5 text-muted-foreground" />
                                                             <Input
-                                                                placeholder="Cerca esercizio..."
+                                                                placeholder={t("analytics.searchExercise")}
                                                                 value={exerciseSearch}
                                                                 onChange={e => setExerciseSearch(e.target.value)}
                                                                 className="pl-8 h-9 text-xs"
@@ -1221,16 +1231,16 @@ export default function Analytics() {
                                                             <Table>
                                                                 <TableHeader className="bg-muted/50">
                                                                     <TableRow>
-                                                                        <TableHead className="font-semibold">Esercizio</TableHead>
-                                                                        <TableHead className="font-semibold">Gruppo</TableHead>
+                                                                        <TableHead className="font-semibold">{t("analytics.exerciseHeader")}</TableHead>
+                                                                        <TableHead className="font-semibold">{t("analytics.groupHeader")}</TableHead>
                                                                         <TableHead className="text-right font-semibold">
-                                                                            Media {classA.className}
+                                                                            {t("analytics.averageClass", { name: classA.className })}
                                                                         </TableHead>
                                                                         <TableHead className="text-right font-semibold">
-                                                                            Media {classB.className}
+                                                                            {t("analytics.averageClass", { name: classB.className })}
                                                                         </TableHead>
-                                                                        <TableHead className="text-center font-semibold">Differenza (Δ)</TableHead>
-                                                                        <TableHead className="text-right font-semibold">Verdetto</TableHead>
+                                                                        <TableHead className="text-center font-semibold">{t("analytics.differenceHeader")}</TableHead>
+                                                                        <TableHead className="text-right font-semibold">{t("analytics.verdictHeader")}</TableHead>
                                                                     </TableRow>
                                                                 </TableHeader>
                                                                 <TableBody>
@@ -1285,23 +1295,23 @@ export default function Analytics() {
                                                                                     row.diff > 0.3 ? (
                                                                                         <span className="text-emerald-600 dark:text-emerald-400 font-medium inline-flex items-center gap-1">
                                                                                             <ArrowUpRight className="h-3.5 w-3.5" />
-                                                                                            Superiore in {classA.className}
+                                                                                            {t("analytics.higherIn", { name: classA.className })}
                                                                                         </span>
                                                                                     ) : row.diff < -0.3 ? (
                                                                                         <span className="text-rose-600 dark:text-rose-400 font-medium inline-flex items-center gap-1">
                                                                                             <ArrowDownRight className="h-3.5 w-3.5" />
-                                                                                            Superiore in {classB.className}
+                                                                                            {t("analytics.lowerIn", { name: classB.className })}
                                                                                         </span>
                                                                                     ) : (
                                                                                         <span className="text-muted-foreground font-medium inline-flex items-center gap-1">
                                                                                             <Minus className="h-3.5 w-3.5" />
-                                                                                            Equivalente
+                                                                                            {t("analytics.equivalent")}
                                                                                         </span>
                                                                                     )
                                                                                 ) : row.avgA !== null ? (
-                                                                                    <span className="text-muted-foreground">Solo in {classA.className}</span>
+                                                                                    <span className="text-muted-foreground">{t("analytics.onlyIn", { name: classA.className })}</span>
                                                                                 ) : (
-                                                                                    <span className="text-muted-foreground">Solo in {classB.className}</span>
+                                                                                    <span className="text-muted-foreground">{t("analytics.onlyIn", { name: classB.className })}</span>
                                                                                 )}
                                                                             </TableCell>
                                                                         </TableRow>
@@ -1311,7 +1321,7 @@ export default function Analytics() {
                                                         </div>
                                                     ) : (
                                                         <div className="py-8 text-center text-muted-foreground text-sm">
-                                                            Nessun esercizio trovato con i criteri specificati
+                                                            {t("analytics.noExercisesMatching")}
                                                         </div>
                                                     )}
                                                 </CardContent>
@@ -1327,8 +1337,8 @@ export default function Analytics() {
                                     <div className="grid gap-6 md:grid-cols-2">
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="text-base">Valutazioni nel Tempo</CardTitle>
-                                                <CardDescription>Numero di prove registrate mese per mese nell'anno scolastico</CardDescription>
+                                                <CardTitle className="text-base">{t("analytics.evaluationsOverTime")}</CardTitle>
+                                                <CardDescription>{t("analytics.evaluationsOverTimeDesc")}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="h-[350px] w-full">
@@ -1344,13 +1354,13 @@ export default function Analytics() {
                                                                     color: "hsl(var(--popover-foreground))",
                                                                     borderRadius: "8px",
                                                                 }}
-                                                                formatter={(val: any) => [`${val} valutazioni`, "Totale"]}
+                                                                formatter={(val: any) => [t("analytics.evaluationsTotal", { val, defaultValue: `${val} valutazioni` }), t("common.total", { defaultValue: "Totale" })]}
                                                             />
                                                             <Bar
                                                                 dataKey="valutazioni"
                                                                 fill="hsl(var(--primary))"
                                                                 radius={[4, 4, 0, 0]}
-                                                                name="Valutazioni"
+                                                                name={t("analytics.evaluationsTab", { defaultValue: "Valutazioni" })}
                                                             />
                                                         </BarChart>
                                                     </ResponsiveContainer>
@@ -1360,8 +1370,8 @@ export default function Analytics() {
 
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="text-base">Andamento Media Voti</CardTitle>
-                                                <CardDescription>Evoluzione della media mensile delle valutazioni</CardDescription>
+                                                <CardTitle className="text-base">{t("analytics.monthlyTrendAvg")}</CardTitle>
+                                                <CardDescription>{t("analytics.monthlyTrendAvgDesc")}</CardDescription>
                                             </CardHeader>
                                             <CardContent>
                                                 <div className="h-[350px] w-full">
@@ -1377,7 +1387,7 @@ export default function Analytics() {
                                                                     color: "hsl(var(--popover-foreground))",
                                                                     borderRadius: "8px",
                                                                 }}
-                                                                formatter={(val: any) => [`${val} / 10`, "Media Voti"]}
+                                                                formatter={(val: any) => [`${val} / 10`, t("analytics.averageGrade", { defaultValue: "Media Voti" })]}
                                                             />
                                                             <Line
                                                                 type="monotone"
@@ -1385,7 +1395,7 @@ export default function Analytics() {
                                                                 stroke="#10b981"
                                                                 strokeWidth={2.5}
                                                                 dot={{ r: 4, fill: "#10b981" }}
-                                                                name="Media Mensile"
+                                                                name={t("analytics.monthlyAverage", { defaultValue: "Media Mensile" })}
                                                             />
                                                         </LineChart>
                                                     </ResponsiveContainer>

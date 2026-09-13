@@ -45,15 +45,7 @@ import { motion } from "framer-motion";
 import { pageTransition, slideUp, buttonPress } from "@/lib/motion";
 import { getExerciseRecords } from "@/utils/record-utils";
 import { ExerciseRecordBanner } from "@/components/ExerciseRecordBanner";
-
-// Unit display names in Italian
-const unitDisplayNames: Record<string, string> = {
-  cm: "Centimetri (cm)",
-  m: "Metri (m)",
-  sec: "Secondi (sec)",
-  reps: "Ripetizioni",
-  qualitativo: "Qualitativo",
-};
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Unit icons
 const unitIcons: Record<string, React.ReactNode> = {
@@ -74,6 +66,7 @@ type BackendUnit = 'cm' | 'sec' | 'm' | 'reps' | 'qualitativo';
 const UNASSIGNED_GROUP_ID = "unassigned";
 
 export default function Exercises() {
+  const { t } = useTranslation();
   const {
     exercises,
     setExercises,
@@ -85,6 +78,11 @@ export default function Exercises() {
   } = useSchoolData();
   const client = useClient();
   const { settings } = useSettings();
+
+  const getUnitDisplayName = (unit: string) => {
+    const key = unit === 'qualitativo' ? 'qualitative' : unit;
+    return t(`units.${key}`, { defaultValue: unit });
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
@@ -183,7 +181,7 @@ export default function Exercises() {
   // Get group names for display
   const getGroupName = (groupId: string): string => {
     const group = exerciseGroups.find(g => g.id === groupId);
-    return group?.groupName || "Gruppo Sconosciuto";
+    return group?.groupName || t("exercises.unassignedGroup", { defaultValue: "Senza Gruppo" });
   };
 
   // Get ordered groups - show ALL groups (including empty ones)
@@ -224,8 +222,8 @@ export default function Exercises() {
   const parseRangeValue = (val: string): number => {
     if (val === "" || val === undefined) return 0;
     const normalized = val.toString().replace(",", ".").trim().toLowerCase();
-    if (normalized === "inf" || normalized === "infinito" || normalized === "∞") return 999999;
-    if (normalized === "-inf" || normalized === "-infinito" || normalized === "-∞") return -999999;
+    if (normalized === "inf" || normalized === "infinito" || normalized === "infinity" || normalized === "∞") return 999999;
+    if (normalized === "-inf" || normalized === "-infinito" || normalized === "-infinity" || normalized === "-∞") return -999999;
     return parseFloat(normalized) || 0;
   };
 
@@ -252,14 +250,14 @@ export default function Exercises() {
     const newErrors: { [key: string]: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Il nome dell'esercizio è obbligatorio";
+      newErrors.name = t("exercises.exerciseNameRequired", { defaultValue: "Il nome dell'esercizio è obbligatorio" });
     }
     // Only require group if exercise groups are enabled
     if (settings.enableExerciseGroups && !formData.exerciseGroupId) {
-      newErrors.exerciseGroupId = "Seleziona un gruppo di esercizi";
+      newErrors.exerciseGroupId = t("exercises.exerciseGroupRequired", { defaultValue: "Seleziona un gruppo di esercizi" });
     }
     if (!formData.unit) {
-      newErrors.unit = "Seleziona un'unità di misura";
+      newErrors.unit = t("exercises.unitRequired", { defaultValue: "Seleziona un'unità di misura" });
     }
 
     setErrors(newErrors);
@@ -333,11 +331,11 @@ export default function Exercises() {
         resetForm();
       } else {
         console.error("Failed to create exercise:", response.error);
-        setErrors({ submit: response.error?.message || "Errore durante la creazione" });
+        setErrors({ submit: response.error?.message || t("common.error") });
       }
     } catch (error) {
       console.error("Error creating exercise:", error);
-      setErrors({ submit: "Errore durante la creazione dell'esercizio" });
+      setErrors({ submit: t("common.error") });
     } finally {
       setIsSubmitting(false);
     }
@@ -384,11 +382,11 @@ export default function Exercises() {
         setNewGroupName("");
       } else {
         console.error("Failed to create group:", response.error);
-        alert("Errore: " + (response.error?.message || "Errore sconosciuto"));
+        alert(t("common.error") + ": " + (response.error?.message || ""));
       }
     } catch (error) {
       console.error("Error creating group:", error);
-      alert("Errore di rete durante la creazione del gruppo");
+      alert(t("common.error"));
     } finally {
       setIsCreatingGroup(false);
     }
@@ -407,11 +405,11 @@ export default function Exercises() {
         setGroupToDelete(null);
       } else {
         console.error("Failed to delete group:", response.error);
-        alert("Errore durante l'eliminazione del gruppo");
+        alert(t("common.error"));
       }
     } catch (error) {
       console.error("Error deleting group:", error);
-      alert("Errore di rete durante l'eliminazione");
+      alert(t("common.error"));
     } finally {
       setIsDeletingGroup(false);
     }
@@ -579,7 +577,7 @@ export default function Exercises() {
           className="h-7 text-xs"
         >
           <Plus className="h-3 w-3 mr-1" />
-          Aggiungi
+          {t("common.add")}
         </Button>
       </div>
       <div className="space-y-2">
@@ -587,7 +585,7 @@ export default function Exercises() {
           <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
             <div className="flex-1 grid grid-cols-3 gap-2">
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Min</Label>
+                <Label className="text-xs text-muted-foreground">{t("exercises.min")}</Label>
                   <DecimalInput
                   value={range.min}
                   onChange={(val) => updateRange(gender, index, 'min', val)}
@@ -598,7 +596,7 @@ export default function Exercises() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Max</Label>
+                <Label className="text-xs text-muted-foreground">{t("exercises.max")}</Label>
                 <DecimalInput
                   value={range.max}
                   onChange={(val) => updateRange(gender, index, 'max', val)}
@@ -609,7 +607,7 @@ export default function Exercises() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Voto</Label>
+                <Label className="text-xs text-muted-foreground">{t("evaluations.grade")}</Label>
                 <Select
                   value={range.score.toString()}
                   onValueChange={(v) => updateRange(gender, index, 'score', parseFloat(v))}
@@ -658,10 +656,10 @@ export default function Exercises() {
       >
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-primary to-primary/60">
-            Catalogo Esercizi
+            {t("exercises.catalogTitle", { defaultValue: "Catalogo Esercizi" })}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gestisci e organizza gli esercizi per le tue classi
+            {t("exercises.catalogSubtitle", { defaultValue: "Gestisci e organizza gli esercizi per le tue classi" })}
           </p>
         </div>
         <div className="flex gap-3">
@@ -669,14 +667,14 @@ export default function Exercises() {
             <motion.div {...buttonPress}>
               <Button variant="outline" className="gap-2 shadow-sm hover:shadow-md transition-all" onClick={() => setNewGroupDialogOpen(true)}>
                 <FolderPlus className="h-4 w-4" />
-                Nuovo Gruppo
+                {t("exercises.newGroup", { defaultValue: "Nuovo Gruppo" })}
               </Button>
             </motion.div>
           )}
           <motion.div {...buttonPress}>
             <Button className="gap-2 shadow-md hover:shadow-lg transition-all bg-linear-to-r from-primary to-primary/90" onClick={() => setDialogOpen(true)}>
               <Plus className="h-4 w-4" />
-              Nuovo Esercizio
+              {t("exercises.newExercise", { defaultValue: "Nuovo Esercizio" })}
             </Button>
           </motion.div>
         </div>
@@ -692,7 +690,7 @@ export default function Exercises() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Cerca per nome o unità..."
+              placeholder={t("exercises.searchPlaceholder", { defaultValue: "Cerca per nome o unità..." })}
               className="pl-9 bg-background/50 border-muted-foreground/20 focus:border-primary/50 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -703,10 +701,10 @@ export default function Exercises() {
             <Select value={selectedGroup} onValueChange={setSelectedGroup}>
               <SelectTrigger className="w-full sm:w-[220px] bg-background/50 border-muted-foreground/20">
                 <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Filtra per Gruppo" />
+                <SelectValue placeholder={t("exercises.filterByGroup", { defaultValue: "Filtra per Gruppo" })} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tutti i gruppi</SelectItem>
+                <SelectItem value="all">{t("exercises.allGroups", { defaultValue: "Tutti i gruppi" })}</SelectItem>
                 {exerciseGroups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.groupName}
@@ -717,7 +715,7 @@ export default function Exercises() {
           )}
         </div>
         <div className="text-sm font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-          {filteredExercises.length} esercizi trovati
+          {t("exercises.exercisesFound", { count: filteredExercises.length, defaultValue: `${filteredExercises.length} esercizi trovati` })}
         </div>
       </div>
 
@@ -732,14 +730,14 @@ export default function Exercises() {
                   <Activity className="h-10 w-10 text-primary/50" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">Nessun esercizio trovato</h3>
+                  <h3 className="text-lg font-semibold">{t("exercises.noExercisesFound", { defaultValue: "Nessun esercizio trovato" })}</h3>
                   <p className="text-muted-foreground max-w-sm mx-auto">
-                    Non hai ancora creato esercizi o la ricerca non ha prodotto risultati.
+                    {t("exercises.noExercisesFoundDesc", { defaultValue: "Non hai ancora creato esercizi o la ricerca non ha prodotto risultati." })}
                   </p>
                 </div>
                 {searchQuery && (
                   <Button variant="link" onClick={() => setSearchQuery('')}>
-                    Azzera filtri
+                    {t("exercises.clearFilters", { defaultValue: "Azzera filtri" })}
                   </Button>
                 )}
               </div>
@@ -754,7 +752,7 @@ export default function Exercises() {
                       <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           {unitIcons[ex.unit]}
-                          <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
+                          <span className="capitalize">{getUnitDisplayName(ex.unit).split(' ')[0] || ex.unit}</span>
                         </div>
                         {ex.maxScore && (
                           <>
@@ -769,15 +767,15 @@ export default function Exercises() {
                       <div className="flex flex-wrap gap-1.5 text-xs items-center">
                         {ex.evaluationType === 'criteria' ? (
                           <Badge variant="outline" className="font-normal">
-                            {ex.evaluationCriteria?.length || 0} Criteri
+                            {t("exercises.criteriaBadge", { count: ex.evaluationCriteria?.length || 0, defaultValue: `${ex.evaluationCriteria?.length || 0} Criteri` })}
                           </Badge>
                         ) : ex.evaluationType === 'criteria-ranges' ? (
                           <Badge variant="outline" className="font-normal">
-                            {ex.evaluationCriteriaWithRanges?.length || 0} Criteri + Fasce
+                            {t("exercises.criteriaRangesBadge", { count: ex.evaluationCriteriaWithRanges?.length || 0, defaultValue: `${ex.evaluationCriteriaWithRanges?.length || 0} Criteri + Fasce` })}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="font-normal">
-                            Fasce
+                            {t("exercises.rangesBadge", { defaultValue: "Fasce" })}
                           </Badge>
                         )}
 
@@ -798,7 +796,7 @@ export default function Exercises() {
                         className="flex-1 h-8 text-xs"
                         onClick={() => openDetailDialog(ex)}
                       >
-                        Dettagli
+                        {t("common.details")}
                       </Button>
                     </CardFooter>
                   </Card>
@@ -817,14 +815,14 @@ export default function Exercises() {
                   <Activity className="h-10 w-10 text-primary/50" />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">Nessun gruppo trovato</h3>
+                  <h3 className="text-lg font-semibold">{t("exercises.noGroupsFound", { defaultValue: "Nessun gruppo trovato" })}</h3>
                   <p className="text-muted-foreground max-w-sm mx-auto">
-                    Non hai ancora creato gruppi di esercizi o la ricerca non ha prodotto risultati.
+                    {t("exercises.noGroupsFoundDesc", { defaultValue: "Non hai ancora creato gruppi di esercizi o la ricerca non ha prodotto risultati." })}
                   </p>
                 </div>
                 {(searchQuery || selectedGroup !== 'all') && (
                   <Button variant="link" onClick={() => { setSearchQuery(''); setSelectedGroup('all'); }}>
-                    Azzera filtri
+                    {t("exercises.clearFilters", { defaultValue: "Azzera filtri" })}
                   </Button>
                 )}
               </div>
@@ -849,14 +847,14 @@ export default function Exercises() {
                     <div className="h-px flex-1 bg-linear-to-r from-border to-transparent" />
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="font-normal text-muted-foreground bg-secondary/50">
-                        {groupExercises.length} esercizi
+                        {t("exercises.exercisesCount", { count: groupExercises.length, defaultValue: `${groupExercises.length} esercizi` })}
                       </Badge>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover/header:opacity-100 transition-all"
                         onClick={() => openDeleteGroupDialog(groupId)}
-                        title="Elimina gruppo"
+                        title={t("exercises.deleteGroup", { defaultValue: "Elimina gruppo" })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -884,7 +882,7 @@ export default function Exercises() {
                                 <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     {unitIcons[ex.unit]}
-                                    <span className="capitalize">{unitDisplayNames[ex.unit]?.split(' ')[0] || ex.unit}</span>
+                                    <span className="capitalize">{getUnitDisplayName(ex.unit).split(' ')[0] || ex.unit}</span>
                                   </div>
                                   {ex.maxScore && (
                                     <>
@@ -899,20 +897,20 @@ export default function Exercises() {
                                 <div className="flex flex-wrap gap-1.5 text-xs items-center">
                                   {ex.evaluationType === 'criteria' ? (
                                     <Badge variant="outline" className="font-normal">
-                                      ⭐ {ex.evaluationCriteria?.length || 0} Criteri
+                                      ⭐ {t("exercises.criteriaBadge", { count: ex.evaluationCriteria?.length || 0, defaultValue: `${ex.evaluationCriteria?.length || 0} Criteri` })}
                                     </Badge>
                                   ) : ex.evaluationType === 'criteria-ranges' ? (
                                     <Badge variant="outline" className="font-normal">
-                                      📊 {ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce
+                                      📊 {t("exercises.criteriaRangesBadge", { count: ex.evaluationCriteriaWithRanges?.length || 0, defaultValue: `${ex.evaluationCriteriaWithRanges?.length || 0} Criteri+Fasce` })}
                                     </Badge>
                                   ) : (
                                     <Badge variant="outline" className="font-normal">
-                                      📏 Fasce
+                                      📏 {t("exercises.rangesBadge", { defaultValue: "Fasce" })}
                                     </Badge>
                                   )}
                                   {ex.evaluationType?.includes('ranges') && (
                                     <Badge variant="secondary" className="font-normal text-[10px]">
-                                      {ex.requiresGender ? '👥 M/F' : '👤 Unisex'}
+                                      {ex.requiresGender ? t("exercises.genderBadge", { defaultValue: "👥 M/F" }) : t("exercises.unisexBadge", { defaultValue: "👤 Unisex" })}
                                     </Badge>
                                   )}
                                 </div>
@@ -932,7 +930,7 @@ export default function Exercises() {
                                   className="flex-1 h-8 text-xs"
                                   onClick={() => openDetailDialog(ex)}
                                 >
-                                  Dettagli
+                                  {t("common.details")}
                                 </Button>
                               </CardFooter>
                             </Card>
@@ -956,20 +954,20 @@ export default function Exercises() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Dumbbell className="h-5 w-5" />
-              Nuovo Esercizio
+              {t("exercises.newExercise", { defaultValue: "Nuovo Esercizio" })}
             </DialogTitle>
             <DialogDescription>
-              Crea un nuovo esercizio e assegnalo a un gruppo.
+              {t("exercises.createExerciseDesc", { defaultValue: "Crea un nuovo esercizio e assegnalo a un gruppo." })}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Exercise Name */}
             <div className="space-y-2">
-              <Label htmlFor="exercise-name">Nome Esercizio *</Label>
+              <Label htmlFor="exercise-name">{t("exercises.exerciseName", { defaultValue: "Nome Esercizio" })} *</Label>
               <Input
                 id="exercise-name"
-                placeholder="es. Salto in Lungo, Corsa 100m"
+                placeholder={t("exercises.exerciseNamePlaceholder", { defaultValue: "es. Salto in Lungo, Corsa 100m" })}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className={errors.name ? "border-destructive" : ""}
@@ -980,18 +978,18 @@ export default function Exercises() {
             {/* Exercise Group Selection - only show if enabled */}
             {settings.enableExerciseGroups && (
               <div className="space-y-2">
-                <Label htmlFor="exercise-group">Gruppo Esercizi *</Label>
+                <Label htmlFor="exercise-group">{t("exercises.exerciseGroup", { defaultValue: "Gruppo Esercizi" })} *</Label>
                 <Select
                   value={formData.exerciseGroupId}
                   onValueChange={(value) => setFormData({ ...formData, exerciseGroupId: value })}
                 >
                   <SelectTrigger id="exercise-group" className={errors.exerciseGroupId ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Seleziona un gruppo" />
+                    <SelectValue placeholder={t("exercises.selectGroup", { defaultValue: "Seleziona un gruppo" })} />
                   </SelectTrigger>
                   <SelectContent>
                     {exerciseGroups.length === 0 ? (
                       <div className="p-2 text-sm text-muted-foreground text-center">
-                        Nessun gruppo. Creane uno prima.
+                        {t("exercises.noGroupsCreateFirst", { defaultValue: "Nessun gruppo. Creane uno prima." })}
                       </div>
                     ) : (
                       exerciseGroups.map((group) => (
@@ -1009,27 +1007,27 @@ export default function Exercises() {
             {/* Unit Selection */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="exercise-unit">Unità di Misura *</Label>
+                <Label htmlFor="exercise-unit">{t("exercises.unit", { defaultValue: "Unità di Misura" })} *</Label>
                 <Select
                   value={formData.unit}
                   onValueChange={(value) => setFormData({ ...formData, unit: value as BackendUnit })}
                 >
                   <SelectTrigger id="exercise-unit" className={errors.unit ? "border-destructive" : ""}>
-                    <SelectValue placeholder="Seleziona unità" />
+                    <SelectValue placeholder={t("exercises.unitRequired", { defaultValue: "Seleziona unità" })} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="cm">Centimetri (cm)</SelectItem>
-                    <SelectItem value="m">Metri (m)</SelectItem>
-                    <SelectItem value="sec">Secondi (sec)</SelectItem>
-                    <SelectItem value="reps">Ripetizioni</SelectItem>
-                    <SelectItem value="qualitativo">Qualitativo</SelectItem>
+                    <SelectItem value="cm">{t("units.cm", { defaultValue: "Centimetri (cm)" })}</SelectItem>
+                    <SelectItem value="m">{t("units.m", { defaultValue: "Metri (m)" })}</SelectItem>
+                    <SelectItem value="sec">{t("units.sec", { defaultValue: "Secondi (sec)" })}</SelectItem>
+                    <SelectItem value="reps">{t("units.reps", { defaultValue: "Ripetizioni" })}</SelectItem>
+                    <SelectItem value="qualitativo">{t("units.qualitative", { defaultValue: "Qualitativo" })}</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.unit && <p className="text-sm text-destructive">{errors.unit}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="max-score">Punteggio Massimo</Label>
+                <Label htmlFor="max-score">{t("exercises.maxScore", { defaultValue: "Punteggio Massimo" })}</Label>
                 <Input
                   id="max-score"
                   type="text"
@@ -1043,7 +1041,7 @@ export default function Exercises() {
 
             {/* Evaluation Type Selection */}
             <div className="space-y-4">
-              <Label>Tipo di Valutazione</Label>
+              <Label>{t("exercises.evaluationType", { defaultValue: "Tipo di Valutazione" })}</Label>
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
@@ -1053,7 +1051,7 @@ export default function Exercises() {
                   className="flex-1"
                 >
                   <Ruler className="h-4 w-4 mr-2" />
-                  Fasce
+                  {t("exercises.rangesBadge", { defaultValue: "Fasce" })}
                 </Button>
                 <Button
                   type="button"
@@ -1063,7 +1061,7 @@ export default function Exercises() {
                   className="flex-1"
                 >
                   <Star className="h-4 w-4 mr-2" />
-                  Criteri
+                  {t("exercises.criteria", { defaultValue: "Criteri" })}
                 </Button>
                 <Button
                   type="button"
@@ -1073,7 +1071,7 @@ export default function Exercises() {
                   className="flex-1"
                 >
                   <TrendingUp className="h-4 w-4 mr-2" />
-                  Criteri+Fasce
+                  {t("exercises.criteriaRangesType", { defaultValue: "Criteri+Fasce" })}
                 </Button>
               </div>
 
@@ -1088,7 +1086,7 @@ export default function Exercises() {
                   >
                     <span className="flex items-center gap-2">
                       <Ruler className="h-4 w-4" />
-                      Configura Fasce di Valutazione
+                      {t("exercises.configureRanges", { defaultValue: "Configura Fasce di Valutazione" })}
                     </span>
                     {showRanges ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </Button>
@@ -1103,13 +1101,13 @@ export default function Exercises() {
                           className="rounded"
                         />
                         <Label htmlFor="use-gender-ranges" className="text-sm cursor-pointer">
-                          Usa fasce diverse per M e F
+                          {t("exercises.useGenderRanges", { defaultValue: "Usa fasce diverse per M e F" })}
                         </Label>
                       </div>
 
-                      {renderRangeEditor(rangesMale, 'M', useGenderRanges ? 'Fasce Maschi' : 'Fasce (tutti)')}
+                      {renderRangeEditor(rangesMale, 'M', useGenderRanges ? t("exercises.maleRangesLabel", { defaultValue: "Fasce Maschi" }) : t("exercises.unifiedRangesLabel", { defaultValue: "Fasce (tutti)" }))}
 
-                      {useGenderRanges && renderRangeEditor(rangesFemale, 'F', 'Fasce Femmine')}
+                      {useGenderRanges && renderRangeEditor(rangesFemale, 'F', t("exercises.femaleRangesLabel", { defaultValue: "Fasce Femmine" }))}
                     </div>
                   )}
                 </div>
@@ -1119,7 +1117,7 @@ export default function Exercises() {
               {evaluationType === 'criteria' && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <p className="text-sm text-muted-foreground">
-                    Definisci i criteri di valutazione. Il voto finale sarà calcolato dalla somma dei punteggi.
+                    {t("exercises.criteriaDesc", { defaultValue: "Definisci i criteri di valutazione. Il voto finale sarà calcolato dalla somma dei punteggi." })}
                   </p>
 
                   <div className="space-y-3">
@@ -1127,7 +1125,7 @@ export default function Exercises() {
                       <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
                         <div className="flex-1 grid grid-cols-3 gap-2">
                           <div className="col-span-2 space-y-1">
-                            <Label className="text-xs text-muted-foreground">Nome Criterio</Label>
+                            <Label className="text-xs text-muted-foreground">{t("exercises.criteriaName", { defaultValue: "Nome Criterio" })}</Label>
                             <Input
                               placeholder="es. Ricezione, Battuta..."
                               value={criterion.name}
@@ -1140,7 +1138,7 @@ export default function Exercises() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                            <Label className="text-xs text-muted-foreground">{t("exercises.maxPoints", { defaultValue: "Max Punti" })}</Label>
                             <Input
                               type="text"
                               inputMode="numeric"
@@ -1149,14 +1147,12 @@ export default function Exercises() {
                               onChange={(e) => {
                                 const updated = [...criteria];
                                 const val = e.target.value;
-                                // Allow empty or numeric input
                                 if (val === '' || /^\d+$/.test(val)) {
                                   updated[index] = { ...updated[index], maxScore: val === '' ? 0 : parseInt(val) };
                                   setCriteria(updated);
                                 }
                               }}
                               onBlur={(e) => {
-                                // Ensure minimum value of 1 on blur
                                 const updated = [...criteria];
                                 const val = e.target.value === '' ? 1 : (parseInt(e.target.value) || 1);
                                 updated[index] = { ...updated[index], maxScore: Math.max(1, val) };
@@ -1189,12 +1185,12 @@ export default function Exercises() {
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Aggiungi Criterio
+                    {t("exercises.addCriterion", { defaultValue: "Aggiungi Criterio" })}
                   </Button>
 
                   <div className="p-3 rounded-lg bg-primary/10 text-center">
                     <p className="text-sm font-medium">
-                      Punteggio Totale Massimo: {criteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                      {t("exercises.maxTotalScore", { score: criteria.reduce((sum, c) => sum + c.maxScore, 0), defaultValue: `Punteggio Totale Massimo: ${criteria.reduce((sum, c) => sum + c.maxScore, 0)}` })}
                     </p>
                   </div>
                 </div>
@@ -1204,7 +1200,7 @@ export default function Exercises() {
               {evaluationType === 'criteria-ranges' && (
                 <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                   <p className="text-sm text-muted-foreground">
-                    Definisci criteri con fasce di valutazione. Per ogni criterio, inserisci una prestazione che verrà convertita in punteggio tramite le fasce.
+                    {t("exercises.criteriaRangesDesc", { defaultValue: "Definisci criteri con fasce di valutazione. Per ogni criterio, inserisci una prestazione che verrà convertita in punteggio tramite le fasce." })}
                   </p>
 
                   <div className="space-y-4">
@@ -1212,7 +1208,7 @@ export default function Exercises() {
                       <div key={criterionIndex} className="p-4 rounded-lg bg-background border space-y-3">
                         {/* Criterion Header */}
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm font-semibold">Criterio {criterionIndex + 1}</Label>
+                          <Label className="text-sm font-semibold">{t("exercises.criterionNumber", { number: criterionIndex + 1, defaultValue: `Criterio ${criterionIndex + 1}` })}</Label>
                           {criteriaWithRanges.length > 1 && (
                             <Button
                               type="button"
@@ -1229,7 +1225,7 @@ export default function Exercises() {
                         {/* Criterion Name, Unit, Max Score */}
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Nome</Label>
+                            <Label className="text-xs text-muted-foreground">{t("common.name")}</Label>
                             <Input
                               placeholder="es. Ricezione"
                               value={criterion.name}
@@ -1242,7 +1238,7 @@ export default function Exercises() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Unità</Label>
+                            <Label className="text-xs text-muted-foreground">{t("exercises.unit")}</Label>
                             <Select
                               value={criterion.unit}
                               onValueChange={(value) => {
@@ -1264,7 +1260,7 @@ export default function Exercises() {
                             </Select>
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                            <Label className="text-xs text-muted-foreground">{t("exercises.maxPoints", { defaultValue: "Max Punti" })}</Label>
                             <Input
                               type="number"
                               min="1"
@@ -1307,7 +1303,7 @@ export default function Exercises() {
                             className="rounded"
                           />
                           <Label htmlFor={`criterion-${criterionIndex}-gender`} className="text-xs cursor-pointer">
-                            Fasce diverse per M/F
+                            {t("exercises.useGenderRanges", { defaultValue: "Fasce diverse per M/F" })}
                           </Label>
                         </div>
 
@@ -1316,7 +1312,7 @@ export default function Exercises() {
                           <div className="flex items-center justify-between">
                             <Label className="text-xs font-medium flex items-center gap-1">
                               <IconGenderMale className="h-3 w-3 text-blue-500" />
-                              {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                              {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? t("exercises.maleRangesLabel", { defaultValue: "Fasce Maschi" }) : t("exercises.unifiedRangesLabel", { defaultValue: "Fasce (tutti)" })}
                             </Label>
                             <Button
                               type="button"
@@ -1337,7 +1333,7 @@ export default function Exercises() {
                               className="h-6 text-xs"
                             >
                               <Plus className="h-3 w-3 mr-1" />
-                              Aggiungi
+                              {t("common.add")}
                             </Button>
                           </div>
                           <div className="space-y-1">
@@ -1357,7 +1353,7 @@ export default function Exercises() {
                                   }}
                                   format={formatRangeValue}
                                   parse={parseRangeValue}
-                                  placeholder="Min"
+                                  placeholder={t("exercises.min")}
                                   className="h-7 text-xs"
                                 />
                                 <DecimalInput
@@ -1374,7 +1370,7 @@ export default function Exercises() {
                                   }}
                                   format={formatRangeValue}
                                   parse={parseRangeValue}
-                                  placeholder="Max"
+                                  placeholder={t("exercises.max")}
                                   className="h-7 text-xs"
                                 />
                                 <Select
@@ -1431,7 +1427,7 @@ export default function Exercises() {
                             <div className="flex items-center justify-between">
                               <Label className="text-xs font-medium flex items-center gap-1">
                                 <IconGenderFemale className="h-3 w-3 text-pink-500" />
-                                Fasce Femmine
+                                {t("exercises.femaleRangesLabel", { defaultValue: "Fasce Femmine" })}
                               </Label>
                               <Button
                                 type="button"
@@ -1452,7 +1448,7 @@ export default function Exercises() {
                                 className="h-6 text-xs"
                               >
                                 <Plus className="h-3 w-3 mr-1" />
-                                Aggiungi
+                                {t("common.add")}
                               </Button>
                             </div>
                             <div className="space-y-1">
@@ -1472,7 +1468,7 @@ export default function Exercises() {
                                   }}
                                   format={formatRangeValue}
                                   parse={parseRangeValue}
-                                  placeholder="Min"
+                                  placeholder={t("exercises.min")}
                                   className="h-7 text-xs"
                                 />
                                 <DecimalInput
@@ -1489,7 +1485,7 @@ export default function Exercises() {
                                   }}
                                   format={formatRangeValue}
                                   parse={parseRangeValue}
-                                  placeholder="Max"
+                                  placeholder={t("exercises.max")}
                                   className="h-7 text-xs"
                                 />
                                   <Select
@@ -1552,12 +1548,12 @@ export default function Exercises() {
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Aggiungi Criterio
+                    {t("exercises.addCriterion", { defaultValue: "Aggiungi Criterio" })}
                   </Button>
 
                   <div className="p-3 rounded-lg bg-primary/10 text-center">
                     <p className="text-sm font-medium">
-                      Punteggio Totale Massimo: {criteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
+                      {t("exercises.maxTotalScore", { score: criteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0), defaultValue: `Punteggio Totale Massimo: ${criteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}` })}
                     </p>
                   </div>
                 </div>
@@ -1571,11 +1567,11 @@ export default function Exercises() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>
-              Annulla
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Crea Esercizio
+              {t("exercises.createExerciseBtn", { defaultValue: "Crea Esercizio" })}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1587,19 +1583,19 @@ export default function Exercises() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FolderPlus className="h-5 w-5" />
-              Nuovo Gruppo Esercizi
+              {t("exercises.newGroup")}
             </DialogTitle>
             <DialogDescription>
-              Crea un nuovo gruppo per organizzare gli esercizi.
+              {t("exercises.newGroupDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="group-name">Nome Gruppo *</Label>
+              <Label htmlFor="group-name">{t("exercises.groupName")} *</Label>
               <Input
                 id="group-name"
-                placeholder="es. Atletica, Coordinazione, Forza"
+                placeholder={t("exercises.groupNamePlaceholder")}
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
               />
@@ -1608,11 +1604,11 @@ export default function Exercises() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setNewGroupDialogOpen(false); setNewGroupName(""); }}>
-              Annulla
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleCreateGroup} disabled={isCreatingGroup || !newGroupName.trim()}>
               {isCreatingGroup && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Crea Gruppo
+              {t("exercises.createGroupBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1622,21 +1618,20 @@ export default function Exercises() {
       <AlertDialog open={deleteGroupDialogOpen} onOpenChange={setDeleteGroupDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare il gruppo?</AlertDialogTitle>
+            <AlertDialogTitle>{t("exercises.deleteGroupConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Stai per eliminare il gruppo "{groupToDelete ? getGroupName(groupToDelete) : ''}".
-              Gli esercizi associati non verranno eliminati ma rimarranno senza gruppo.
+              {t("exercises.deleteGroupConfirmDesc", { name: groupToDelete ? getGroupName(groupToDelete) : '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteGroup}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeletingGroup}
             >
               {isDeletingGroup && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Elimina Gruppo
+              {t("exercises.deleteGroup")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1646,21 +1641,20 @@ export default function Exercises() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminare l'esercizio?</AlertDialogTitle>
+            <AlertDialogTitle>{t("exercises.deleteExerciseConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Stai per eliminare l'esercizio "{exerciseToDelete?.name}".
-              Questa azione non può essere annullata.
+              {t("exercises.deleteExerciseConfirmDesc", { name: exerciseToDelete?.name || '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteExercise}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
               {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Elimina
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1673,13 +1667,13 @@ export default function Exercises() {
             <div className="flex items-center justify-between gap-4">
               <DialogTitle className="flex items-center gap-2">
                 <Dumbbell className="h-5 w-5" />
-                {isEditing ? "Modifica Esercizio" : "Dettagli Esercizio"}
+                {isEditing ? t("exercises.editExercise") : t("exercises.exerciseDetails")}
               </DialogTitle>
               <div className="flex items-center gap-4">
                 {!isEditing && (
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
-                    Modifica
+                    {t("common.edit")}
                   </Button>
                 )}
                 <DialogClose className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
@@ -1695,7 +1689,7 @@ export default function Exercises() {
               {/* Basic Info */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nome Esercizio</Label>
+                  <Label>{t("exercises.exerciseName")}</Label>
                   {isEditing ? (
                     <Input
                       value={editFormData.name}
@@ -1709,7 +1703,7 @@ export default function Exercises() {
                 <div className="grid grid-cols-2 gap-4">
                   {settings.enableExerciseGroups && (
                     <div className="space-y-2">
-                      <Label>Gruppo</Label>
+                      <Label>{t("exercises.exerciseGroup")}</Label>
                       {isEditing ? (
                         <Select
                           value={editFormData.exerciseGroupId}
@@ -1733,7 +1727,7 @@ export default function Exercises() {
                   )}
 
                   <div className={`space-y-2 ${!settings.enableExerciseGroups ? 'col-span-2' : ''}`}>
-                    <Label>Unità di Misura</Label>
+                    <Label>{t("exercises.unit")}</Label>
                     {isEditing ? (
                       <Select
                         value={editFormData.unit}
@@ -1743,21 +1737,21 @@ export default function Exercises() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cm">Centimetri (cm)</SelectItem>
-                          <SelectItem value="m">Metri (m)</SelectItem>
-                          <SelectItem value="sec">Secondi (sec)</SelectItem>
-                          <SelectItem value="reps">Ripetizioni</SelectItem>
-                          <SelectItem value="qualitativo">Qualitativo</SelectItem>
+                          <SelectItem value="cm">{t("units.cm")}</SelectItem>
+                          <SelectItem value="m">{t("units.m")}</SelectItem>
+                          <SelectItem value="sec">{t("units.sec")}</SelectItem>
+                          <SelectItem value="reps">{t("units.reps")}</SelectItem>
+                          <SelectItem value="qualitativo">{t("units.qualitative")}</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="p-3 bg-muted rounded-md">{unitDisplayNames[selectedExercise.unit] || selectedExercise.unit}</div>
+                      <div className="p-3 bg-muted rounded-md">{getUnitDisplayName(selectedExercise.unit)}</div>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Punteggio Massimo</Label>
+                  <Label>{t("exercises.maxScore")}</Label>
                   {isEditing ? (
                     <Input
                       type="text"
@@ -1773,7 +1767,7 @@ export default function Exercises() {
               {/* Evaluation Section */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Tipo di Valutazione</Label>
+                  <Label className="text-base font-semibold">{t("exercises.evaluationType")}</Label>
                 </div>
 
                 {/* Evaluation Type Toggle (Edit Mode) */}
@@ -1787,7 +1781,7 @@ export default function Exercises() {
                       className="h-8"
                     >
                       <Ruler className="h-4 w-4 mr-2" />
-                      Fasce
+                      {t("exercises.ranges")}
                     </Button>
                     <Button
                       type="button"
@@ -1797,7 +1791,7 @@ export default function Exercises() {
                       className="h-8"
                     >
                       <Star className="h-4 w-4 mr-2" />
-                      Criteri
+                      {t("exercises.criteria")}
                     </Button>
                     <Button
                       type="button"
@@ -1807,7 +1801,7 @@ export default function Exercises() {
                       className="h-8"
                     >
                       <TrendingUp className="h-4 w-4 mr-2" />
-                      Criteri+Fasce
+                      {t("exercises.criteriaRangesType")}
                     </Button>
                   </div>
                 )}
@@ -1818,17 +1812,17 @@ export default function Exercises() {
                     {(selectedExercise.evaluationType || 'range') === 'criteria' ? (
                       <>
                         <Star className="h-4 w-4" />
-                        <span>Valutazione per Criteri</span>
+                        <span>{t("exercises.criteriaType")}</span>
                       </>
                     ) : (selectedExercise.evaluationType || 'range') === 'criteria-ranges' ? (
                       <>
                         <TrendingUp className="h-4 w-4" />
-                        <span>Criteri con Fasce</span>
+                        <span>{t("exercises.criteriaRangesType")}</span>
                       </>
                     ) : (
                       <>
                         <Ruler className="h-4 w-4" />
-                        <span>Valutazione per Fasce</span>
+                        <span>{t("exercises.rangeType")}</span>
                       </>
                     )}
                   </div>
@@ -1846,7 +1840,7 @@ export default function Exercises() {
                         className="rounded"
                       />
                       <Label htmlFor="edit-use-gender-ranges" className="text-sm cursor-pointer">
-                        Fasce diverse per M/F
+                        {t("exercises.useGenderRanges")}
                       </Label>
                     </div>
 
@@ -1856,11 +1850,11 @@ export default function Exercises() {
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-medium flex items-center gap-2">
                             <IconGenderMale className="h-4 w-4 text-blue-500" />
-                            {editUseGenderRanges ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                            {editUseGenderRanges ? t("exercises.maleRangesLabel") : t("exercises.unifiedRangesLabel")}
                           </Label>
                           <Button type="button" variant="outline" size="sm" onClick={() => addEditRange('M')} className="h-7 text-xs">
                             <Plus className="h-3 w-3 mr-1" />
-                            Aggiungi
+                            {t("common.add")}
                           </Button>
                         </div>
                         <div className="space-y-2">
@@ -1868,7 +1862,7 @@ export default function Exercises() {
                             <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
                               <div className="flex-1 grid grid-cols-3 gap-2">
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Min</Label>
+                                  <Label className="text-xs text-muted-foreground">{t("exercises.min")}</Label>
                                   <DecimalInput
                                     value={range.min}
                                     onChange={(val) => updateEditRange('M', index, 'min', val)}
@@ -1878,7 +1872,7 @@ export default function Exercises() {
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Max</Label>
+                                  <Label className="text-xs text-muted-foreground">{t("exercises.max")}</Label>
                                   <DecimalInput
                                     value={range.max}
                                     onChange={(val) => updateEditRange('M', index, 'max', val)}
@@ -1888,7 +1882,7 @@ export default function Exercises() {
                                   />
                                 </div>
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">Voto</Label>
+                                  <Label className="text-xs text-muted-foreground">{t("exercises.score")}</Label>
                                   <Select
                                     value={range.score.toString()}
                                     onValueChange={(v) => updateEditRange('M', index, 'score', parseFloat(v))}
@@ -1928,11 +1922,11 @@ export default function Exercises() {
                           <div className="flex items-center justify-between">
                             <Label className="text-sm font-medium flex items-center gap-2">
                               <IconGenderFemale className="h-4 w-4 text-pink-500" />
-                              Fasce Femmine
+                              {t("exercises.femaleRangesLabel")}
                             </Label>
                             <Button type="button" variant="outline" size="sm" onClick={() => addEditRange('F')} className="h-7 text-xs">
                               <Plus className="h-3 w-3 mr-1" />
-                              Aggiungi
+                              {t("common.add")}
                             </Button>
                           </div>
                           <div className="space-y-2">
@@ -1940,7 +1934,7 @@ export default function Exercises() {
                               <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
                                 <div className="flex-1 grid grid-cols-3 gap-2">
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Min</Label>
+                                    <Label className="text-xs text-muted-foreground">{t("exercises.min")}</Label>
                                     <DecimalInput
                                       value={range.min}
                                       onChange={(val) => updateEditRange('F', index, 'min', val)}
@@ -1950,7 +1944,7 @@ export default function Exercises() {
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Max</Label>
+                                    <Label className="text-xs text-muted-foreground">{t("exercises.max")}</Label>
                                     <DecimalInput
                                       value={range.max}
                                       onChange={(val) => updateEditRange('F', index, 'max', val)}
@@ -1960,7 +1954,7 @@ export default function Exercises() {
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Voto</Label>
+                                    <Label className="text-xs text-muted-foreground">{t("exercises.score")}</Label>
                                     <Select
                                       value={range.score.toString()}
                                       onValueChange={(v) => updateEditRange('F', index, 'score', parseFloat(v))}
@@ -2002,7 +1996,7 @@ export default function Exercises() {
                 {isEditing && editEvaluationType === 'criteria' && (
                   <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                     <p className="text-sm text-muted-foreground">
-                      Definisci i criteri di valutazione. Il voto finale sarà calcolato dalla somma dei punteggi.
+                      {t("exercises.criteriaDesc")}
                     </p>
 
                     <div className="space-y-3">
@@ -2010,9 +2004,9 @@ export default function Exercises() {
                         <div key={index} className="flex items-center gap-2 p-3 rounded-lg bg-background border">
                           <div className="flex-1 grid grid-cols-3 gap-2">
                             <div className="col-span-2 space-y-1">
-                              <Label className="text-xs text-muted-foreground">Nome Criterio</Label>
+                              <Label className="text-xs text-muted-foreground">{t("exercises.criteriaName")}</Label>
                               <Input
-                                placeholder="es. Ricezione, Battuta..."
+                                placeholder={t("exercises.criteriaPlaceholder", { defaultValue: "es. Ricezione, Battuta..." })}
                                 value={criterion.name}
                                 onChange={(e) => {
                                   const updated = [...editCriteria];
@@ -2023,7 +2017,7 @@ export default function Exercises() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                              <Label className="text-xs text-muted-foreground">{t("exercises.maxPoints")}</Label>
                               <Input
                                 type="text"
                                 inputMode="numeric"
@@ -2070,12 +2064,12 @@ export default function Exercises() {
                       className="w-full"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Aggiungi Criterio
+                      {t("exercises.addCriterion")}
                     </Button>
 
                     <div className="p-3 rounded-lg bg-primary/10 text-center">
                       <p className="text-sm font-medium">
-                        Punteggio Totale Massimo: {editCriteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                        {t("exercises.maxTotalScore", { score: editCriteria.reduce((sum, c) => sum + c.maxScore, 0) })}
                       </p>
                     </div>
                   </div>
@@ -2085,7 +2079,7 @@ export default function Exercises() {
                 {isEditing && editEvaluationType === 'criteria-ranges' && (
                   <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                     <p className="text-sm text-muted-foreground">
-                      Definisci criteri con fasce di valutazione. Per ogni criterio, inserisci una prestazione che verrà convertita in punteggio tramite le fasce.
+                      {t("exercises.criteriaRangesDesc")}
                     </p>
 
                     <div className="space-y-4">
@@ -2093,7 +2087,7 @@ export default function Exercises() {
                         <div key={criterionIndex} className="p-4 rounded-lg bg-background border space-y-3">
                           {/* Criterion Header */}
                           <div className="flex items-center justify-between">
-                            <Label className="text-sm font-semibold">Criterio {criterionIndex + 1}</Label>
+                            <Label className="text-sm font-semibold">{t("exercises.criterionNumber", { number: criterionIndex + 1 })}</Label>
                             {editCriteriaWithRanges.length > 1 && (
                               <Button
                                 type="button"
@@ -2110,9 +2104,9 @@ export default function Exercises() {
                           {/* Criterion Name, Unit, Max Score */}
                           <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Nome</Label>
+                              <Label className="text-xs text-muted-foreground">{t("common.name", { defaultValue: "Nome" })}</Label>
                               <Input
-                                placeholder="es. Ricezione"
+                                placeholder={t("exercises.criteriaPlaceholder", { defaultValue: "es. Ricezione" })}
                                 value={criterion.name}
                                 onChange={(e) => {
                                   const updated = [...editCriteriaWithRanges];
@@ -2123,7 +2117,7 @@ export default function Exercises() {
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Unità</Label>
+                              <Label className="text-xs text-muted-foreground">{t("exercises.unit")}</Label>
                               <Select
                                 value={criterion.unit}
                                 onValueChange={(value) => {
@@ -2136,16 +2130,16 @@ export default function Exercises() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="cm">cm</SelectItem>
-                                  <SelectItem value="m">m</SelectItem>
-                                  <SelectItem value="sec">sec</SelectItem>
-                                  <SelectItem value="reps">reps</SelectItem>
-                                  <SelectItem value="qualitativo">qual.</SelectItem>
+                                  <SelectItem value="cm">{t("units.cm")}</SelectItem>
+                                  <SelectItem value="m">{t("units.m")}</SelectItem>
+                                  <SelectItem value="sec">{t("units.sec")}</SelectItem>
+                                  <SelectItem value="reps">{t("units.reps")}</SelectItem>
+                                  <SelectItem value="qualitativo">{t("units.qualitative")}</SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">Max Punti</Label>
+                              <Label className="text-xs text-muted-foreground">{t("exercises.maxPoints")}</Label>
                               <Input
                                 type="number"
                                 min="1"
@@ -2187,7 +2181,7 @@ export default function Exercises() {
                               className="rounded"
                             />
                             <Label htmlFor={`edit-criterion-${criterionIndex}-gender`} className="text-xs cursor-pointer">
-                              Fasce diverse per M/F
+                              {t("exercises.useGenderRanges")}
                             </Label>
                           </div>
 
@@ -2196,7 +2190,7 @@ export default function Exercises() {
                             <div className="flex items-center justify-between">
                               <Label className="text-xs font-medium flex items-center gap-1">
                                 <IconGenderMale className="h-3 w-3 text-blue-500" />
-                                {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? 'Fasce Maschi' : 'Fasce (tutti)'}
+                                {criterion.ranges?.F !== undefined && criterion.ranges?.M !== criterion.ranges?.F ? t("exercises.maleRangesLabel") : t("exercises.unifiedRangesLabel")}
                               </Label>
                               <Button
                                 type="button"
@@ -2217,7 +2211,7 @@ export default function Exercises() {
                                 className="h-6 text-xs"
                               >
                                 <Plus className="h-3 w-3 mr-1" />
-                                Aggiungi
+                                {t("common.add")}
                               </Button>
                             </div>
                             <div className="space-y-1">
@@ -2237,7 +2231,7 @@ export default function Exercises() {
                                     }}
                                     format={formatRangeValue}
                                     parse={parseRangeValue}
-                                    placeholder="Min"
+                                    placeholder={t("exercises.min")}
                                     className="h-7 text-xs"
                                   />
                                   <DecimalInput
@@ -2254,7 +2248,7 @@ export default function Exercises() {
                                     }}
                                     format={formatRangeValue}
                                     parse={parseRangeValue}
-                                    placeholder="Max"
+                                    placeholder={t("exercises.max")}
                                     className="h-7 text-xs"
                                   />
                                   <Select
@@ -2311,7 +2305,7 @@ export default function Exercises() {
                               <div className="flex items-center justify-between">
                                 <Label className="text-xs font-medium flex items-center gap-1">
                                   <IconGenderFemale className="h-3 w-3 text-pink-500" />
-                                  Fasce Femmine
+                                  {t("exercises.femaleRangesLabel")}
                                 </Label>
                                 <Button
                                   type="button"
@@ -2332,7 +2326,7 @@ export default function Exercises() {
                                   className="h-6 text-xs"
                                 >
                                   <Plus className="h-3 w-3 mr-1" />
-                                  Aggiungi
+                                  {t("common.add")}
                                 </Button>
                               </div>
                               <div className="space-y-1">
@@ -2352,7 +2346,7 @@ export default function Exercises() {
                                       }}
                                       format={formatRangeValue}
                                       parse={parseRangeValue}
-                                      placeholder="Min"
+                                      placeholder={t("exercises.min")}
                                       className="h-7 text-xs"
                                     />
                                     <DecimalInput
@@ -2369,7 +2363,7 @@ export default function Exercises() {
                                       }}
                                       format={formatRangeValue}
                                       parse={parseRangeValue}
-                                      placeholder="Max"
+                                      placeholder={t("exercises.max")}
                                       className="h-7 text-xs"
                                     />
                                     <Select
@@ -2432,12 +2426,12 @@ export default function Exercises() {
                       className="w-full"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Aggiungi Criterio
+                      {t("exercises.addCriterion")}
                     </Button>
 
                     <div className="p-3 rounded-lg bg-primary/10 text-center">
                       <p className="text-sm font-medium">
-                        Punteggio Totale Massimo: {editCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
+                        {t("exercises.maxTotalScore", { score: editCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0) })}
                       </p>
                     </div>
                   </div>
@@ -2453,17 +2447,17 @@ export default function Exercises() {
                           {selectedExercise.evaluationCriteria.map((criterion, i) => (
                             <div key={i} className="flex justify-between items-center p-2 bg-background rounded border">
                               <span className="font-medium">{criterion.name}</span>
-                              <span className="text-muted-foreground">max {criterion.maxScore} punti</span>
+                              <span className="text-muted-foreground">{t("exercises.maxPointsScore", { defaultValue: `max ${criterion.maxScore} punti`, score: criterion.maxScore })}</span>
                             </div>
                           ))}
                           <div className="p-3 rounded-lg bg-primary/10 text-center">
                             <p className="text-sm font-medium">
-                              Punteggio Totale Massimo: {selectedExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0)}
+                              {t("exercises.maxTotalScore", { score: selectedExercise.evaluationCriteria.reduce((sum, c) => sum + c.maxScore, 0) })}
                             </p>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Nessun criterio di valutazione configurato</p>
+                        <p className="text-sm text-muted-foreground">{t("exercises.noCriteriaConfigured")}</p>
                       )
                     ) : (selectedExercise.evaluationType === 'criteria-ranges') ? (
                       /* Criteria with Ranges view */
@@ -2474,10 +2468,10 @@ export default function Exercises() {
                               <div key={i} className="p-3 bg-background rounded-lg border space-y-2">
                                 <div className="flex justify-between items-center border-b pb-2">
                                   <div className="font-medium flex items-center gap-2">
-                                    <Badge variant="outline" className="h-5 text-[10px]">{criterion.unit}</Badge>
+                                    <Badge variant="outline" className="h-5 text-[10px]">{getUnitDisplayName(criterion.unit)}</Badge>
                                     {criterion.name}
                                   </div>
-                                  <Badge variant="secondary">Max: {criterion.maxScore}</Badge>
+                                  <Badge variant="secondary">{t("exercises.max")}: {criterion.maxScore}</Badge>
                                 </div>
 
                                 {/* Ranges Preview */}
@@ -2486,7 +2480,7 @@ export default function Exercises() {
                                     <div className="space-y-2">
                                       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                                         <IconGenderMale className="h-3.5 w-3.5 text-blue-500" />
-                                        Fasce {criterion.ranges?.F ? 'Maschi' : 'Uniche'}
+                                        {criterion.ranges?.F ? t("exercises.maleRangesLabel") : t("exercises.unifiedRangesLabel")}
                                       </div>
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
                                         {criterion.ranges.M.map((r, idx) => (
@@ -2502,7 +2496,7 @@ export default function Exercises() {
                                     <div className="space-y-2">
                                       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                                         <IconGenderFemale className="h-3.5 w-3.5 text-pink-500" />
-                                        Fasce Femmine
+                                        {t("exercises.femaleRangesLabel")}
                                       </div>
                                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
                                         {criterion.ranges.F.map((r, idx) => (
@@ -2520,12 +2514,12 @@ export default function Exercises() {
 
                           <div className="p-3 rounded-lg bg-primary/10 text-center">
                             <p className="text-sm font-medium">
-                              Punteggio Totale Massimo: {selectedExercise.evaluationCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0)}
+                              {t("exercises.maxTotalScore", { score: selectedExercise.evaluationCriteriaWithRanges.reduce((sum, c) => sum + c.maxScore, 0) })}
                             </p>
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Nessun criterio con fasce configurato</p>
+                        <p className="text-sm text-muted-foreground">{t("exercises.noCriteriaConfigured")}</p>
                       )
                     ) : (
                       /* Ranges view */
@@ -2534,7 +2528,7 @@ export default function Exercises() {
                           <div className="space-y-2">
                             <Label className="text-sm font-medium flex items-center gap-2">
                               <IconGenderMale className="h-4 w-4 text-blue-500" />
-                              Fasce Maschi
+                              {t("exercises.maleRangesLabel")}
                             </Label>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               {selectedExercise.evaluationRanges.M.map((range, i) => (
@@ -2548,7 +2542,7 @@ export default function Exercises() {
                             <div className="space-y-2">
                               <Label className="text-sm font-medium flex items-center gap-2">
                                 <IconGenderFemale className="h-4 w-4 text-pink-500" />
-                                Fasce Femmine
+                                {t("exercises.femaleRangesLabel")}
                               </Label>
                               <div className="grid grid-cols-3 gap-2 text-sm">
                                 {selectedExercise.evaluationRanges.F.map((range, i) => (
@@ -2561,7 +2555,7 @@ export default function Exercises() {
                           )}
                         </>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Nessuna fascia di valutazione configurata</p>
+                        <p className="text-sm text-muted-foreground">{t("exercises.noRangesConfigured")}</p>
                       )
                     )}
                   </div>
@@ -2578,8 +2572,8 @@ export default function Exercises() {
               {/* Metadata */}
               {!isEditing && (
                 <div className="text-xs text-muted-foreground space-y-1 pt-4 border-t">
-                  <p>Creato: {new Date(selectedExercise.createdAt).toLocaleDateString('it-IT')}</p>
-                  <p>Aggiornato: {new Date(selectedExercise.updatedAt).toLocaleDateString('it-IT')}</p>
+                  <p>{t("common.created", { defaultValue: "Creato" })}: {new Date(selectedExercise.createdAt).toLocaleDateString()}</p>
+                  <p>{t("common.updated", { defaultValue: "Aggiornato" })}: {new Date(selectedExercise.updatedAt).toLocaleDateString()}</p>
                 </div>
               )}
             </div>
@@ -2589,22 +2583,22 @@ export default function Exercises() {
             {isEditing ? (
               <>
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  Annulla
+                  {t("common.cancel")}
                 </Button>
                 <Button onClick={handleUpdateExercise} disabled={isUpdating}>
                   {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   <Save className="mr-2 h-4 w-4" />
-                   Salva Modifiche
-                 </Button>
-               </>
-             ) : (
-               <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
-                 Chiudi
-               </Button>
-             )}
-           </DialogFooter>
-         </DialogContent>
-       </Dialog>
-     </motion.div>
-   );
+                  {t("common.saveChanges", { defaultValue: "Salva Modifiche" })}
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+                {t("common.close")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  );
 }

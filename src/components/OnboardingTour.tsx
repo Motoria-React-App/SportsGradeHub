@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
     Dialog,
     DialogContent,
@@ -10,55 +11,54 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-
-interface Step {
-    title: string;
-    description: string;
+interface StepConfig {
+    titleKey: string;
+    descKey: string;
     image?: string;
     color: string;
     video?: string;
 }
 
-const STEPS: Step[] = [
+const STEP_CONFIGS: StepConfig[] = [
     {
-        title: "Benvenuto su SportsGradeHub!",
-        description: "Siamo felici di averti a bordo. Questa breve guida ti mostrerà come ottenere il massimo dalla tua nuova piattaforma di valutazione sportiva.",
-        // image: "/onboarding/welcome.png",
+        titleKey: "banners.onboarding.step1Title",
+        descKey: "banners.onboarding.step1Desc",
         color: "",
     },
     {
-        title: "Dashboard e Statistiche",
-        description: "Monitora l'andamento generale dei tuoi studenti. Visualizza medie, completamento valutazioni e trend di crescita in un colpo d'occhio.",
+        titleKey: "banners.onboarding.step2Title",
+        descKey: "banners.onboarding.step2Desc",
         image: "/onboarding/dashboard.png",
         color: "",
     },
     {
-        title: "Gestione Classi e Studenti",
-        description: "Crea le tue classi in pochi secondi. Aggiungi studenti manualmente o importa liste per organizzare il tuo lavoro in modo efficiente.",
+        titleKey: "banners.onboarding.step3Title",
+        descKey: "banners.onboarding.step3Desc",
         image: "/onboarding/classes.png",
         color: "",
     },
     {
-        title: "Catalogo Esercizi",
-        description: "Configura i tuoi esercizi personalizzati. Scegli tra valutazione a fasce, a criteri o mista per adattare l'app a qualsiasi disciplina sportiva.",
+        titleKey: "banners.onboarding.step4Title",
+        descKey: "banners.onboarding.step4Desc",
         image: "/onboarding/exercise.png",
         color: "",
     },
     {
-        title: "Valutazioni Veloci",
-        description: "Il cuore dell'app. Inserisci le prestazioni direttamente sul campo. Il sistema calcolerà automaticamente punteggi e medie in tempo reale.",
+        titleKey: "banners.onboarding.step5Title",
+        descKey: "banners.onboarding.step5Desc",
         image: "/onboarding/evaluation.png",
         color: "",
     },
     {
-        title: "Personalizzazione Avanzata",
-        description: "Adatta SportsGradeHub alle tue esigenze. Configura parametri di sessione, preferenze di calcolo e molto altro dalle impostazioni. Puoi anche abilitare l'organizzazione degli esercizi in gruppi tematici per una gestione ancora più strutturata.",
+        titleKey: "banners.onboarding.step6Title",
+        descKey: "banners.onboarding.step6Desc",
         image: "/onboarding/setting.png",
         color: "",
     },
 ];
 
 export function OnboardingTour() {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
 
@@ -70,7 +70,7 @@ export function OnboardingTour() {
     }, []);
 
     const handleNext = () => {
-        if (currentStep < STEPS.length - 1) {
+        if (currentStep < STEP_CONFIGS.length - 1) {
             setCurrentStep(currentStep + 1);
         } else {
             handleComplete();
@@ -92,29 +92,31 @@ export function OnboardingTour() {
         handleComplete();
     };
 
-    const step = STEPS[currentStep];
+    const stepConfig = STEP_CONFIGS[currentStep];
+    const stepTitle = t(stepConfig.titleKey);
+    const stepDescription = t(stepConfig.descKey);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent showCloseButton={false} className="sm:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl bg-background/95 backdrop-blur-xl">
                 <div className="flex flex-col h-[600px] md:h-auto">
                     {/* Header/Image Area */}
-                    <div className={cn("relative w-full aspect-video overflow-hidden bg-linear-to-br", step.color)}>
+                    <div className={cn("relative w-full aspect-video overflow-hidden bg-linear-to-br", stepConfig.color)}>
                         <div className="absolute inset-0 bg-black/10 mix-blend-overlay" />
-                        {step.image && (
+                        {stepConfig.image ? (
                             <img
-                                src={step.image}
-                                alt={step.title}
+                                src={stepConfig.image}
+                                alt={stepTitle}
                                 className="w-full h-full object-cover rounded-lg transform scale-95 transition-transform duration-700 hover:scale-100"
                             />
-                        ) || (
-                                <div className="w-full h-full flex items-center justify-center">
-                                    <img src="/logoSGH.png" alt="SportsGradeHub Logo" className="h-16 w-16 object-cover rounded-full shadow-sm" />
-                                </div>
-                            )}
-                        {step.video && (
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                                <img src="/logoSGH.png" alt="SportsGradeHub Logo" className="h-16 w-16 object-cover rounded-full shadow-sm" />
+                            </div>
+                        )}
+                        {stepConfig.video && (
                             <video
-                                src={step.video}
+                                src={stepConfig.video}
                                 autoPlay
                                 loop
                                 muted
@@ -133,7 +135,7 @@ export function OnboardingTour() {
 
                         {/* Step Counter Overlay */}
                         <div className="absolute top-4 left-4 bg-black/30 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-[10px] font-bold text-white tracking-widest uppercase">
-                            Step {currentStep + 1} / {STEPS.length}
+                            {t("banners.onboarding.stepCounter", { current: currentStep + 1, total: STEP_CONFIGS.length, defaultValue: `Step ${currentStep + 1} / ${STEP_CONFIGS.length}` })}
                         </div>
                     </div>
 
@@ -142,17 +144,17 @@ export function OnboardingTour() {
                         <div className="space-y-2 max-w-md">
                             <DialogHeader>
                                 <DialogTitle className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent text-center bg-linear-to-b from-foreground to-foreground/70">
-                                    {step.title}
+                                    {stepTitle}
                                 </DialogTitle>
                             </DialogHeader>
                             <p className="text-base text-muted-foreground leading-relaxed">
-                                {step.description}
+                                {stepDescription}
                             </p>
                         </div>
 
                         {/* Progress Indicators */}
                         <div className="flex gap-2 pb-2">
-                            {STEPS.map((_, i) => (
+                            {STEP_CONFIGS.map((_, i) => (
                                 <div
                                     key={i}
                                     className={cn(
@@ -171,7 +173,7 @@ export function OnboardingTour() {
                             className="text-muted-foreground hover:text-foreground text-xs"
                             onClick={handleSkip}
                         >
-                            Salta Tour
+                            {t("banners.onboarding.skipTour", { defaultValue: "Salta Tour" })}
                         </Button>
 
                         <div className="flex items-center gap-2">
@@ -183,7 +185,7 @@ export function OnboardingTour() {
                                     className="h-10 text-xs font-semibold px-4"
                                 >
                                     <ChevronLeft className="h-4 w-4 mr-2" />
-                                    Indietro
+                                    {t("banners.onboarding.prevStep", { defaultValue: "Indietro" })}
                                 </Button>
                             )}
 
@@ -191,17 +193,17 @@ export function OnboardingTour() {
                                 onClick={handleNext}
                                 className={cn(
                                     "h-10 text-xs font-bold px-6 shadow-lg shadow-primary/20 transition-all",
-                                    currentStep === STEPS.length - 1 ? "bg-emerald-600 hover:bg-emerald-700" : "bg-primary hover:bg-primary/90"
+                                    currentStep === STEP_CONFIGS.length - 1 ? "bg-emerald-600 hover:bg-emerald-700" : "bg-primary hover:bg-primary/90"
                                 )}
                             >
-                                {currentStep === STEPS.length - 1 ? (
+                                {currentStep === STEP_CONFIGS.length - 1 ? (
                                     <>
-                                        Inizia ora
+                                        {t("banners.onboarding.finishTour", { defaultValue: "Inizia ora" })}
                                         <Check className="ml-2 h-4 w-4" />
                                     </>
                                 ) : (
                                     <>
-                                        Prossimo
+                                        {t("banners.onboarding.nextStep", { defaultValue: "Prossimo" })}
                                         <ChevronRight className="ml-2 h-4 w-4" />
                                     </>
                                 )}
