@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/collapsible"
 
 import { NavUser } from "./nav-user"
+import { CoffeeBanner } from "./coffee-banner"
 import { useClient, useSchoolData } from "@/provider/clientProvider"
 import { SchoolClass } from "@/types/types"
 import {
@@ -407,6 +408,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 
         <SidebarFooter className="border-t border-sidebar-border">
+          <CoffeeBanner />
           {client.UserModel?.user && <NavUser user={client.UserModel.user} />}
         </SidebarFooter>
 

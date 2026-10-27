@@ -77,13 +77,25 @@ Visit the live application: **[https://sports-grade-hub.vercel.app](https://spor
    npm install
    ```
 
-3. **Start the development server**
+3. **Configure the backend connection**
+   Copy `.env.example` to `.env` in this frontend directory. Set `VITE_API_URL`
+   to your backend base URL and `VITE_API_KEY` to the same value as `SGH_API_KEY`
+   on that backend. Restart Vite after changing these variables.
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
 
-4. **Open your browser**
+5. **Open your browser**
    Navigate to `http://localhost:5173`
+
+### Buy Me a Coffee banner
+
+The official yellow Buy Me a Coffee button links to
+`https://buymeacoffee.com/aamritt` and appears above the account menu in the
+desktop and mobile sidebar. Its embed lives in `src/components/coffee-banner.tsx`
+inside an isolated iframe because the provider script uses `document.writeln`.
 
 ### Building for Production
 

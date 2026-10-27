@@ -68,6 +68,7 @@ export const translations = {
     sidebar: {
       search: "Cerca",
       home: "Home",
+      coffeeAccessibleLabel: "Sostieni SportsGradeHub su Buy Me a Coffee (si apre in una nuova scheda)",
       exercises: "Esercizi",
       evaluations: "Valutazioni",
       leaderboards: "Leaderboards",
@@ -1043,6 +1044,7 @@ export const translations = {
     sidebar: {
       search: "Search",
       home: "Home",
+      coffeeAccessibleLabel: "Support SportsGradeHub on Buy Me a Coffee (opens in a new tab)",
       exercises: "Exercises",
       evaluations: "Grading",
       leaderboards: "Leaderboards",
