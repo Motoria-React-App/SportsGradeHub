@@ -153,12 +153,6 @@ Per un bug, apri una [issue](https://github.com/Motoria-React-App/SportsGradeHub
 
 Per proporre una modifica, crea un branch dedicato e apri una pull request con una descrizione del cambiamento e delle verifiche effettuate. Prima dell’invio esegui almeno `npm run build`.
 
-## Sostieni il progetto
-
-Se SportsGradeHub ti è utile, puoi [offrire un caffè ad aamritt](https://buymeacoffee.com/aamritt).
-
-Il pulsante ufficiale è presente anche nella barra laterale dell’app. L’integrazione si trova in [`coffee-banner.tsx`](src/components/coffee-banner.tsx); lo script è contenuto in un iframe perché utilizza `document.writeln`.
-
 ---
 
 Un progetto di [Motoria React App](https://github.com/Motoria-React-App).
